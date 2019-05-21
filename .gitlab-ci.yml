@@ -1,0 +1,107 @@
+image: golang:latest
+
+before_script:
+  - echo "Acquire::http::Proxy \"http://proxy-us.intel.com:911\";" >> /etc/apt/apt.conf
+  - echo "Acquire::https::Proxy \"http://proxy-us.intel.com:911\";" >> /etc/apt/apt.conf
+  - git config --global http.proxy "http://proxy-us.intel.com:911"
+  - git config --global http."https://gitlab.devtools.intel.com".proxy ""
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.devtools.intel.com".insteadOf "https://gitlab.devtools.intel.com"
+  # - eval $(ssh-agent -s)
+  # - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - cd $CI_PROJECT_DIR
+
+variables:
+  HTTPS_PROXY: http://proxy-us.intel.com:911
+  no_proxy: ".intel.com"
+
+stages:
+ - build
+ - test
+ - dist
+ - pages
+
+compile:
+  stage: build
+  tags: 
+    - go
+  script:
+  - go build ./...
+
+test:
+  stage: test
+  services:
+    - postgres:latest
+  variables:
+    POSTGRES_HOSTNAME: postgres
+    POSTGRES_DB: pgdb
+    POSTGRES_USER: runner
+    POSTGRES_PASSWORD: test
+  tags: 
+    - go
+  script:
+    - go test ./... -tags=integration -coverprofile cover.out
+    - go tool cover -func cover.out
+    - go tool cover -html=cover.out -o cover.html
+  artifacts:
+    paths:
+      - "cover.html"
+
+installer:
+  stage: dist
+  tags:
+    - go
+  script:
+    - apt update && apt install -y makeself
+    - make installer
+    - cp ./doc/openapi.yml ./out/openapi.yml
+  artifacts:
+    paths:
+      - "out/authservice-*.bin"
+      - "out/openapi.yml"
+
+docker:
+  stage: dist
+  tags: 
+    - go
+    - docker
+  script:
+    - curl -sSL https://get.docker.com/ | sh
+    - apt-get update && apt-get install -y makeself
+    - make docker
+    - cp ./dist/docker/docker-compose.yml ./out/docker-compose.yml
+    - cp ./doc/openapi.yml ./out/openapi.yml
+  artifacts:
+    paths:
+      - "out/*.tar"
+      - "out/docker-compose.yml"
+      - "out/openapi.yml"
+
+lld:
+  stage: dist
+  tags:
+    - go
+  script:
+    - apt update && apt install -y pandoc
+    - pandoc --standalone --css pandoc.css -f markdown_github -t html5 doc/LLD.md -o LLD.html
+  artifacts:
+    paths:
+      - LLD.html
+
+pages:
+  stage: pages
+  tags:
+    - go
+  dependencies:
+    - test
+    - lld
+  script:
+    - mkdir -p public/
+    - cp cover.html public/cover.html
+    - cp LLD.html public/LLD.html
+  artifacts:
+    paths:
+    - public
+  only:
+  - master

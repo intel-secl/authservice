@@ -1,0 +1,308 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Auth Service
+servers:
+  - url: http://authservice.com:8443/aas/
+paths:
+  /hosts:
+    get:
+      parameters: 
+        - name: hostname
+          in: query
+          description: Query matching hostname
+          schema:
+            type: string
+        - name: version
+          in: query
+          description: Query matching version
+          schema:
+            type: string
+        - name: build
+          in: query
+          description: Query matching build number
+          schema:
+            type: string
+        - name: os
+          in: query
+          description: Query matching OS type
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Query matching host status
+          schema:
+            type: string
+      summary: Query hosts
+      description: Perform queries on the list of hosts
+      tags: 
+        - Hosts
+      responses:
+        '200':
+          description: Successfully queried hosts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Host'
+    post:
+      summary: Create host (Internal usage only)
+      description: Create a new host entry. Hostnames must be unique across different hosts.
+      tags:
+        - Hosts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Host'
+      responses:
+        '201':
+          description: Successfully created new host entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Host'
+  /hosts/{id}:
+    get:
+      summary: Get host
+      description: Get a single host by ID
+      parameters: 
+        - $ref: '#/components/parameters/HostID'
+      tags:
+        - Hosts
+      responses:
+        '200':
+          description: Successfully retrieved host
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Host'
+        '404':
+          description: Host with id not found
+    delete:
+      summary: Delete Host
+      description: Delete a single host by ID
+      parameters: 
+       - $ref: '#/components/parameters/HostID'
+      tags:
+        - Hosts
+      responses:
+        '204':
+          description: Successfully deleted host
+        '400':
+          description: Host with id not found
+    patch:
+      summary: Update Host (NOT YET IMPLEMENTED)
+      description: Update a host by ID 
+      parameters: 
+        - $ref: '#/components/parameters/HostID'
+      tags: 
+        - Hosts
+      responses:
+        '200':
+          description: TBD
+          
+  /reports:
+    get:
+      summary: Query reports
+      description: Query all reports by filter criteria
+      parameters: 
+        - name: hostname
+          in: query
+          description: query by host origination 
+          schema:
+            type: string
+        - name: hostid
+          in: query
+          description: query by host id
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          description: query by date starting from (RFC3339 date)
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: query by date up until to (RFC3339 date)
+          schema:
+            type: string
+            format: date
+      tags:
+        - Reports
+      responses:
+        '200':
+          description: Successfully queried reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: '#/components/schemas/Report'
+    post:
+      description: Create a new report
+      summary: Create Report (Internal usage only)
+      tags:
+        - Reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+      responses:
+        '201':
+          description: Successfully created report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+  /reports/{id}:
+    get:
+      tags:
+       - Reports
+      parameters: 
+       - $ref: '#/components/parameters/ReportID'
+      summary: Get report by ID
+      description: Get a single report by its ID
+      responses:
+        '200':
+          description: Successfully retrieved report by id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          description: Report with id not found
+
+  /heartbeat:
+    post:
+      description: Receieve heartbeat from host
+      tags:
+        - Heartbeat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Heartbeat'
+      responses:
+        '200':
+          description: Successfully updated host status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Heartbeat'
+
+components: 
+  parameters:
+    HostID:
+      name: id
+      in: path
+      description: Host ID
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReportID:
+      name: id
+      in: path
+      description: Report ID
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Host:
+      type: object
+      required:
+        - id
+        - hostname
+        - version
+        - build
+        - os
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        hostname: 
+          type: string
+        version:
+          type: string
+        build: 
+          type: string
+        os:
+          type: string
+        status:
+          type: string
+    Report:
+      type: object
+      required:
+        - id
+        - host_id
+        - detection
+      properties:
+        id:
+          type: string
+          format: uuid
+        host_id: 
+          type: string
+          format: uuid
+        detection:
+          type: object
+          required:
+            - description
+            - pid
+            - tid
+            - process_name
+            - process_image_path
+            - process_cmd_line
+            - timestamp
+            - severity
+            - profile_name
+            - cve_ids
+            - threat_class
+          properties:
+            description:
+              type: string
+            pid:
+              type: integer
+            tid:
+              type: integer
+            process_name:
+              type: string
+            process_image_path:
+              type: string
+            process_cmd_line:
+              type: string
+            timestamp:
+              type: integer
+            severity:
+              type: integer
+            profile_name:
+              type: string
+            cve_ids: 
+              type: array
+              items:
+                type: string
+            threat_class:
+              type: string
+        error:
+          type: object
+          properties:
+            description:
+              type: string
+    Heartbeat:
+      type: object
+      required:
+        - id
+        - interval
+      properties:
+        id:
+          type: string
+          format: uuid
+        interval:
+          type: uint16
+
