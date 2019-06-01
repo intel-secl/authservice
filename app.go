@@ -10,10 +10,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"intel/isecl/lib/common/crypt"
-	e "intel/isecl/lib/common/exec"
-	"intel/isecl/lib/common/setup"
-	"intel/isecl/lib/common/validation"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
 	"intel/isecl/authservice/middleware"
@@ -22,6 +18,10 @@ import (
 	"intel/isecl/authservice/resource"
 	"intel/isecl/authservice/tasks"
 	"intel/isecl/authservice/version"
+	"intel/isecl/lib/common/crypt"
+	e "intel/isecl/lib/common/exec"
+	"intel/isecl/lib/common/setup"
+	"intel/isecl/lib/common/validation"
 	"io"
 	"net/http"
 	"os"
@@ -210,6 +210,8 @@ func (a *App) Run(args []string) error {
 		a.printUsage()
 		return errors.New("Unrecognized command: " + args[1])
 	//TODO : Remove added for debug - used to debug db queries
+	case "token":
+		return a.TestTokenAuth()
 	case "testdb":
 		a.TestNewDBFunctions()
 	case "tlscertsha384":
@@ -225,7 +227,7 @@ func (a *App) Run(args []string) error {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
 			time.Sleep(10 * time.Millisecond)
-			return err;
+			return err
 		}
 	case "-help":
 		fallthrough
@@ -343,7 +345,7 @@ func (a *App) startServer() error {
 	// the Open method has a retry operation that takes a long time
 	if err := postgres.VerifyConnection(c.Postgres.Hostname, c.Postgres.Port, c.Postgres.DBName,
 		c.Postgres.Username, c.Postgres.Password, c.Postgres.SSLMode, c.Postgres.SSLCert); err != nil {
-			return err
+		return err
 	}
 
 	// Open database
@@ -359,14 +361,24 @@ func (a *App) startServer() error {
 
 	log.Tracef("Heartbeat interval: %d", c.HeartbeatIntervalMins)
 
+	// Create public routes that does not need any authentication
+	r := mux.NewRouter()
+
 	// Create Router, set routes
-	r := mux.NewRouter().PathPrefix("/aas").Subrouter()
-	r.Use(middleware.NewBasicAuth(aasDB.UserRepository()))
+	sr := r.PathPrefix("/aas").Subrouter()
+	sr.Use(middleware.NewBasicAuth(aasDB.UserRepository()))
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
-		for _, s := range setters {
-			s(r, aasDB)
+		for _, setter := range setters {
+			setter(sr, aasDB)
 		}
 	}(resource.SetHosts, resource.SetReports, resource.SetVersion, resource.SetHeartbeat)
+
+	sr = r.PathPrefix("/aas/noauth").Subrouter()
+	func(setters ...func(*mux.Router, repository.AASDatabase)) {
+		for _, setter := range setters {
+			setter(sr, aasDB)
+		}
+	}(resource.SetVersion)
 
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,

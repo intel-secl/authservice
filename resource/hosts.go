@@ -30,6 +30,7 @@ func SetHosts(r *mux.Router, db repository.AASDatabase) {
 	r.Handle("/hosts", queryHosts(db)).Methods("GET")
 	r.Handle("/hosts/{id}", deleteHost(db)).Methods("DELETE")
 	r.Handle("/hosts/{id}", getHost(db)).Methods("GET")
+	r.Handle("/host", getHost(db)).Methods("GET")
 	r.Handle("/hosts/{id}", handlers.ContentTypeHandler(updateHost(db), "application/json")).Methods("PATCH")
 }
 

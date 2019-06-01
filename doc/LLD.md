@@ -4,56 +4,99 @@
 
 |     | Description                 |
 |-----|-----------------------------|
-| AAS | Auth Service    |
-|     |                             |
+| AAS | Authentication & Authorization Service    |
+
 
 
 # Overview
 
-The `Auth Service` is a web service whose purpose is to manage many deployed instances of the `Threat Detection Agent`.
+The `Auth Service` is a web service whose purpose is to authenticate a user and return has the mapping or users to roles
 
-The `Auth Service` has two core functionalities:
+The `Auth Service` has following core functionalities:
 
-1. Aggregate threat reports from `Threat Detection Agent` (Phase 1)
-2. Push updated heuristics models to `Threat Detection Agent` (Phase 2)
+
 
 # API Endpoints
 
-## Node Management
+## Token related
 
-### POST `/aas/hosts`
-Register an Agent to the Service.
+### POST `/aas/user/token`
+Retrieve a token based on authorization
 
-- Content-Type: `application/json`
 - Authorization: `HTTP Basic Authentication`
+- Content-Type: `application/json`
+- Accept: `application/jwt`
 
-Example body:
 ```json
 {
-  "hostname": "10.105.168.1",
-  "hardware_uuid" : "1eda8d91-fa64-6d6d-f663-283dc520e658",
-  "os": "linux",
-  "version": "1.2.1",
-  "build": "201910012012"
+  "role_domain" : "restrict roles to just this domain",
+  "role" : "just this role when desired role is known",
+  "validity" : "time the token is valid for",
+  "include_username" : "include the username as well in the token(off by default)"
 }
 ```
 
+The above are all optional. This is used to restrict token to limit its purpose
+
+Example Response:
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJpYXQiOjE1MTYyMzkwMiwiZXhwIjoxNTE2MzgzMDIsInJvbGVzIjpbIldMUzpSZXBvcnRlciIsIldMUzpVc2VyIl19.
+Nj4Xb5EofegxWtBntfhhk3qrJJrKHw_S3uM_FFahP0s
+```
+
+The above token correspond to the following
+
+HEADER:ALGORITHM & TOKEN TYPE
+```json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+PAYLOAD:DATA
+```json
+{
+  "iat": 151623902,
+  "exp": 151638302,
+   "roles": ["WLS:Reporter", "WLS:User"]
+ }
+```
+VERIFY SIGNATURE
+```golang
+HMACSHA256(
+  base64UrlEncode(header) + "." +
+  base64UrlEncode(payload),
+
+hellotherehowareyou
+
+) secret base64 encoded
+```
+
+## User Management
+### POST `/aas/users`
+
+Create a user in AAS
+
+- Authorization: `HTTP Basic Authentication`
+- Content-Type: `application/json`
+
+```json
+{
+    "id": "user[@domain]",
+    "password": "password",
+}
+```
 Example Response:
 ```json
 {
-  "id": "123e4567-e89b-12d3-a456-426655440000",
-  "hostname": "10.105.168.1",
-  "hardware_uuid" : "1eda8d91-fa64-6d6d-f663-283dc520e658",
-  "version": "1.2.1",
-  "build": "201910012012",
-  "os": "linux",
-  "status": "online"
+    "user_id" : "user_uuid"
 }
 ```
 
-### GET `/aas/hosts`
+### GET `/aas/users`
 
-Query all registered hosts
+Query Users
 
 - Authorization: `HTTP Basic Authentication`
 
@@ -62,66 +105,164 @@ Example Response:
 ```json
 [
     {
-        "id": "123e4567-e89b-12d3-a456-426655440000",
-        "hostname": "10.105.168.1",
-        "hardware_uuid": "00ecd3ab-9af4-e711-906e-001560a04062",
-        "version": "1.2.1",
-        "build": "201910012012",
-        "os": "linux",
-        "status": "online",
+        "user_id": "123e4567-e89b-12d3-a456-426655440000",
+        "user_name": "system_user@wls",
     },
     {
         "id": "223e4567-e89b-12d3-a456-426655440000",
-        "hostname": "10.105.168.2",
-        "hardware_uuid": "1eda8d91-fa64-6d6d-f663-283dc520e658",
-        "version": "1.2.1",
-        "build": "201910012012",
-        "os": "linux",
-        "status": "offline",
+        "user_name": "admin",
     },
 ]
 ```
-
 Available Query parameters:
 
-- hostname=(hostname)
-- hardwareUUID=(hardwareUUID)
-- version=(version)
-- build=(build)
-- os=(os)
-- status=(status)
+- userName=(user_name)
 
-Query parameters can be conjoined in any combination, so for example: `GET /aas/hosts?version=v1.0.0&os=linux`
+### GET `/aas/users/{id-uuidv4}`
 
-### GET `/aas/hosts/{id-uuidv4}`
-
-Get a single host by ID or its hostname
+Get a single user by ID
 
 - Authorization: `HTTP Basic Authentication`
 
-Retrieve information regarding a specific host
-- `GET /aas/hosts/123e4567-e89b-12d3-a456-426655440000`
+Retrieve information regarding a specific user
+- `GET /aas/users/123e4567-e89b-12d3-a456-426655440000`
 
 Example Response:
 
 ```json
 {
-    "id": "123e4567-e89b-12d3-a456-426655440000",
-    "hostname": "10.105.168.1",
-    "hardware_uuid": "1eda8d91-fa64-6d6d-f663-283dc520e658",
-    "version": "1.2.1",
-    "build": "201910012012",
-    "os": "linux",
-    "status": "Reserve for future implementation",
-}
+    "id": "223e4567-e89b-12d3-a456-426655440000",
+    "user_name": "admin",
+},
 ```
 
-### DELETE `/aas/hosts/{id-uuidv4}`
 
-Unregister node from `AAS`
+
+### DELETE `/aas/users/{user_id}`
 
 - Authorization: `HTTP Basic Authentication`
 
+Response: success/failure
+
+deletes user from database with specific user id. Deleting a record using this method is a 2-step process as we need to first obtain the user uuid using the `GET` method.
+
+
+### DELETE `/aas/users?username=myname@intel.com`
+
+- Authorization: `HTTP Basic Authentication`
+
+Response: success/failure
+
+Not sure if we should have this interface ??
+
+### POST `/aas/users/{userid}/change_password`
+(not available in intial version)
+
+used to change password for the user if they know the existing password.
+Can this be used for an admin to change password for someone else?
+
+- Authorization: `HTTP Basic Authentication`
+- Content-Type: `application/json`
+
+```json
+{
+    "password" : "new_password"
+}
+```
+
+Response : success/ failure
+
+## Role Management
+### POST `/aas/roles`
+
+Create a role in AAS
+
+- Authorization: `HTTP Basic Authentication`
+- Content-Type: `application/json`
+
+```json
+{
+    "role_domain" : "can be used to identify microservice - example TDS|WLS",
+    "name": "role_name",
+    "role_scope": "used and defined by microservice based on its needs"
+}
+```
+Example Response:
+```json
+{
+    "role_id" : "role_uuid"
+}
+```
+### GET `/aas/roles`
+
+Query Users
+
+- Authorization: `HTTP Basic Authentication`
+
+
+Example Response:
+```json
+[
+    {
+        "role_id": "123e4567-e89b-12d3-a456-426655440000",
+        "role_domain" : "WLS",
+        "name": "Administrator",
+        "role_scope": ""    
+    },
+    {
+        "id": "223e4567-e89b-12d3-a456-426655440000",
+        "role_domain" : "AAS",
+        "name": "RoleManager",
+        "role_scope": "TDS"    
+    },
+]
+```
+Available Query parameters:
+
+- roleDomain=(role_domain)
+- roleName=(role_name)
+
+### GET `/aas/roles/{id-uuidv4}`
+
+Get a single role by ID
+
+- Authorization: `HTTP Basic Authentication`
+
+Retrieve information regarding a specific role
+- `GET /aas/roles/123e4567-e89b-12d3-a456-426655440000`
+
+Example Response:
+
+```json
+{
+    "role_id": "123e4567-e89b-12d3-a456-426655440000",
+    "role_domain" : "WLS",
+    "name" : "Administrators",
+    "role_scope": "",
+}
+```
+
+### DELETE `/aas/roles/{id}`
+
+DELETE a role in AAS
+
+- Authorization: `HTTP Basic Authentication`
+
+## User Role Management
+### POST /api/users/{userid}/roles
+
+Assign a role to the user
+
+- Authorization: `HTTP Basic Authentication`
+- Content-Type: `application/json`
+
+```json
+{
+    "user_id" : "user_uuid",
+    "role_id": "role_uuid",
+    "validity": "4h"
+}
+```
 
 ## Host Heartbeat
 
@@ -147,201 +288,6 @@ Example response:
     "interval" : 5
 }
 ```
-
-- id: this field is left empty
-- interval: the heartbeat interval required by TD service
-
-### Effects on GET `/aas/hosts/{id-uuidv4}` and GET `/aas/hosts`
-
-*Status* field in responses of these APIs will be determined according to the last successful call to `/aas/heartbeat` executed by corresponding hosts. The time after which a call is required is `HeartbeatIntervalMins + 1` minutes, while `HeartbeatIntervalMins` is a field in `config.yml`
-
-- If the host has a successful call to `/aas/heartbeat` in the past `HeartbeatIntervalMins + 1` minutes, the response to queries regarding it will be:
-```json
-{
-  "id": "123e4567-e89b-12d3-a456-426655440000",
-  "hostname": "10.105.168.1",
-  "hardware_uuid": "1eda8d91-fa64-6d6d-f663-283dc520e658",
-  "version": "1.2.1",
-  "build": "201910012012",
-  "os": "linux",
-  "status": "online"
-}
-```
-- Otherwise, it will be:
-```json
-{
-  "id": "123e4567-e89b-12d3-a456-426655440000",
-  "hostname": "10.105.168.1",
-  "hardware_uuid": "1eda8d91-fa64-6d6d-f663-283dc520e658",
-  "version": "1.2.1",
-  "build": "201910012012",
-  "os": "linux",
-  "status": "offline"
-}
-```
-
-## Reports
-
-### POST `/aas/reports`
-Create a new threat detection report event.
-
-- Content-Type: `application/json`
-- Authorization: `HTTP Basic Authentication`
-
-Example body:
-
-```json
-{
-    "host_id": "123e4567-e89b-12d3-a456-426655440000",
-    "hardware_uuid" :"00ecd3ab-9af4-aab7-888e-001560a04062",
-    "hostname" : "10.105.168.1",
-    "detection": {
-        "description": "Crypto mining suspected",
-        "pid": 1234,
-        "tid": 3, // thread id
-        "process_name": "malicious.exe",
-        "process_image_path": "C:\temp\malicious.exe",
-        "process_cmd_line": "C:\temp\malicious.exe -h exfil.onion",
-        "timestamp": 1234758758, // time since unix epoch
-        "severity": 10,
-        "profile_name": "rfc_ml_sca",
-        "cve_ids": "CVE-...",
-        "threat_class": "spectre variant 1",
-    },
-    "error": {
-        "description": "error message",
-    }
-}
-```
-
-AAS will create the ID, and log the event date.
-
-The response of this action will be `HTTP200: OK` if success.
-
-
-### GET `/aas/reports`
-Query reports by filter criteria.
-
-- Authorization: `HTTP Basic Authentication`
-
-With no query parameters, it returns ALL reports:
-```json
-[
-    <report 1>,
-    <report 2>,
-    ...
-]
-```
-
-With query parameter `?hostname=10.1.1.1`, returns all reports from the specified host
-
-`GET /aas/reports?hostname=10.1.1.1`
-```json
-[
-    {
-        "id": "123e4567-e89b-12d3-a456-426655440000",
-        "date": "2019-02-04T20:56:31Z",
-        "host_id": "5db41ae2-62b4-4472-8bd2-bedd3765523d",
-        "hardware_uuid": "00ecd3ab-9af4-e711-906e-001560a04062",
-        "hostname": "10.1.1.1",
-        "detection": {
-            "description": "Crypto mining suspected",
-            "pid": 1234,
-            "tid": 3, // thread id
-            "process_name": "malicious.exe",
-            "process_image_path": "C:\temp\malicious.exe",
-            "process_cmd_line": "C:\temp\malicious.exe -h exfil.onion",
-        },
-        "error": {
-            "description": "error message",
-        }
-    },
-    {
-        "id": "223e4567-e89b-12d3-a456-426655440000",
-        "date": "2019-02-04T20:56:31Z",
-        "hostname": "10.1.1.1",
-        "hardware_uuid": "1eda8d91-fa64-6d6d-f663-283dc520e658",
-        "detection": {
-            "description": "Side channel detected",
-            "pid": 1235,
-            "tid": 3, // thread id
-            "process_name": "chrome.exe",
-            "process_image_path": "C:\Users\admin\AppData\Roaming\chrome.exe",
-            "process_cmd_line": "C:\Users\admin\AppData\Roaming\chrome.exe",
-        },
-        "error": {
-            "description": "error message",
-        }
-    }
-]
-```
-
-With query parameter `?from=<RFC3339Date>`, returns all reports with date later than or equal to the specified date.
-
-With query parameter `?to=<RFC3339Date>`, returns all reports with date before or equal to the specified date
-
-`GET /aas/reports?from=2018-02-04T20:56:31Z&to=2020-02-04T20:56:31Z`
-
-```json
-[
-    {
-        "id": "123e4567-e89b-12d3-a456-426655440000",
-        "date": "2019-02-04T20:56:31Z",
-        "hostname": "10.1.1.1",
-        "hardware_uuid": "1eda8d91-fa64-6d6d-f663-283dc520e658",
-        "detection": {
-            "description": "Crypto mining suspected",
-            "pid": 1234,
-            "tid": 3, // thread id
-            "process_name": "malicious.exe",
-            "process_image_path": "C:\temp\malicious.exe",
-            "process_cmd_line": "C:\temp\malicious.exe -h exfil.onion",
-        },
-        "error": {
-            "description": "error message",
-        }
-    },
-]
-```
-
-Available Query parameters:
-
-- hostname=(hostname)
-- hardwareUUID=(hardwareUUID)
-- hostid=(host uuid)
-- from=(from_date)
-- to=(to_date)
-
-### GET `/aas/reports/{id}`
-Get a single report by its unique identifier
-
-- Authorization: `HTTP Basic Authentication`
-
-`GET /aas/reports/123e4567-e89b-12d3-a456-426655440000`
-
-```json
-{
-    "id": "123e4567-e89b-12d3-a456-426655440000",
-    "date": "2019-02-04T20:56:31Z",
-    "hardware_uuid": "00ecd3ab-9af4-aab5-906e-001560a04062",
-    "hostname": "10.1.1.1",
-    "detection": {
-        "description": "Crypto mining suspected",
-        "pid": 1234,
-        "tid": 3, // thread id
-        "process_name": "malicious.exe",
-        "process_image_path": "C:\temp\malicious.exe",
-        "process_cmd_line": "C:\temp\malicious.exe -h exfil.onion",
-    },
-    "error": {
-        "description": "error message",
-    }
-}
-```
-
-## Configuration and Heuristics
-
-API's for pushing configuration and heuristics stubbed out until Phase 2
 
 # Auth Service Installation
 
