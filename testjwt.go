@@ -9,13 +9,13 @@ import (
 	"intel/isecl/authservice/jwt"
 )
 type Role struct{
-	Domain string `json:"domain"`
+	Domain string `json:"domain,omitempty"`
 	Name string `json:"name"`
-	Scope string `json:"scope"`
+	Scope string `json:"scope,omitempty"`
 }
 
 type CtClaims struct {
-	Roles Role `json:"roles"`
+	Roles []Role `json:"roles"`
 	Test  int `json:"testfield,omitempty"`
 }
 
@@ -39,7 +39,8 @@ func (a *App) TestTokenAuth() error {
 		fmt.Println(err)
 		return err
 	}
-	claims := CtClaims{Roles:Role{"TDS","HostUpdater","HostA"}, Test:1}
+	roles := []Role {Role{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, Role{"TDS","HostUpdater","HostA"}, Role{"WLS","Administrator",""}}
+	claims := CtClaims{roles, 0}
 	fmt.Println(claims)
 	jwt, err := factory.Create(&claims,"Vinil's JWT", 0)
 	if err != nil {

@@ -289,7 +289,33 @@ Example response:
 }
 ```
 
-# Auth Service Installation
+# User Stories
+### Create Roles
+As someone with appropriate privileges, a user need the ability to create roles. The roles may have attributes such as domain/ tenant. This can be useful in clarifying where the role is applicable. 
+
+### Create Roles with Scope 
+This provides the ability for the role to be restricted by certain criteria. For instance, a CMS:CertificateRequestor role can have a scope "CN:aas.isecl.intel.com". This means that CMS may use this information to match the CSR request. 
+
+
+### Create User
+As an administrator, I want to create roles. The roles may have attributes such as domain/ tenant. This can be useful in clarifying where the role is applicable. 
+
+### Assign User Role
+A user can be assigned a role by someone with the right privilege. In addition, the privilege that the user has may be restricted to a certain scope. 
+
+### Obtain a token 
+A user can obtain a token with credentials (user name as password). The returned token will contain roles and scope. 
+The user can choose to restrict the token by the following attributes
+    1. Domain
+    2. Role 
+    3. time (so instance, I only want a token that is valid for 5 mins to carry out a specific task )
+
+### Create a Role/ Permission with a limited time.
+As a user with appropriate privileges, a user can create a role or a permission/ scope that is valid for a limited time. The goal of this is to provide temporary roles/ privileges. For example, this may be used for service user to request certificate during installation time. After installation, the priviege no longer exists
+
+
+
+# Auth Service Installaton
 
 There are two modes of installation:
 
@@ -318,36 +344,10 @@ All necessary setup options should be readable from environment variables, so th
 
 Currently, there are no requirements for  `AAS` for clients to present certificates. Authentication to clients uses basic authentication.
 
-`AAS` server certificate shall be stored in a the following location `/etc/authservice/cert.pem`. Currently, we are using self signed certificate. This may be replaced with one that uses PKI infrastructure.
+`AAS` server certificate shall be stored in a the following location `/etc/authservice/cert.pem`. During AAS installation time, the AAS has to request a certificate from the CMS. In order to do this, the installation needs a token that is signed by CMS that has privileges to request an AAS TLS certificate. 
 
 # AAS Features
 ## Authentication and Authorization
-AAS has implemented role based authentication and authorization. There are 3 main roles that are currently present in AAS. The roles and permissions in aas are the following
-- **Administrators** - has access to all REST API endpoints except posting `TD Agent` reports and Heartbeat
-- **RegHost** - has access to register and host and query hosts. This credential may be used by tdagent to register the host. However, these credentials are not meant to be stored on the clients.
-- **HostUpdate** - this is role that is used by each agent to post reports and hearbeats to AAS. In order to prevent one tdagent posting reports or heartbeat on another's behalf, we are assigning one role per host. The database tables roles contain 3 fields - id, name and domain. The domain column would contain the host_id of the agent/host.
-
-For example, when we create a host and the host_id is host_id_6752, we create a role and user as follows
-```sql
-Insert into roles (id, name, domain) values ('role_id_10', 'host_update', 'host_id_6752');
-Insert into users (id, name, password) values ('user_id_23', 'host_id_6752', 'bcrypted_random_password' );
-Insert into user_roles (role_id, user_id) values ('role_id_10', 'user_id_23')
-```
-
-We then return the following to the host/ agent
-```json
-{
-    "id": "host_id_6752",
-    "user": "user_id_23",
-    "token": "random_password",
-}
-```
-Subsequently the agent shall use the user_id and token as credentials for basic authorization when posting reports and heartbeat.
-
-The goal of the design is that this approach can be easily adaptable when we use a different service to perform authentication.
-
-When a client hits a Rest API, it is first serviced by a authentication middleware http handler. The user is authenticated with supplied user credentials (user and token). Once authenticated, we retrieve the roles that the user has based. This list of roles is saved in the context of the request. Subsequent handlers processing the request (in this case our API handler function) has access to the roles. So based on the roles available, it can make a decision whether the operation is permitted(authorization)
-
 
 ### Authentication Defender
 
@@ -360,7 +360,6 @@ The authenticaiton defender is a designed to thwart disctionary based attacks by
 Available setup tasks:
 - database
 - admin
-- reghost
 - server
 - tls
 - all
@@ -497,31 +496,6 @@ Uninstalls Auth Service, with optional flag to keep configuration
 
 # Container Operations
 
-A container can be started using the command:
-
-`docker run isecl/authservice:latest -e AAS_PORT=8443 -e ... -p 8443:8443`
-
-Volume mounts for specifying the TLS cert files must be provided
-
-Preferably, a docker-compose.yml would be used instead
-
-```yaml
-version: "3.2"
-
-services:
-  database:
-    image: postgres:latest
-    ...
-  aas:
-    image: isecl/authservice:latest
-    environment:
-      AAS_PORT: 8443
-    secrets:
-      - source: tls.cert
-        target: /run/secrets/tls.pem
-    ...
-    # NOT A COMPLETE DOCKER-COMPOSE EXAMPLE
-```
 # Postgres Database Installation Script
 ##### *Warning: Do not use the script on a server that already has a postgres database installed. It will remove your current database working directory*  
 A script has been provided that may be used to install a Postgres database. Customers may choose to install their own postgres database installation and configuration. The script is merely provided for ease of installation.
