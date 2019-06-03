@@ -40,9 +40,7 @@ The above are all optional. This is used to restrict token to limit its purpose
 
 Example Response:
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
-eyJpYXQiOjE1MTYyMzkwMiwiZXhwIjoxNTE2MzgzMDIsInJvbGVzIjpbIldMUzpSZXBvcnRlciIsIldMUzpVc2VyIl19.
-Nj4Xb5EofegxWtBntfhhk3qrJJrKHw_S3uM_FFahP0s
+eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJyb2xlcyI6W3siZG9tYWluIjoiQ01TIiwibmFtZSI6IkNlcnRpZmljYXRlUmVxdWVzdGVyIiwic2NvcGUiOiJDTjphYXMuaXNlY2wuaW50ZWwuY29tIn0seyJkb21haW4iOiJURFMiLCJuYW1lIjoiSG9zdFVwZGF0ZXIiLCJzY29wZSI6Ikhvc3RBIn0seyJkb21haW4iOiJXTFMiLCJuYW1lIjoiQWRtaW5pc3RyYXRvciJ9XSwiZXhwIjoxNTU5NjYzMjcwLCJpYXQiOjE1NTk1NzY4NzAsImlzcyI6IlRlc3QgSXNzdWVyIiwic3ViIjoiVmluaWwncyBKV1QifQ.XC40YN8arek7z_8WrRF5ph-0QkI6aa-ea_W9tL8jSDp1AtxLqTOwyb_6eCXBBTYqBdWC2G1RxRHf19LaLBZ053HlyOeUf3295F_Kyp8Rz0eF2aOlKA4DejX84iWqnkd5
 ```
 
 The above token correspond to the following
@@ -50,27 +48,41 @@ The above token correspond to the following
 HEADER:ALGORITHM & TOKEN TYPE
 ```json
 {
-  "alg": "HS256",
+  "alg": "ES384",
   "typ": "JWT"
 }
 ```
 PAYLOAD:DATA
 ```json
 {
-  "iat": 151623902,
-  "exp": 151638302,
-   "roles": ["WLS:Reporter", "WLS:User"]
- }
+  "roles": [
+    {
+      "domain": "CMS",
+      "name": "CertificateRequester",
+      "scope": "CN:aas.isecl.intel.com"
+    },
+    {
+      "domain": "TDS",
+      "name": "HostUpdater",
+      "scope": "HostA"
+    },
+    {
+      "domain": "WLS",
+      "name": "Administrator"
+    }
+  ],
+  "exp": 1559663270,
+  "iat": 1559576870,
+  "iss": "Test Issuer",
+  "sub": "Vinil's JWT"
+}
 ```
 VERIFY SIGNATURE
 ```golang
-HMACSHA256(
+ECDSASHA384(
   base64UrlEncode(header) + "." +
   base64UrlEncode(payload),
-
-hellotherehowareyou
-
-) secret base64 encoded
+  base64UrlEncode(signature)
 ```
 
 ## User Management
@@ -263,33 +275,62 @@ Assign a role to the user
     "validity": "4h"
 }
 ```
+## Database Schema
 
-## Host Heartbeat
+### roles
+|   Column   |           Type           | Collation | Nullable |
+|------------|--------------------------|-----------|----------|
+| id         | uuid                     |           | not null |
+| created_at | timestamp with time zone |           |          |
+| updated_at | timestamp with time zone |           |          |
+| name       | text                     |           | not null |
+| domain     | text                     |           |          |
 
-### POST `/aas/heartbeat`
+### scope
+|   Column   |           Type           | Collation | Nullable |
+|------------|--------------------------|-----------|----------|
+| id         | uuid                     |           | not null |
+| created_at | timestamp with time zone |           |          |
+| updated_at | timestamp with time zone |           |          |
+| scope      | text                     |           | not null |
 
-- Content-Type: `application/json`
-- Authorization: `HTTP Basic Authentication`
 
-```json
-{
-    "id": "123e4567-e89b-12d3-a456-426655440000",
-    "interval" : 1
-}
-```
 
-- id: host id from which this heartbeat is sent
-- interval: the heartbeat interval that is currently configured on the host
 
-Example response:
-```json
-{
-    "id": "",
-    "interval" : 5
-}
-```
 
-# User Stories
+Indexes:
+    "roles_pkey" PRIMARY KEY, btree (id)
+
+### users
+|   Column   |           Type           | Collation | Nullable |
+|------------|--------------------------|-----------|----------|
+| id            | uuid                     |           | not null |
+| created_at    | timestamp with time zone |           |          |
+| updated_at    | timestamp with time zone |           |          |
+| deleted_at    | timestamp with time zone |           |          |
+| name          | text                     |           |          |
+| password_hash | bytea                    |           |          |
+
+
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+
+### user_roles
+|   Column   |           Type           | Collation | Nullable |
+|------------|--------------------------|-----------|----------|
+| user_id  | uuid |           | not null |
+| role_id  | uuid |           | not null |
+| scope_id | uuid |           |  |
+
+
+
+
+
+
+Indexes:
+    "user_roles_pkey" PRIMARY KEY, btree (user_id, role_id)
+
+## User Stories
 ### Create Roles
 As someone with appropriate privileges, a user need the ability to create roles. The roles may have attributes such as domain/ tenant. This can be useful in clarifying where the role is applicable. 
 
