@@ -29,7 +29,7 @@ Retrieve a token based on authorization
 
 ```json
 {
-  "role_domain" : "restrict roles to just this domain",
+  "role_domain" : "restrict roles to just this service",
   "role" : "just this role when desired role is known",
   "validity" : "time the token is valid for",
   "include_username" : "include the username as well in the token(off by default)"
@@ -57,17 +57,17 @@ PAYLOAD:DATA
 {
   "roles": [
     {
-      "domain": "CMS",
+      "service": "CMS",
       "name": "CertificateRequester",
       "scope": "CN:aas.isecl.intel.com"
     },
     {
-      "domain": "TDS",
+      "service": "TDS",
       "name": "HostUpdater",
       "scope": "HostA"
     },
     {
-      "domain": "WLS",
+      "service": "WLS",
       "name": "Administrator"
     }
   ],
@@ -284,7 +284,7 @@ Assign a role to the user
 | created_at | timestamp with time zone |           |          |
 | updated_at | timestamp with time zone |           |          |
 | name       | text                     |           | not null |
-| domain     | text                     |           |          |
+| service     | text                     |           |          |
 
 ### scope
 |   Column   |           Type           | Collation | Nullable |
@@ -332,14 +332,14 @@ Indexes:
 
 ## User Stories
 ### Create Roles
-As someone with appropriate privileges, a user need the ability to create roles. The roles may have attributes such as domain/ tenant. This can be useful in clarifying where the role is applicable. 
+As someone with appropriate privileges, a user need the ability to create roles. The roles may have attributes such as service/ tenant. This can be useful in clarifying where the role is applicable. 
 
 ### Create Roles with Scope 
 This provides the ability for the role to be restricted by certain criteria. For instance, a CMS:CertificateRequestor role can have a scope "CN:aas.isecl.intel.com". This means that CMS may use this information to match the CSR request. 
 
 
 ### Create User
-As an administrator, I want to create roles. The roles may have attributes such as domain/ tenant. This can be useful in clarifying where the role is applicable. 
+As an administrator, I want to create roles. The roles may have attributes such as service/ tenant. This can be useful in clarifying where the role is applicable. 
 
 ### Assign User Role
 A user can be assigned a role by someone with the right privilege. In addition, the privilege that the user has may be restricted to a certain scope. 
@@ -347,7 +347,7 @@ A user can be assigned a role by someone with the right privilege. In addition, 
 ### Obtain a token 
 A user can obtain a token with credentials (user name as password). The returned token will contain roles and scope. 
 The user can choose to restrict the token by the following attributes
-    1. Domain
+    1. service
     2. Role 
     3. time (so instance, I only want a token that is valid for 5 mins to carry out a specific task )
 
