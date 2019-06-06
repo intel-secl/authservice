@@ -4,12 +4,17 @@
 package jwtauth
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"intel/isecl/lib/common/crypt"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -22,6 +27,54 @@ type JwtFactory struct {
 	issuer        string
 	tokenValidity time.Duration
 	signingMethod jwt.SigningMethod
+	keyId         string
+}
+
+type StandardClaims jwt.StandardClaims
+type CustomClaims interface{}
+
+type claims struct {
+	jwt.StandardClaims
+	customClaims interface{}
+}
+
+type Token struct {
+	jwtToken       *jwt.Token
+	standardClaims *jwt.StandardClaims
+	customClaims   interface{}
+}
+
+func (t *Token) GetClaims() interface{} {
+	return t.customClaims
+}
+
+func (t *Token) GetAllClaims() interface{} {
+	if t.jwtToken == nil {
+		return nil
+	}
+	return t.jwtToken.Claims
+}
+
+func (t *Token) GetStandardClaims() interface{} {
+	if t.jwtToken == nil {
+		return nil
+	}
+	return t.standardClaims
+}
+
+func (t *Token) GetHeader() *map[string]interface{} {
+	if t.jwtToken == nil {
+		return nil
+	}
+	return &t.jwtToken.Header
+}
+
+type verifierPrivate struct {
+	pubKeyMap  map[string]crypto.PublicKey
+	publicName string
+}
+type Verifier interface {
+	ValidateTokenAndGetClaims(tokenString string, customClaims interface{}) (*Token, error)
 }
 
 func getJwtSigningMethod(privKey crypto.PrivateKey) (jwt.SigningMethod, error) {
@@ -48,13 +101,14 @@ func getJwtSigningMethod(privKey crypto.PrivateKey) (jwt.SigningMethod, error) {
 
 }
 
-// NewJwtFactory method allows to create a factory object that can be used to generate the token.
+// NewTokenFactory method allows to create a factory object that can be used to generate the token.
 // basically, it allows to load the private key just once and keep using it. The issuer and default
 // validity can be passed in so that these do not have to be passed in every time.
-func NewJwtFactory(pkcs8der []byte, issuer string, tokenValidity time.Duration) (*JwtFactory, error) {
+func NewTokenFactory(pkcs8der []byte, includeKeyIdInToken bool, signingCertPem []byte, issuer string, tokenValidity time.Duration) (*JwtFactory, error) {
 	if tokenValidity == 0 {
 		tokenValidity = defaultTokenValidity
 	}
+
 
 	key, err := x509.ParsePKCS8PrivateKey(pkcs8der)
 	if err != nil {
@@ -64,26 +118,35 @@ func NewJwtFactory(pkcs8der []byte, issuer string, tokenValidity time.Duration) 
 	if err != nil {
 		return nil, err
 	}
+
+	var keyId string
+	if includeKeyIdInToken {
+		block, _ := pem.Decode(signingCertPem)
+		if block == nil {
+			return "", fmt.Errorf("NewTokenFactory: failed to parse signing certificate PEM")
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return "", fmt.Errorf("NewTokenFactory: failed to parse certificate: " + err.Error())
+		}
+		keyId, _ = GetHashData(cert.Raw, crypto.SHA1)
+
+	}
+
 	return &JwtFactory{privKey: key,
 		issuer:        issuer,
 		tokenValidity: tokenValidity,
 		signingMethod: signingMethod,
+		keyId:         keyId
 	}, nil
-}
-
-type StandardClaims jwt.StandardClaims
-
-type jwtClaims struct {
-	jwt.StandardClaims
-	clientClaims interface{}
 }
 
 // We are doing custom marshalling here to combine the standard attributes of a JWT and the claims
 // that we want to add. Everything would be at the top level. For instance, if we want to carry
 //
-func (c jwtClaims) MarshalJSON() ([]byte, error) {
+func (c claims) MarshalJSON() ([]byte, error) {
 
-	slice1, err := json.Marshal(c.clientClaims)
+	slice1, err := json.Marshal(c.customClaims)
 	if err != nil {
 		return nil, err
 	}
@@ -100,35 +163,144 @@ func (c jwtClaims) MarshalJSON() ([]byte, error) {
 // Create generates a token based on the claims structure passed in. We collapse the claims with the standard
 // jwt claims. Each client need only worry about what he would like to include in the claims.
 // Of course the token is signed as well.
-func (f *JwtFactory) Create(claims interface{}, subject string, validity time.Duration) (string, error) {
+func (f *JwtFactory) Create(clms interface{}, subject string, validity time.Duration) (string, error) {
 	if validity == 0 {
 		validity = f.tokenValidity
 	}
 	now := time.Now()
 
-	jwtclaim := jwtClaims{}
+	jwtclaim := claims{}
 	jwtclaim.StandardClaims.IssuedAt = now.Unix()
 	jwtclaim.StandardClaims.ExpiresAt = now.Add(validity).Unix()
 	jwtclaim.StandardClaims.Issuer = f.issuer
 	jwtclaim.StandardClaims.Subject = subject
 
-	jwtclaim.clientClaims = claims
-	/*
-		slice1, err := json.Marshal(claims)
-		if err != nil {
-			return "", err
-		}
-		fmt.Printf("client calims : %s\n", slice1)
-		slice2, err := json.Marshal(jwtclaim.StandardClaims)
-		if err != nil {
-			return "", err
-		}
-		fmt.Printf("standard calims : %s\n", slice2)
-		slice1[len(slice1)-1] = ','
-		slice2[0] = ' '
-		fmt.Printf("Merged JSON :%s", append(slice1, slice2...))
-	*/
+	jwtclaim.customClaims = clms
 	token := jwt.NewWithClaims(f.signingMethod, jwtclaim)
 	return token.SignedString(f.privKey)
+
+}
+
+//TODO: move to common crypto
+
+// GetPublicKeyFromCertPem retrieve the public key from a certificate pem block
+// We only support ECDSA and RSA public key
+func GetPublicKeyFromCertPem(certPem []byte) (crypto.PublicKey, error) {
+	block, _ := pem.Decode(certPem)
+	if block == nil {
+		return "", fmt.Errorf("failed to parse certificate PEM")
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse certificate: " + err.Error())
+	}
+	switch cert.PublicKeyAlgorithm {
+	case x509.RSA:
+		if key, ok := cert.PublicKey.(rsa.PublicKey); ok {
+			return key, nil
+		}
+		return nil, fmt.Errorf("public key algorithm of cert reported as RSA cert does not match RSA public key struct")
+	case x509.ECDSA:
+		if key, ok := cert.PublicKey.(ecdsa.PublicKey); ok {
+			return key, nil
+		}
+		return nil, fmt.Errorf("public key algorithm of cert reported as ECDSA cert does not match ECDSA public key struct")
+	}
+	return nil, fmt.Errorf("only RSA and ECDSA public keys are supported")
+}
+
+// GetCertHashFromPemInHex returns hash of a certificate from a Pem block
+func GetCertHashFromPemInHex(certPem []byte, hashAlg crypto.Hash) (string, error) {
+	block, _ := pem.Decode(certPem)
+	if block == nil {
+		return "", fmt.Errorf("failed to parse certificate PEM")
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse certificate: " + err.Error())
+	}
+	hash, err := crypt.GetHashData(cert.Raw, crypto.SHA1)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash), nil
+}
+
+//TODO - implement this to parse the claims
+func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customClaims interface{}) (*Token, error) {
+
+	token := Token{}
+	token.standardClaims = &jwt.StandardClaims{}
+	parsedToken, err := jwt.ParseWithClaims(tokenString, token.standardClaims, func(token *jwt.Token) (interface{}, error) {
+		fmt.Println("Called from within the ParseWithClaims publicKey Name :", v.publicName)
+		token.Header["kid"]
+		return v.publicKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	token.jwtToken = parsedToken
+	// so far we have only got the standardClaims parsed. We need to now fill the customClaims
+
+	parts := strings.Split(tokenString, ".")
+	// no need check for the number of segments since the previous ParseWithClaims has already done this check.
+	// therefor the following is redundant. If we change the implementation, will need to revisit
+	//if len(parts) != 3 {
+	//	return nil, "jwt token to be parsed seems to be in "
+	//}
+
+	// parse Claims
+	var claimBytes []byte
+
+	if claimBytes, err = jwt.DecodeSegment(parts[1]); err != nil {
+		return nil, fmt.Errorf("could not decode claims part of the jwt token")
+	}
+
+	dec := json.NewDecoder(bytes.NewBuffer(claimBytes))
+	err = dec.Decode(&customClaims)
+	token.customClaims = customClaims
+
+	return &token, nil
+}
+
+func NewVerifier(signingCertPems interface{}) (Verifier, err error) {
+
+	var certPemSlice [][]byte
+
+	switch signingCertPems.(type) {
+	default:
+		return nil, fmt.Errorf("signingCertPems has to be of type []byte or [][]byte")
+	case [][]byte:
+		certPemSlice = signingCertPems.([][]byte)
+	case []byte:
+		certPemSlice = [][]byte{signingCertPems.([]byte)}
+
+	}
+	pubKeyMap := make(map[string]crypto.PublicKey)
+	for _, certPem := range certPemSlice {
+		//todo - we should validate the certificate here as well
+		// we might just want to take the certificate from the pem here itseld
+		// then retrieve the public key, hash and also do the verification right
+		// here. Otherwise we are parsing the certificate multiple times.
+
+		certHash, err := GetCertHashFromPemInHex(certPem, crypto.SHA1)
+		if err != nil {
+			continue
+		}
+		pubKey, err := GetPublicKeyFromCertPem(certPem)
+		if err != nil {
+			continue
+		}
+		pubKeyMap[certHash] = pubKey
+	}
+
+	if len(pubKeyMap) == 0 {
+		return nil, fmt.Errorf("Could not parse/validate any of the jwt signing certificates ")
+	}
+
+	verifier := verifierPrivate{}
+	verifier.pubKeyMap = pubKeyMap
+	return &verifier, nil
 
 }

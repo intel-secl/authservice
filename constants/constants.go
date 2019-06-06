@@ -18,6 +18,10 @@ const (
 	ConfigFile                    = "config.yml"
 	TLSCertFile                   = "cert.pem"
 	TLSKeyFile                    = "key.pem"
+	TokenSignCertsDir             = ConfigDir + "certs/tokensign/"
+	TokenSignKeyFile              = ConfigDir + "keys/tokensign/key.pem"
+	TrustedCAsStoreDir            = ConfigDir + "certs/trustedca/"
+	TrustedRootCAFile             = TrustedCAsStoreDir + "root.pem"
 	PIDFile                       = "authservice.pid"
 	ServiceRemoveCmd              = "systemctl disable authservice"
 	HashingAlgorithm              = crypto.SHA384
