@@ -211,7 +211,11 @@ func (a *App) Run(args []string) error {
 		return errors.New("Unrecognized command: " + args[1])
 	//TODO : Remove added for debug - used to debug db queries
 	case "token":
-		return a.TestTokenAuth()
+		if err := a.TestTokenAuth(); err != nil {
+			fmt.Printf("jwt token generation failed error: %v ", err)
+			return err
+		}
+		return nil
 	case "testdb":
 		a.TestNewDBFunctions()
 	case "tlscertsha384":

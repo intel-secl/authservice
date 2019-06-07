@@ -70,6 +70,7 @@ func (t *Token) GetHeader() *map[string]interface{} {
 }
 
 type verifierPrivate struct {
+	pubKey     crypto.PublicKey
 	pubKeyMap  map[string]crypto.PublicKey
 	publicName string
 }
@@ -109,7 +110,6 @@ func NewTokenFactory(pkcs8der []byte, includeKeyIdInToken bool, signingCertPem [
 		tokenValidity = defaultTokenValidity
 	}
 
-
 	key, err := x509.ParsePKCS8PrivateKey(pkcs8der)
 	if err != nil {
 		return nil, err
@@ -120,16 +120,19 @@ func NewTokenFactory(pkcs8der []byte, includeKeyIdInToken bool, signingCertPem [
 	}
 
 	var keyId string
-	if includeKeyIdInToken {
+
+	//todo - we need to decide if we should use the information in the cert
+	if includeKeyIdInToken && len(signingCertPem) > 0 {
 		block, _ := pem.Decode(signingCertPem)
 		if block == nil {
-			return "", fmt.Errorf("NewTokenFactory: failed to parse signing certificate PEM")
+			return nil, fmt.Errorf("NewTokenFactory: failed to parse signing certificate PEM")
 		}
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
-			return "", fmt.Errorf("NewTokenFactory: failed to parse certificate: " + err.Error())
+			return nil, fmt.Errorf("NewTokenFactory: failed to parse certificate: " + err.Error())
 		}
-		keyId, _ = GetHashData(cert.Raw, crypto.SHA1)
+		hash, _ := crypt.GetHashData(cert.Raw, crypto.SHA1)
+		keyId = hex.EncodeToString(hash)
 
 	}
 
@@ -137,7 +140,7 @@ func NewTokenFactory(pkcs8der []byte, includeKeyIdInToken bool, signingCertPem [
 		issuer:        issuer,
 		tokenValidity: tokenValidity,
 		signingMethod: signingMethod,
-		keyId:         keyId
+		keyId:         keyId,
 	}, nil
 }
 
@@ -177,6 +180,9 @@ func (f *JwtFactory) Create(clms interface{}, subject string, validity time.Dura
 
 	jwtclaim.customClaims = clms
 	token := jwt.NewWithClaims(f.signingMethod, jwtclaim)
+	if f.keyId != "" {
+		token.Header["kid"] = f.keyId
+	}
 	return token.SignedString(f.privKey)
 
 }
@@ -234,8 +240,28 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	token.standardClaims = &jwt.StandardClaims{}
 	parsedToken, err := jwt.ParseWithClaims(tokenString, token.standardClaims, func(token *jwt.Token) (interface{}, error) {
 		fmt.Println("Called from within the ParseWithClaims publicKey Name :", v.publicName)
-		token.Header["kid"]
-		return v.publicKey, nil
+		keyIDValue, keyIDExists := token.Header["kid"]
+		if keyIDExists {
+			fmt.Println("Token Header Key id Value :", keyIDValue)
+			var matchPubKey crypto.PublicKey
+			var matchPubKeyExists bool
+			if keyIDString, ok := keyIDValue.(string); ok {
+				matchPubKey, matchPubKeyExists = v.pubKeyMap[keyIDString]
+			} else {
+				return nil, fmt.Errorf("kid (key id) in jwt header is not a string :v", keyIDValue)
+			}
+
+			if matchPubKeyExists {
+				return matchPubKey, nil
+			} else {
+				return nil, fmt.Errorf("could not find certificate with hash that matched kid in token :%s", keyIDValue)
+			}
+		}
+		if v.pubKey != nil {
+			return v.pubKey, nil
+		}
+		return nil, fmt.Errorf("public key not found in verifier. we should not have not got here.. something really strange")
+
 	})
 	if err != nil {
 		return nil, err
@@ -264,7 +290,7 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	return &token, nil
 }
 
-func NewVerifier(signingCertPems interface{}) (Verifier, err error) {
+func NewVerifier(signingCertPems interface{}) (Verifier, error) {
 
 	var certPemSlice [][]byte
 
@@ -279,8 +305,8 @@ func NewVerifier(signingCertPems interface{}) (Verifier, err error) {
 	}
 	pubKeyMap := make(map[string]crypto.PublicKey)
 	for _, certPem := range certPemSlice {
-		//todo - we should validate the certificate here as well
-		// we might just want to take the certificate from the pem here itseld
+		// TODO - we should validate the certificate here as well
+		// we might just want to take the certificate from the pem here itself
 		// then retrieve the public key, hash and also do the verification right
 		// here. Otherwise we are parsing the certificate multiple times.
 
@@ -295,12 +321,21 @@ func NewVerifier(signingCertPems interface{}) (Verifier, err error) {
 		pubKeyMap[certHash] = pubKey
 	}
 
-	if len(pubKeyMap) == 0 {
+	verifier := verifierPrivate{}
+	switch length := len(pubKeyMap); {
+	case length == 0:
 		return nil, fmt.Errorf("Could not parse/validate any of the jwt signing certificates ")
+	case length == 1:
+		for _, pubKeyValue := range pubKeyMap {
+			verifier.pubKey = pubKeyValue
+		}
+	case length > 50:
+		return nil, fmt.Errorf("too many jwt signing certificates. Possibly an incorrect directory passed in - unable to continue ")
+
+	case length > 1:
+		verifier.pubKeyMap = pubKeyMap
 	}
 
-	verifier := verifierPrivate{}
-	verifier.pubKeyMap = pubKeyMap
 	return &verifier, nil
 
 }
