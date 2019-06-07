@@ -235,41 +235,27 @@ func (a *App) TestTokenAuth() error {
 		return err
 	}
 	fmt.Println("\nJWT :",jwt)
+	fmt.Println("\n\n\n Token Generation Complete. Testing Token verification and retrieving claims\n\n\n")
+	if err := a.ValidateToken(certPemBytes, jwt); err != nil{
+		return err
+	}
+	fmt.Println("\n\n Token Validation Complete.\n\n")
 	return nil
 
 }
 
-/*
-func (a *App) ValidateToken() error {
-	fmt.Println("Inside the Validate Token App Function")
-	keyCurve := elliptic.P384()
-	privKey, err := ecdsa.GenerateKey(keyCurve, rand.Reader)
+
+func (a *App) ValidateToken(certPem []byte, jwtString string) error {
+	v, err := jwtauth.NewVerifier(certPem)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
-	privKeyDer, err := x509.MarshalPKCS8PrivateKey(privKey)
+	claims := CtClaims{}
+	v.ValidateTokenAndGetClaims(jwtString, &claims)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
-	fmt.Println("Der bytes %s", privKeyDer)
-	
-	factory, err := jwtauth.NewTokenFactory(privKeyDer, false, nil, "Test Issuer", 0)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	roles := []Role {Role{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, Role{"TDS","HostUpdater","HostA"}, Role{"WLS","Administrator",""}}
-	claims := CtClaims{roles}
 	fmt.Println(claims)
-	jwt, err := factory.Create(&claims,"Vinil's JWT", 0)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	fmt.Println("JWT :",jwt)
-	return nil
 
+	return nil
 }
-*/

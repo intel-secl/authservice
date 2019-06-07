@@ -202,12 +202,12 @@ func GetPublicKeyFromCertPem(certPem []byte) (crypto.PublicKey, error) {
 	}
 	switch cert.PublicKeyAlgorithm {
 	case x509.RSA:
-		if key, ok := cert.PublicKey.(rsa.PublicKey); ok {
+		if key, ok := cert.PublicKey.(*rsa.PublicKey); ok {
 			return key, nil
 		}
 		return nil, fmt.Errorf("public key algorithm of cert reported as RSA cert does not match RSA public key struct")
 	case x509.ECDSA:
-		if key, ok := cert.PublicKey.(ecdsa.PublicKey); ok {
+		if key, ok := cert.PublicKey.(*ecdsa.PublicKey); ok {
 			return key, nil
 		}
 		return nil, fmt.Errorf("public key algorithm of cert reported as ECDSA cert does not match ECDSA public key struct")
@@ -240,6 +240,13 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	token.standardClaims = &jwt.StandardClaims{}
 	parsedToken, err := jwt.ParseWithClaims(tokenString, token.standardClaims, func(token *jwt.Token) (interface{}, error) {
 		fmt.Println("Called from within the ParseWithClaims publicKey Name :", v.publicName)
+		// if v.pubKey exists, it means that there is only a single public key. We should not even be checking for
+		// if there is a kid (key id) in the header
+		if v.pubKey != nil {
+			fmt.Println("found the public key used to sign the jwt")
+			return v.pubKey, nil
+		}
+
 		keyIDValue, keyIDExists := token.Header["kid"]
 		if keyIDExists {
 			fmt.Println("Token Header Key id Value :", keyIDValue)
@@ -248,18 +255,19 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 			if keyIDString, ok := keyIDValue.(string); ok {
 				matchPubKey, matchPubKeyExists = v.pubKeyMap[keyIDString]
 			} else {
-				return nil, fmt.Errorf("kid (key id) in jwt header is not a string :v", keyIDValue)
+				fmt.Println("kid (key id) in jwt header is not a string : %v\n", keyIDValue)
+				return nil, fmt.Errorf("kid (key id) in jwt header is not a string : %v", keyIDValue)
 			}
-
+			fmt.Println("About to check if matching Pub key exists")
 			if matchPubKeyExists {
+				fmt.Println("Found a matching public key in the map")
 				return matchPubKey, nil
 			} else {
+				fmt.Printf("could not find certificate with hash that matched kid in token :%s\n", keyIDValue)
 				return nil, fmt.Errorf("could not find certificate with hash that matched kid in token :%s", keyIDValue)
 			}
 		}
-		if v.pubKey != nil {
-			return v.pubKey, nil
-		}
+		fmt.Printf("public key not found in verifier. we should not have not got here.. something really strange")
 		return nil, fmt.Errorf("public key not found in verifier. we should not have not got here.. something really strange")
 
 	})
@@ -282,9 +290,9 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	if claimBytes, err = jwt.DecodeSegment(parts[1]); err != nil {
 		return nil, fmt.Errorf("could not decode claims part of the jwt token")
 	}
-
+	fmt.Printf("Claim bytes %s\n", claimBytes)
 	dec := json.NewDecoder(bytes.NewBuffer(claimBytes))
-	err = dec.Decode(&customClaims)
+	err = dec.Decode(customClaims)
 	token.customClaims = customClaims
 
 	return &token, nil

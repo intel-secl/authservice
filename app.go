@@ -212,7 +212,7 @@ func (a *App) Run(args []string) error {
 	//TODO : Remove added for debug - used to debug db queries
 	case "token":
 		if err := a.TestTokenAuth(); err != nil {
-			fmt.Printf("jwt token generation failed error: %v ", err)
+			fmt.Printf("jwt token test create and validate test error: %v ", err)
 			return err
 		}
 		return nil
