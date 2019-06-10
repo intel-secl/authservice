@@ -70,7 +70,6 @@ func (t *Token) GetHeader() *map[string]interface{} {
 }
 
 type verifierPrivate struct {
-	pubKey     crypto.PublicKey
 	pubKeyMap  map[string]crypto.PublicKey
 	publicName string
 }
@@ -239,35 +238,31 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	token := Token{}
 	token.standardClaims = &jwt.StandardClaims{}
 	parsedToken, err := jwt.ParseWithClaims(tokenString, token.standardClaims, func(token *jwt.Token) (interface{}, error) {
-		fmt.Println("Called from within the ParseWithClaims publicKey Name :", v.publicName)
-		// if v.pubKey exists, it means that there is only a single public key. We should not even be checking for
-		// if there is a kid (key id) in the header
-		if v.pubKey != nil {
-			fmt.Println("found the public key used to sign the jwt")
-			return v.pubKey, nil
+
+		// lets check if there is only one key. If so, then lets just return the public key from the map
+		// no need to parse the "kid" (key id) from the jwt header
+		if len(v.pubKeyMap) == 1 {
+			for key, _ := range v.pubKeyMap {
+				return v.pubKeyMap[key], nil
+			}
 		}
 
+		// now we have more than 1 certificates. We need to used the key id to pull up the right public key
 		keyIDValue, keyIDExists := token.Header["kid"]
 		if keyIDExists {
-			fmt.Println("Token Header Key id Value :", keyIDValue)
 			var matchPubKey crypto.PublicKey
 			var matchPubKeyExists bool
 			if keyIDString, ok := keyIDValue.(string); ok {
 				matchPubKey, matchPubKeyExists = v.pubKeyMap[keyIDString]
 			} else {
-				fmt.Println("kid (key id) in jwt header is not a string : %v\n", keyIDValue)
 				return nil, fmt.Errorf("kid (key id) in jwt header is not a string : %v", keyIDValue)
 			}
-			fmt.Println("About to check if matching Pub key exists")
 			if matchPubKeyExists {
-				fmt.Println("Found a matching public key in the map")
 				return matchPubKey, nil
 			} else {
-				fmt.Printf("could not find certificate with hash that matched kid in token :%s\n", keyIDValue)
 				return nil, fmt.Errorf("could not find certificate with hash that matched kid in token :%s", keyIDValue)
 			}
 		}
-		fmt.Printf("public key not found in verifier. we should not have not got here.. something really strange")
 		return nil, fmt.Errorf("public key not found in verifier. we should not have not got here.. something really strange")
 
 	})
@@ -333,14 +328,11 @@ func NewVerifier(signingCertPems interface{}) (Verifier, error) {
 	switch length := len(pubKeyMap); {
 	case length == 0:
 		return nil, fmt.Errorf("Could not parse/validate any of the jwt signing certificates ")
-	case length == 1:
-		for _, pubKeyValue := range pubKeyMap {
-			verifier.pubKey = pubKeyValue
-		}
+
 	case length > 50:
 		return nil, fmt.Errorf("too many jwt signing certificates. Possibly an incorrect directory passed in - unable to continue ")
 
-	case length > 1:
+	case length >= 1:
 		verifier.pubKeyMap = pubKeyMap
 	}
 

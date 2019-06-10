@@ -20,8 +20,8 @@ The `Auth Service` has following core functionalities:
 
 ## Token related
 
-### POST `/aas/user/token`
-Retrieve a token based on authorization
+### POST `/aas/token`
+Retrieve a token with supplied user credentials. Return a map of roles assiociated with the user as well optional scope that contains contextual information pertaining to the user-role mapping.
 
 - Authorization: `HTTP Basic Authentication`
 - Content-Type: `application/json`
@@ -29,19 +29,26 @@ Retrieve a token based on authorization
 
 ```json
 {
-  "role_domain" : "restrict roles to just this service",
+    "user_name": "user name",
+    "password": "password of user"
+}
+
+The following fileds are optional and will not be part of Phase 1 implementation 
+
+```json
+{
+  "service" : "restrict roles to just this service",
   "role" : "just this role when desired role is known",
   "validity" : "time the token is valid for",
   "include_username" : "include the username as well in the token(off by default)"
 }
 ```
 
-The above are all optional. This is used to restrict token to limit its purpose
+These optional fields are used to restrict how long and where the token may be used. 
 
 Example Response:
 ```
-eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJyb2xlcyI6W3siZG9tYWluIjoiQ01TIiwibmFtZSI6IkNlcnRpZmljYXRlUmVxdWVzdGVyIiwic2NvcGUiOiJDTjphYXMuaXNlY2wuaW50ZWwuY29tIn0seyJkb21haW4iOiJURFMiLCJuYW1lIjoiSG9zdFVwZGF0ZXIiLCJzY29wZSI6Ikhvc3RBIn0seyJkb21haW4iOiJXTFMiLCJuYW1lIjoiQWRtaW5pc3RyYXRvciJ9XSwiZXhwIjoxNTU5NjYzMjcwLCJpYXQiOjE1NTk1NzY4NzAsImlzcyI6IlRlc3QgSXNzdWVyIiwic3ViIjoiVmluaWwncyBKV1QifQ.XC40YN8arek7z_8WrRF5ph-0QkI6aa-ea_W9tL8jSDp1AtxLqTOwyb_6eCXBBTYqBdWC2G1RxRHf19LaLBZ053HlyOeUf3295F_Kyp8Rz0eF2aOlKA4DejX84iWqnkd5
-```
+eyJhbGciOiJFUzM4NCIsImtpZCI6IjRmMjM4NTFkOTVmZjc5MGJkODRhNjBkZTAxMjg5NzYzZjVjZmJkMjkiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W3sic2VydmljZSI6IkNNUyIsIm5hbWUiOiJDZXJ0aWZpY2F0ZVJlcXVlc3RlciIsInNjb3BlIjoiQ046YWFzLmlzZWNsLmludGVsLmNvbSJ9LHsic2VydmljZSI6IlREUyIsIm5hbWUiOiJIb3N0VXBkYXRlciIsInNjb3BlIjoiSG9zdEEifSx7InNlcnZpY2UiOiJXTFMiLCJuYW1lIjoiQWRtaW5pc3RyYXRvciJ9XSwiZXhwIjoxNTYwMDYyODk2LCJpYXQiOjE1NTk5NzY0OTYsImlzcyI6IkFBUyBKV1QgU2lnbmluZyIsInN1YiI6IlZpbmlsJ3MgSldUIn0.TD42FmUV4baSOIiDwh0gIbgmIh0AtUcWv3FKegdDOH9QT1ofETOoxp9B1_D0WNbCA52UID0GxYdU5i-hD_hIhnpq-tPPzLXXPBGZbr-DrVWGWLAhiuKORCMwPzBbaD-D```
 
 The above token correspond to the following
 
@@ -49,6 +56,7 @@ HEADER:ALGORITHM & TOKEN TYPE
 ```json
 {
   "alg": "ES384",
+  "kid": "4f23851d95ff790bd84a60de01289763f5cfbd29",
   "typ": "JWT"
 }
 ```
@@ -71,9 +79,9 @@ PAYLOAD:DATA
       "name": "Administrator"
     }
   ],
-  "exp": 1559663270,
-  "iat": 1559576870,
-  "iss": "Test Issuer",
+  "exp": 1560062896,
+  "iat": 1559976496,
+  "iss": "AAS JWT Signing",
   "sub": "Vinil's JWT"
 }
 ```
@@ -81,16 +89,15 @@ VERIFY SIGNATURE
 ```golang
 ECDSASHA384(
   base64UrlEncode(header) + "." +
-  base64UrlEncode(payload),
-  base64UrlEncode(signature)
-```
+  base64UrlEncode(payload))
+ ```
 
 ## User Management
 ### POST `/aas/users`
 
 Create a user in AAS
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 - Content-Type: `application/json`
 
 ```json
@@ -110,7 +117,7 @@ Example Response:
 
 Query Users
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 
 
 Example Response:
@@ -134,7 +141,7 @@ Available Query parameters:
 
 Get a single user by ID
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 
 Retrieve information regarding a specific user
 - `GET /aas/users/123e4567-e89b-12d3-a456-426655440000`
@@ -152,7 +159,7 @@ Example Response:
 
 ### DELETE `/aas/users/{user_id}`
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 
 Response: success/failure
 
@@ -161,7 +168,7 @@ deletes user from database with specific user id. Deleting a record using this m
 
 ### DELETE `/aas/users?username=myname@intel.com`
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 
 Response: success/failure
 
@@ -172,6 +179,9 @@ Not sure if we should have this interface ??
 
 used to change password for the user if they know the existing password.
 Can this be used for an admin to change password for someone else?
+Here the authorization should probably be basic authentication. We should not be using a
+token to change the password since some service that has obtained the token should not
+be able to change the password
 
 - Authorization: `HTTP Basic Authentication`
 - Content-Type: `application/json`
@@ -189,14 +199,13 @@ Response : success/ failure
 
 Create a role in AAS
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 - Content-Type: `application/json`
 
 ```json
 {
-    "role_domain" : "can be used to identify microservice - example TDS|WLS",
+    "service" : "can be used to identify microservice - example TDS|WLS",
     "name": "role_name",
-    "role_scope": "used and defined by microservice based on its needs"
 }
 ```
 Example Response:
@@ -209,7 +218,7 @@ Example Response:
 
 Query Users
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 
 
 Example Response:
@@ -238,7 +247,7 @@ Available Query parameters:
 
 Get a single role by ID
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 
 Retrieve information regarding a specific role
 - `GET /aas/roles/123e4567-e89b-12d3-a456-426655440000`
@@ -258,7 +267,7 @@ Example Response:
 
 DELETE a role in AAS
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 
 ## User Role Management
 ### POST /api/users/{userid}/roles
@@ -270,9 +279,15 @@ Assign a role to the user
 
 ```json
 {
-    "user_id" : "user_uuid",
-    "role_id": "role_uuid",
-    "validity": "4h"
+    [
+
+        {
+            "user_id" : "user_uuid",
+            "role_id": "role_uuid",
+            "validity": "4h"
+        }
+
+    ]
 }
 ```
 ## Database Schema
@@ -283,20 +298,8 @@ Assign a role to the user
 | id         | uuid                     |           | not null |
 | created_at | timestamp with time zone |           |          |
 | updated_at | timestamp with time zone |           |          |
-| name       | text                     |           | not null |
 | service     | text                     |           |          |
-
-### scope
-|   Column   |           Type           | Collation | Nullable |
-|------------|--------------------------|-----------|----------|
-| id         | uuid                     |           | not null |
-| created_at | timestamp with time zone |           |          |
-| updated_at | timestamp with time zone |           |          |
-| scope      | text                     |           | not null |
-
-
-
-
+| name       | text                     |           | not null |
 
 Indexes:
     "roles_pkey" PRIMARY KEY, btree (id)
@@ -309,7 +312,9 @@ Indexes:
 | updated_at    | timestamp with time zone |           |          |
 | deleted_at    | timestamp with time zone |           |          |
 | name          | text                     |           |          |
-| password_hash | bytea                    |           |          |
+| password_hash | byte                    |           |          |
+| password_salt | byte                    |           |          |
+| password_cost | int                    |           |          |
 
 
 Indexes:
@@ -320,7 +325,7 @@ Indexes:
 |------------|--------------------------|-----------|----------|
 | user_id  | uuid |           | not null |
 | role_id  | uuid |           | not null |
-| scope_id | uuid |           |  |
+| scope | text |           |  |
 
 
 
@@ -331,25 +336,41 @@ Indexes:
     "user_roles_pkey" PRIMARY KEY, btree (user_id, role_id)
 
 ## User Stories
-### Create Roles
-As someone with appropriate privileges, a user need the ability to create roles. The roles may have attributes such as service/ tenant. This can be useful in clarifying where the role is applicable. 
+### Create, Read, Update, Delete Roles
+Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. The roles may have `service` attribute which indicates what microservice the role belongs to. For instance, you can have a `WLS Reporter` role as well as a `HVS Reporter` role. In this case, role comprises of two parts - `service` (WLS vs HVS) and the `role name` - `Reporter`
 
-### Create Roles with Scope 
-This provides the ability for the role to be restricted by certain criteria. For instance, a CMS:CertificateRequestor role can have a scope "CN:aas.isecl.intel.com". This means that CMS may use this information to match the CSR request. 
+### Create, Read, Update, Delete Users
+Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. 
 
+### Assign, Read, Update and Remove user roles
+A user can be assigned one or more roles. When the user no longer needs the role, these role associations may be deleted. This task is performed by someone with the appropriate privileges (typically an admin)
 
-### Create User
-As an administrator, I want to create roles. The roles may have attributes such as service/ tenant. This can be useful in clarifying where the role is applicable. 
-
-### Assign User Role
-A user can be assigned a role by someone with the right privilege. In addition, the privilege that the user has may be restricted to a certain scope. 
+### Associate a `scope` when assigning a role permission
+When a role is associated with a user, a `scope` may be associated with that user-role mapping. This is to provide relevant context to the application that needs extra infromation in addition to the user role association. An example of this when a certificte request is made to CMS with a CSR, in addition to having the `CMS:CertRequestor` role, there should be some contextual information that indicates which certificates the user may obtain. 
 
 ### Obtain a token 
-A user can obtain a token with credentials (user name as password). The returned token will contain roles and scope. 
-The user can choose to restrict the token by the following attributes
+A user can obtain a token with credentials (user name as password). The returned token will contain roles and scope. Beofre the token is provided to the user, the following must be completed
+1. The user name and password shall be verified 
+2. Obtain list of roles and scope that is associated with the user. 
+
+The user can choose to restrict the token by the following attributes - not in scope for Phase 1
     1. service
     2. Role 
     3. time (so instance, I only want a token that is valid for 5 mins to carry out a specific task )
+
+
+### Install AAS
+A user should be able to install the AAS service. As part of the installation process, the following items should be accomplished
+  1. Set up a database
+  2. Install root certificate of CMS
+  3. Request TLS Certificate from CMS, store it and configure https with TLS certificate a
+  4. Request JWT signing certificate from CMS, store it - to be used for token signing
+  5. Create an admin user. 
+  6. Preload roles in AAS
+  7. Preload users in AAS
+  8. Preload user-roles in AAS
+  9. A daemon is configured to run the AAS service and started
+  
 
 ### Create a Role/ Permission with a limited time.
 As a user with appropriate privileges, a user can create a role or a permission/ scope that is valid for a limited time. The goal of this is to provide temporary roles/ privileges. For example, this may be used for service user to request certificate during installation time. After installation, the priviege no longer exists

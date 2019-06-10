@@ -20,6 +20,8 @@ const (
 	TLSKeyFile                    = "key.pem"
 	TokenSignKeysAndCertDir       = ConfigDir + "certs/tokensign/"
 	TokenSignKeyFile              = TokenSignKeysAndCertDir + "key.pem"
+	TokenSignCertFile             = TokenSignKeysAndCertDir + "jwtsigncert.pem"
+	TrustedJWTSigningCertsDir     = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir            = ConfigDir + "certs/trustedca/"
 	TrustedRootCAFile             = TrustedCAsStoreDir + "root.pem"
 	PIDFile                       = "authservice.pid"
