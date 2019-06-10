@@ -14,9 +14,43 @@ The `Auth Service` is a web service whose purpose is to authenticate a user and 
 
 The `Auth Service` has following core functionalities:
 
+## User Stories
+### Create, Read, Update, Delete Roles
+Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. The roles may have `service` attribute which indicates what microservice the role belongs to. For instance, you can have a `WLS Reporter` role as well as a `HVS Reporter` role. In this case, role comprises of two parts - `service` (WLS vs HVS) and the `role name` - `Reporter`
+
+### Create, Read, Update, Delete Users
+Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. 
+
+### Assign, Read, Update and Remove user roles
+A user can be assigned one or more roles. When the user no longer needs the role, these role associations may be deleted. This task is performed by someone with the appropriate privileges (typically an admin)
+
+### Associate a `scope` when assigning a role permission
+When a role is associated with a user, a `scope` may be associated with that user-role mapping. This is to provide relevant context to the application that needs extra infromation in addition to the user role association. An example of this when a certificte request is made to CMS with a CSR, in addition to having the `CMS:CertRequestor` role, there should be some contextual information that indicates which certificates the user may obtain. 
+
+### Obtain a token 
+A user can obtain a token with credentials (user name as password). The returned token will contain roles and scope. Beofre the token is provided to the user, the following must be completed
+1. The user name and password shall be verified 
+2. Obtain list of roles and scope that is associated with the user. 
+
+The user can choose to restrict the token by the following attributes - not in scope for Phase 1
+    1. service
+    2. Role 
+    3. time (so instance, I only want a token that is valid for 5 mins to carry out a specific task )
 
 
-# API Endpoints
+### Install AAS
+A user should be able to install the AAS service. As part of the installation process, the following items should be accomplished
+  1. Set up a database
+  2. Install root certificate of CMS
+  3. Request TLS Certificate from CMS, store it and configure https with TLS certificate a
+  4. Request JWT signing certificate from CMS, store it - to be used for token signing
+  5. Create an admin user. 
+  6. Preload roles in AAS
+  7. Preload users in AAS
+  8. Preload user-roles in AAS
+  9. A daemon is configured to run the AAS service and started
+  
+## API Endpoints
 
 ## Token related
 
@@ -290,6 +324,7 @@ Assign a role to the user
     ]
 }
 ```
+
 ## Database Schema
 
 ### roles
@@ -334,47 +369,6 @@ Indexes:
 
 Indexes:
     "user_roles_pkey" PRIMARY KEY, btree (user_id, role_id)
-
-## User Stories
-### Create, Read, Update, Delete Roles
-Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. The roles may have `service` attribute which indicates what microservice the role belongs to. For instance, you can have a `WLS Reporter` role as well as a `HVS Reporter` role. In this case, role comprises of two parts - `service` (WLS vs HVS) and the `role name` - `Reporter`
-
-### Create, Read, Update, Delete Users
-Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. 
-
-### Assign, Read, Update and Remove user roles
-A user can be assigned one or more roles. When the user no longer needs the role, these role associations may be deleted. This task is performed by someone with the appropriate privileges (typically an admin)
-
-### Associate a `scope` when assigning a role permission
-When a role is associated with a user, a `scope` may be associated with that user-role mapping. This is to provide relevant context to the application that needs extra infromation in addition to the user role association. An example of this when a certificte request is made to CMS with a CSR, in addition to having the `CMS:CertRequestor` role, there should be some contextual information that indicates which certificates the user may obtain. 
-
-### Obtain a token 
-A user can obtain a token with credentials (user name as password). The returned token will contain roles and scope. Beofre the token is provided to the user, the following must be completed
-1. The user name and password shall be verified 
-2. Obtain list of roles and scope that is associated with the user. 
-
-The user can choose to restrict the token by the following attributes - not in scope for Phase 1
-    1. service
-    2. Role 
-    3. time (so instance, I only want a token that is valid for 5 mins to carry out a specific task )
-
-
-### Install AAS
-A user should be able to install the AAS service. As part of the installation process, the following items should be accomplished
-  1. Set up a database
-  2. Install root certificate of CMS
-  3. Request TLS Certificate from CMS, store it and configure https with TLS certificate a
-  4. Request JWT signing certificate from CMS, store it - to be used for token signing
-  5. Create an admin user. 
-  6. Preload roles in AAS
-  7. Preload users in AAS
-  8. Preload user-roles in AAS
-  9. A daemon is configured to run the AAS service and started
-  
-
-### Create a Role/ Permission with a limited time.
-As a user with appropriate privileges, a user can create a role or a permission/ scope that is valid for a limited time. The goal of this is to provide temporary roles/ privileges. For example, this may be used for service user to request certificate during installation time. After installation, the priviege no longer exists
-
 
 
 # Auth Service Installaton
