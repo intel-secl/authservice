@@ -66,6 +66,7 @@ Retrieve a token with supplied user credentials. Return a map of roles assiociat
     "user_name": "user name",
     "password": "password of user"
 }
+```
 
 The following fileds are optional and will not be part of Phase 1 implementation 
 
