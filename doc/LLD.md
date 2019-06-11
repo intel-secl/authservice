@@ -18,11 +18,17 @@ The `Auth Service` has following core functionalities:
 ### Create, Read, Update, Delete Roles
 Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. The roles may have `service` attribute which indicates what microservice the role belongs to. For instance, you can have a `WLS Reporter` role as well as a `HVS Reporter` role. In this case, role comprises of two parts - `service` (WLS vs HVS) and the `role name` - `Reporter`
 
+*Update will not be part of Phase 1*
+
 ### Create, Read, Update, Delete Users
 Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. 
 
+*Update will not be part of Phase 1*
+
 ### Assign, Read, Update and Remove user roles
 A user can be assigned one or more roles. When the user no longer needs the role, these role associations may be deleted. This task is performed by someone with the appropriate privileges (typically an admin)
+
+*Update will not be part of Phase 1*
 
 ### Associate a `scope` when assigning a role permission
 When a role is associated with a user, a `scope` may be associated with that user-role mapping. This is to provide relevant context to the application that needs extra infromation in addition to the user role association. An example of this when a certificte request is made to CMS with a CSR, in addition to having the `CMS:CertRequestor` role, there should be some contextual information that indicates which certificates the user may obtain. 
@@ -82,8 +88,8 @@ The following fileds are optional and will not be part of Phase 1 implementation
 These optional fields are used to restrict how long and where the token may be used. 
 
 Example Response:
-```
-eyJhbGciOiJFUzM4NCIsImtpZCI6IjRmMjM4NTFkOTVmZjc5MGJkODRhNjBkZTAxMjg5NzYzZjVjZmJkMjkiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W3sic2VydmljZSI6IkNNUyIsIm5hbWUiOiJDZXJ0aWZpY2F0ZVJlcXVlc3RlciIsInNjb3BlIjoiQ046YWFzLmlzZWNsLmludGVsLmNvbSJ9LHsic2VydmljZSI6IlREUyIsIm5hbWUiOiJIb3N0VXBkYXRlciIsInNjb3BlIjoiSG9zdEEifSx7InNlcnZpY2UiOiJXTFMiLCJuYW1lIjoiQWRtaW5pc3RyYXRvciJ9XSwiZXhwIjoxNTYwMDYyODk2LCJpYXQiOjE1NTk5NzY0OTYsImlzcyI6IkFBUyBKV1QgU2lnbmluZyIsInN1YiI6IlZpbmlsJ3MgSldUIn0.TD42FmUV4baSOIiDwh0gIbgmIh0AtUcWv3FKegdDOH9QT1ofETOoxp9B1_D0WNbCA52UID0GxYdU5i-hD_hIhnpq-tPPzLXXPBGZbr-DrVWGWLAhiuKORCMwPzBbaD-D```
+
+eyJhbGciOiJFUzM4NCIsImtpZCI6IjRmMjM4NTFkOTVmZjc5MGJkODRhNjBkZTAxMjg5NzYzZjVjZmJkMjkiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W3sic2VydmljZSI6IkNNUyIsIm5hbWUiOiJDZXJ0aWZpY2F0ZVJlcXVlc3RlciIsInNjb3BlIjoiQ046YWFzLmlzZWNsLmludGVsLmNvbSJ9LHsic2VydmljZSI6IlREUyIsIm5hbWUiOiJIb3N0VXBkYXRlciIsInNjb3BlIjoiSG9zdEEifSx7InNlcnZpY2UiOiJXTFMiLCJuYW1lIjoiQWRtaW5pc3RyYXRvciJ9XSwiZXhwIjoxNTYwMDYyODk2LCJpYXQiOjE1NTk5NzY0OTYsImlzcyI6IkFBUyBKV1QgU2lnbmluZyIsInN1YiI6IlZpbmlsJ3MgSldUIn0.TD42FmUV4baSOIiDwh0gIbgmIh0AtUcWv3FKegdDOH9QT1ofETOoxp9B1_D0WNbCA52UID0GxYdU5i-hD_hIhnpq-tPPzLXXPBGZbr-DrVWGWLAhiuKORCMwPzBbaD-D
 
 The above token correspond to the following
 
@@ -208,7 +214,7 @@ deletes user from database with specific user id. Deleting a record using this m
 Response: success/failure
 
 Not sure if we should have this interface ??
-
+*Will not be part of Phase 1*
 ### POST `/aas/users/{userid}/change_password`
 (not available in intial version)
 
@@ -309,7 +315,7 @@ DELETE a role in AAS
 
 Assign a role to the user
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: `Bearer Token`
 - Content-Type: `application/json`
 
 ```json
@@ -317,9 +323,8 @@ Assign a role to the user
     [
 
         {
-            "user_id" : "user_uuid",
             "role_id": "role_uuid",
-            "validity": "4h"
+            "scope": "scope text",
         }
 
     ]

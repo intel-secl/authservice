@@ -9,6 +9,7 @@ import (
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"net/http"
+
 	"github.com/gorilla/mux"
 )
 
@@ -19,11 +20,10 @@ func setupRouter(db repository.AASDatabase, user_role types.Role) *mux.Router {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r = context.SetUserRoles(r, []types.Role{user_role})
 			next.ServeHTTP(w, r)
-                })
+		})
 	}
 	r := mux.NewRouter().PathPrefix("/aas").Subrouter()
 	r.Use(m)
 	SetHosts(r, db)
-	SetReports(r, db)
 	return r
 }

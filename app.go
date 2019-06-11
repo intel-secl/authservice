@@ -375,7 +375,7 @@ func (a *App) startServer() error {
 		for _, setter := range setters {
 			setter(sr, aasDB)
 		}
-	}(resource.SetHosts, resource.SetReports, resource.SetVersion, resource.SetHeartbeat)
+	}(resource.SetHosts, resource.SetVersion)
 
 	sr = r.PathPrefix("/aas/noauth").Subrouter()
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
