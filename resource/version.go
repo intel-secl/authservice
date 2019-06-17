@@ -9,6 +9,7 @@ import (
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/version"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -19,7 +20,11 @@ func SetVersion(r *mux.Router, db repository.AASDatabase) {
 
 func getVersion() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		verStr := fmt.Sprintf("%s-%s", version.Version, version.GitHash)
+		verStr := fmt.Sprintf("%s-%s, auth: %s", version.Version, version.GitHash, r.Header.Get("Authorization"))
 		w.Write([]byte(verStr))
+		splitToken := strings.Split(r.Header.Get("Authorization"), "Bearer")
+		if len(splitToken) > 1 {
+			w.Write([]byte(splitToken[1]))
+		}
 	})
 }

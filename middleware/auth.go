@@ -5,18 +5,34 @@
 package middleware
 
 import (
-	_ "intel/isecl/authservice/config"
+	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/context"
+	"intel/isecl/authservice/defender"
 	_ "intel/isecl/authservice/defender"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"net/http"
+	"time"
 	_ "time"
 
 	_ "github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
+
+var defend *defender.Defender
+
+func init() {
+	c := config.Global()
+
+	defend = defender.New(c.AuthDefender.MaxAttempts,
+		time.Duration(c.AuthDefender.IntervalMins)*time.Minute,
+		time.Duration(c.AuthDefender.LockoutDurationMins)*time.Minute)
+	quit := make(chan struct{})
+
+	go defend.CleanupTask(quit)
+
+}
 
 func NewBasicAuth(u repository.UserRepository) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {

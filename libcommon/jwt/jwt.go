@@ -13,7 +13,8 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"intel/isecl/lib/common/crypt"
+	"intel/isecl/authservice/libcommon/crypt"
+	ccrypt "intel/isecl/lib/common/crypt"
 	"strings"
 	"time"
 
@@ -21,6 +22,14 @@ import (
 )
 
 const defaultTokenValidity time.Duration = 24 * time.Hour
+
+type MatchingCertNotFoundError struct {
+	KeyId string
+}
+
+func (e MatchingCertNotFoundError) Error() string {
+	return fmt.Sprintf("certificate with matching public key not found. kid (key id) : %s", e.KeyId)
+}
 
 type JwtFactory struct {
 	privKey       crypto.PrivateKey
@@ -130,7 +139,7 @@ func NewTokenFactory(pkcs8der []byte, includeKeyIdInToken bool, signingCertPem [
 		if err != nil {
 			return nil, fmt.Errorf("NewTokenFactory: failed to parse certificate: " + err.Error())
 		}
-		hash, _ := crypt.GetHashData(cert.Raw, crypto.SHA1)
+		hash, _ := ccrypt.GetHashData(cert.Raw, crypto.SHA1)
 		keyId = hex.EncodeToString(hash)
 
 	}
@@ -188,50 +197,6 @@ func (f *JwtFactory) Create(clms interface{}, subject string, validity time.Dura
 
 //TODO: move to common crypto
 
-// GetPublicKeyFromCertPem retrieve the public key from a certificate pem block
-// We only support ECDSA and RSA public key
-func GetPublicKeyFromCertPem(certPem []byte) (crypto.PublicKey, error) {
-	block, _ := pem.Decode(certPem)
-	if block == nil {
-		return "", fmt.Errorf("failed to parse certificate PEM")
-	}
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse certificate: " + err.Error())
-	}
-	switch cert.PublicKeyAlgorithm {
-	case x509.RSA:
-		if key, ok := cert.PublicKey.(*rsa.PublicKey); ok {
-			return key, nil
-		}
-		return nil, fmt.Errorf("public key algorithm of cert reported as RSA cert does not match RSA public key struct")
-	case x509.ECDSA:
-		if key, ok := cert.PublicKey.(*ecdsa.PublicKey); ok {
-			return key, nil
-		}
-		return nil, fmt.Errorf("public key algorithm of cert reported as ECDSA cert does not match ECDSA public key struct")
-	}
-	return nil, fmt.Errorf("only RSA and ECDSA public keys are supported")
-}
-
-// GetCertHashFromPemInHex returns hash of a certificate from a Pem block
-func GetCertHashFromPemInHex(certPem []byte, hashAlg crypto.Hash) (string, error) {
-	block, _ := pem.Decode(certPem)
-	if block == nil {
-		return "", fmt.Errorf("failed to parse certificate PEM")
-	}
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse certificate: " + err.Error())
-	}
-	hash, err := crypt.GetHashData(cert.Raw, crypto.SHA1)
-	if err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(hash), nil
-}
-
 //TODO - implement this to parse the claims
 func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customClaims interface{}) (*Token, error) {
 
@@ -239,34 +204,45 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	token.standardClaims = &jwt.StandardClaims{}
 	parsedToken, err := jwt.ParseWithClaims(tokenString, token.standardClaims, func(token *jwt.Token) (interface{}, error) {
 
-		// lets check if there is only one key. If so, then lets just return the public key from the map
-		// no need to parse the "kid" (key id) from the jwt header
+		//return nil, &MatchingCertNotFoundError{"keyIDValue"}
+
+		// now we have more than 1 certificates. We need to use the key id to pull up the right public key
+		keyIDValue, keyIDExists := token.Header["kid"]
+		if keyIDExists {
+			var matchPubKey crypto.PublicKey
+			var matchPubKeyExists, ok bool
+			var keyIDString string
+
+			if keyIDString, ok = keyIDValue.(string); ok {
+				if matchPubKey, matchPubKeyExists = v.pubKeyMap[keyIDString]; matchPubKeyExists {
+					return matchPubKey, nil
+				}
+			} else {
+				return nil, fmt.Errorf("kid (key id) in jwt header is not a string : %v", keyIDValue)
+			}
+			return nil, &MatchingCertNotFoundError{keyIDString}
+		}
+
+		// at this point, there is no kid in the header. This means that we should only have one public key
+		// if we have more than one public key, we have a problem since we do not know which one to use to verify.
 		if len(v.pubKeyMap) == 1 {
 			for key, _ := range v.pubKeyMap {
 				return v.pubKeyMap[key], nil
 			}
 		}
 
-		// now we have more than 1 certificates. We need to used the key id to pull up the right public key
-		keyIDValue, keyIDExists := token.Header["kid"]
-		if keyIDExists {
-			var matchPubKey crypto.PublicKey
-			var matchPubKeyExists bool
-			if keyIDString, ok := keyIDValue.(string); ok {
-				matchPubKey, matchPubKeyExists = v.pubKeyMap[keyIDString]
-			} else {
-				return nil, fmt.Errorf("kid (key id) in jwt header is not a string : %v", keyIDValue)
-			}
-			if matchPubKeyExists {
-				return matchPubKey, nil
-			} else {
-				return nil, fmt.Errorf("could not find certificate with hash that matched kid in token :%s", keyIDValue)
-			}
-		}
-		return nil, fmt.Errorf("public key not found in verifier. we should not have not got here.. something really strange")
+		return nil, fmt.Errorf("public key not found in verifier or more than one certificate and there is no kid in the token - cannot select the right cert")
 
 	})
 	if err != nil {
+		if jwtErr, ok := err.(*jwt.ValidationError); ok {
+			if noCertErr, ok := jwtErr.Inner.(*MatchingCertNotFoundError); ok {
+				//fmt.Println(noCertErr)
+				return nil, noCertErr
+			}
+			//fmt.Println(noCertErr)
+			return nil, jwtErr
+		}
 		return nil, err
 	}
 	token.jwtToken = parsedToken
@@ -313,11 +289,11 @@ func NewVerifier(signingCertPems interface{}) (Verifier, error) {
 		// then retrieve the public key, hash and also do the verification right
 		// here. Otherwise we are parsing the certificate multiple times.
 
-		certHash, err := GetCertHashFromPemInHex(certPem, crypto.SHA1)
+		certHash, err := crypt.GetCertHashFromPemInHex(certPem, crypto.SHA1)
 		if err != nil {
 			continue
 		}
-		pubKey, err := GetPublicKeyFromCertPem(certPem)
+		pubKey, err := crypt.GetPublicKeyFromCertPem(certPem)
 		if err != nil {
 			continue
 		}

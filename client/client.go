@@ -21,6 +21,8 @@ type Client struct {
 	Username string
 	// Password to supply for the Username
 	Password string
+	// Bearer Token
+	JWTToken []byte
 	// A reference to the underlying http Client.
 	// If the value is nil, a default client will be created and used.
 	HTTPClient *http.Client
@@ -43,7 +45,12 @@ func (c *Client) resolvePath(path string) (string, error) {
 }
 
 func (c *Client) dispatchRequest(req *http.Request) (*http.Response, error) {
-	req.SetBasicAuth(c.Username, c.Password)
+	if c.Username != "" && c.Password != "" {
+		req.SetBasicAuth(c.Username, c.Password)
+	}
+	if c.JWTToken != nil {
+		req.Header.Add("Authorization", string(c.JWTToken))
+	}
 	return c.httpClient().Do(req)
 }
 
@@ -98,58 +105,38 @@ func (c *Client) AddHost(h types.HostInfo) (*types.HostCreateResponse, error) {
 	return &created, nil
 }
 
-func (c *Client) AddReportRaw(report string) error {
-	reports, err := c.resolvePath("reports")
+func (c *Client) GetJwtSigningCert() ([]byte, error) {
+	jwtCertUrl, err := c.resolvePath("noauth/jwtCert")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	req, _ := http.NewRequest(http.MethodPost, reports, bytes.NewBufferString(report))
-	req.Header.Set("Content-Type", "application/json")
+	req, _ := http.NewRequest(http.MethodGet, jwtCertUrl, nil)
+	req.Header.Set("Accept", "application/x-pem-file")
 	rsp, err := c.dispatchRequest(req)
 	if err != nil {
-		return err
-	}
-	if rsp.StatusCode != http.StatusCreated {
-		return err
-	}
-	return nil
-}
-
-func (c *Client) AddReport(r types.Report) error {
-	// fix this as well
-	payload, err := json.Marshal(&r)
-	if err != nil {
-		return err
-	}
-	return c.AddReportRaw(string(payload))
-}
-
-func (c *Client) Heartbeat(hb types.HostHeartbeat) (uint16, error) {
-
-	heartbeat, err := c.resolvePath("heartbeat")
-	if err != nil {
-		return 0, err
-	}
-	payload, err := json.Marshal(hb)
-	if err != nil {
-		return 0, err
-	}
-	httpBody := string(payload)
-	req, _ := http.NewRequest(http.MethodPost, heartbeat, bytes.NewBufferString(httpBody))
-	req.Header.Set("Content-Type", "application/json")
-
-	rsp, err := c.dispatchRequest(req)
-	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	if rsp.StatusCode != http.StatusOK {
-		msg, _ := ioutil.ReadAll(rsp.Body)
-		return 0, fmt.Errorf("heartbeat error: HTTP %d: %s", rsp.StatusCode, string(msg))
+		return nil, fmt.Errorf("failed to retrieve JWT signing certificate: HTTP Code: %d", rsp.StatusCode)
 	}
-	var heartbeatResp types.HostHeartbeat
-	err = json.NewDecoder(rsp.Body).Decode(&heartbeatResp)
+
+	return ioutil.ReadAll(rsp.Body)
+}
+
+func (c *Client) GetJwtToken() ([]byte, error) {
+	jwtUrl, err := c.resolvePath("token")
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return heartbeatResp.IntervalMins, nil
+	req, _ := http.NewRequest(http.MethodGet, jwtUrl, nil)
+	req.Header.Set("Accept", "application/jwt")
+	rsp, err := c.dispatchRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	if rsp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to retrieve JWT (json web token): HTTP Code: %d", rsp.StatusCode)
+	}
+
+	return ioutil.ReadAll(rsp.Body)
 }

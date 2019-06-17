@@ -8,10 +8,15 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/hex"
+	"encoding/pem"
 	"fmt"
 	_ "intel/isecl/authservice/constants"
+	"intel/isecl/lib/common/crypt"
 	"math/big"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -115,7 +120,7 @@ func CreateKeyPairAndCertificateRequest(subject, hostList, keyType string, keyLe
 
 // CreateKeyPairAndCertificateRequest taken in parameters for certificate request and return der bytes for the CSR
 // and a PKCS8 private key. We are using PKCS8 since we could can have a single package for ecdsa or rsa keys.
-func CreateKeyPairAndCertificate(subject, hostList, keyType string, keyLength int) (certReq []byte, pkcs8Der []byte, err error) {
+func CreateKeyPairAndCertificate(subject, hostList, keyType string, keyLength int) ([]byte, []byte, error) {
 
 	//first let us look at type of keypair that we are generating
 	privKey, pubKey, err := GenerateKeyPair(keyType, keyLength)
@@ -126,7 +131,7 @@ func CreateKeyPairAndCertificate(subject, hostList, keyType string, keyLength in
 	// generate self signed certificate
 	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 	notBefore := time.Now()
 	notAfter := notBefore.Add(8760 * time.Hour) // 1 year
@@ -160,9 +165,96 @@ func CreateKeyPairAndCertificate(subject, hostList, keyType string, keyLength in
 	if err != nil {
 		return nil, nil, fmt.Errorf("Could not create certificate. error : %s", err)
 	}
-	pkcs8Der, err = x509.MarshalPKCS8PrivateKey(privKey)
+	pkcs8Der, err := x509.MarshalPKCS8PrivateKey(privKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Could not marshal private key to pkcs8 format error :%s", err)
 	}
 	return cert, pkcs8Der, nil
+}
+
+// GetPublicKeyFromCertPem retrieve the public key from a certificate pem block
+// We only support ECDSA and RSA public key
+func GetPublicKeyFromCertPem(certPem []byte) (crypto.PublicKey, error) {
+	cert, err := GetCertFromPem(certPem)
+	if err != nil {
+		return "", err
+	}
+	switch cert.PublicKeyAlgorithm {
+	case x509.RSA:
+		if key, ok := cert.PublicKey.(*rsa.PublicKey); ok {
+			return key, nil
+		}
+		return nil, fmt.Errorf("public key algorithm of cert reported as RSA cert does not match RSA public key struct")
+	case x509.ECDSA:
+		if key, ok := cert.PublicKey.(*ecdsa.PublicKey); ok {
+			return key, nil
+		}
+		return nil, fmt.Errorf("public key algorithm of cert reported as ECDSA cert does not match ECDSA public key struct")
+	}
+	return nil, fmt.Errorf("only RSA and ECDSA public keys are supported")
+}
+
+func GetCertFromPem(certPem []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode(certPem)
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse certificate PEM")
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate: " + err.Error())
+	}
+	return cert, nil
+}
+
+// GetCertHashFromPemInHex returns hash of a certificate from a Pem block
+func GetCertHashFromPemInHex(certPem []byte, hashAlg crypto.Hash) (string, error) {
+	cert, err := GetCertFromPem(certPem)
+	if err != nil {
+		return "", err
+	}
+	hash, err := crypt.GetHashData(cert.Raw, hashAlg)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash), nil
+}
+
+func SavePrivateKeyAsPKCS8(keyDer []byte, filePath string) error {
+
+	// marshal private key to disk
+	keyOut, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0) // open file with restricted permissions
+	if err != nil {
+		return fmt.Errorf("could not open private key file for writing: %v", err)
+	}
+	// private key should not be world readable
+	os.Chmod(filePath, 0640)
+	defer keyOut.Close()
+
+	if err := pem.Encode(keyOut, &pem.Block{Type: "PKCS8 PRIVATE KEY", Bytes: keyDer}); err != nil {
+		return fmt.Errorf("could not pem encode the private key: %v", err)
+	}
+	return nil
+
+}
+
+func SavePemCertWithShortSha1FileName(certPem []byte, dir string) error {
+	sha1Hex, err := GetCertHashFromPemInHex(certPem, crypto.SHA1)
+	if err != nil {
+		return err
+	}
+	// open file with restricted permissions
+	filePath := filepath.Join(dir, sha1Hex[:9])
+	certOut, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0)
+	if err != nil {
+		return fmt.Errorf("could not open private key file for writing: %v", err)
+	}
+	// private key should not be world readable
+	os.Chmod(filePath, 0640)
+	defer certOut.Close()
+	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certPem}); err != nil {
+		return fmt.Errorf("could not pem encode the private key: %v", err)
+	}
+
+	return nil
 }

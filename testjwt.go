@@ -5,17 +5,11 @@ import (
 	"fmt"
 	"intel/isecl/authservice/libcommon/jwt"
 	"intel/isecl/authservice/libcommon/crypt"
+	cos "intel/isecl/authservice/libcommon/os"
+	ct "intel/isecl/authservice/libcommon/types"
+
 	"os"
 )
-type Role struct{
-	Service string `json:"service,omitempty"`
-	Name string `json:"name"`
-	Scope string `json:"scope,omitempty"`
-}
-
-type CtClaims struct {
-	Roles []Role `json:"roles"`
-}
 
 
 
@@ -63,8 +57,8 @@ func (a *App) TestTokenAuth() error {
 		fmt.Println(err)
 		return err
 	}
-	roles := []Role {Role{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, Role{"TDS","HostUpdater","HostA"}, Role{"WLS","Administrator",""}}
-	claims := CtClaims{roles}
+	ur := []ct.UserRole {ct.UserRole{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, ct.UserRole{"TDS","HostUpdater","HostA"}, ct.UserRole{"WLS","Administrator",""}}
+	claims := ct.UserRoles{ur}
 	fmt.Println(claims)
 	jwt, err := factory.Create(&claims,"Vinil's JWT", 0)
 	if err != nil {
@@ -87,12 +81,32 @@ func (a *App) ValidateToken(certPem []byte, jwtString string) error {
 	if err != nil {
 		return err
 	}
-	claims := CtClaims{}
-	v.ValidateTokenAndGetClaims(jwtString, &claims)
+	claims := ct.UserRoles{}
+	_, err = v.ValidateTokenAndGetClaims(jwtString, &claims)
 	if err != nil {
+		if noCertErr, ok := err.(*jwtauth.MatchingCertNotFoundError); ok {
+			//fmt.Println(noCertErr)
+			fmt.Println("Matching Certificate hash not found. Try to pull down and save the certificate now", noCertErr)
+		}
 		return err
 	}
 	fmt.Println(claims)
 
+	return nil
+}
+
+
+func (a* App) PrintDirFileContents(dir string) error {
+	if dir == "" {
+		return fmt.Errorf("PrintDirFileContents needs a directory path to look for files")
+	}
+	data, err := cos.GetDirFileContents(dir, "")
+	if err != nil {
+		return err
+	}
+	for i, fileData := range data {
+		fmt.Println("File :", i)
+		fmt.Printf("%s",fileData)
+	}
 	return nil
 }

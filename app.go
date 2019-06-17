@@ -209,13 +209,19 @@ func (a *App) Run(args []string) error {
 	default:
 		a.printUsage()
 		return errors.New("Unrecognized command: " + args[1])
-	//TODO : Remove added for debug - used to debug db queries
+	case "list":
+		if len(args) < 3 {
+			a.printUsage()
+			os.Exit(1)
+		}
+		return a.PrintDirFileContents(args[2])
 	case "token":
 		if err := a.TestTokenAuth(); err != nil {
 			fmt.Printf("jwt token test create and validate test error: %v ", err)
 			return err
 		}
 		return nil
+	//TODO : Remove added for debug - used to debug db queries
 	case "testdb":
 		a.TestNewDBFunctions()
 	case "tlscertsha384":
@@ -383,6 +389,14 @@ func (a *App) startServer() error {
 			setter(sr, aasDB)
 		}
 	}(resource.SetVersion)
+
+	sr = r.PathPrefix("/aas/test/").Subrouter()
+	sr.Use(middleware.NewTokenAuth())
+	func(setters ...func(*mux.Router)) {
+		for _, setter := range setters {
+			setter(sr)
+		}
+	}(resource.SetTestJwt)
 
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
