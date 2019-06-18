@@ -388,7 +388,14 @@ func (a *App) startServer() error {
 		for _, setter := range setters {
 			setter(sr, aasDB)
 		}
-	}(resource.SetVersion)
+	}(resource.SetVersion, resource.SetJwtToken)
+
+	sr = r.PathPrefix("/aas").Subrouter()
+	func(setters ...func(*mux.Router, repository.AASDatabase)) {
+		for _, setter := range setters {
+			setter(sr, aasDB)
+		}
+	}(resource.SetJwtToken)
 
 	sr = r.PathPrefix("/aas/test/").Subrouter()
 	sr.Use(middleware.NewTokenAuth())

@@ -49,7 +49,7 @@ func (c *Client) dispatchRequest(req *http.Request) (*http.Response, error) {
 		req.SetBasicAuth(c.Username, c.Password)
 	}
 	if c.JWTToken != nil {
-		req.Header.Add("Authorization", string(c.JWTToken))
+		req.Header.Add("Authorization", "Bearer "+string(c.JWTToken))
 	}
 	return c.httpClient().Do(req)
 }

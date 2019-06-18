@@ -39,6 +39,11 @@ type Configuration struct {
 		IntervalMins        int
 		LockoutDurationMins int
 	}
+
+	Token struct {
+		IncludeKid bool
+		TokenDurationMins int
+	}
 }
 
 var mu sync.Mutex

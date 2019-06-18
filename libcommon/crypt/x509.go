@@ -13,6 +13,7 @@ import (
 	"fmt"
 	_ "intel/isecl/authservice/constants"
 	"intel/isecl/lib/common/crypt"
+	"io/ioutil"
 	"math/big"
 	"net"
 	"os"
@@ -236,6 +237,21 @@ func SavePrivateKeyAsPKCS8(keyDer []byte, filePath string) error {
 	}
 	return nil
 
+}
+
+func GetPKCS8PrivKeyDerFromFile(filePath string) ([]byte, error) {
+
+	privKeyPem, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read from private key file %s : ", filePath)
+	}
+
+	block, _ := pem.Decode(privKeyPem)
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse private Key PEM file")
+	}
+
+	return block.Bytes, nil
 }
 
 func SavePemCertWithShortSha1FileName(certPem []byte, dir string) error {

@@ -24,6 +24,7 @@ import (
 )
 
 var jwtVerifier jwtauth.Verifier
+var jwtCertDownloadAttempted bool
 
 func initJwtVerifier() (err error){
 	
@@ -57,9 +58,15 @@ func GetUserRoles(r *http.Request) *ct.UserRoles {
 	return nil
 }
 
-func retrieveAndSaveTrustedJwtSigningCerts(){
+func retrieveAndSaveTrustedJwtSigningCerts() error{
+	if jwtCertDownloadAttempted  {
+		return fmt.Errorf("already attempted to download JWT signing certificates. Will not attempt again")
+	}
 	// todo. this function will make https requests and save files
 	// to the directory where we keep trusted certificates
+
+	jwtCertDownloadAttempted = true
+	return nil
 }
 
 func NewTokenAuth() mux.MiddlewareFunc {
@@ -68,7 +75,9 @@ func NewTokenAuth() mux.MiddlewareFunc {
 
 		// lets start by making sure jwt token verifier is initalized
 
-		if jwtVerifier == nil {
+		// there is a case when the jwtVerifier is not loaded with the right certificates. 
+		// In this case, we need to reattempt. So lets run this in a loop
+		if jwtVerifier == nil  {
 			if err := initJwtVerifier(); err != nil {
 				log.WithError(err).Error("not able to initialize jwt verifier.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -84,6 +93,12 @@ func NewTokenAuth() mux.MiddlewareFunc {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+
+		// TODO: Not really liking the 4 level of nested if below.. this works.. but would really
+		// like to refactor this to flatten the nested if. This is a problem with golang where the
+		// convention is to return an error object. You need to explicitly check the value of the
+		// error object and the move onto the next check. 
+		
 		// the second item in the slice should be the jwtToken. let try to validate
 		claims := ct.UserRoles{}
 		_, err := jwtVerifier.ValidateTokenAndGetClaims(strings.TrimSpace(splitAuthHeader[1]), &claims)
@@ -91,32 +106,32 @@ func NewTokenAuth() mux.MiddlewareFunc {
 			// lets check if the failure is because we could not find a public key used to sign the token
 			// We will be able to check this only if there is a kid (key id) field in the JWT header.
 			// check the details of the jwt library implmentation to see how this is done
-			if noCertErr, ok := err.(*jwtauth.MatchingCertNotFoundError); ok {
-				//fmt.Println(noCertErr)
-				fmt.Println("Matching Certificate hash not found. Try to pull down and save the certificate now", noCertErr)
-				// let us try to load tokens from list of URLs with JWT signing certificates that we trust
+			if _, ok := err.(*jwtauth.MatchingCertNotFoundError); ok {
 				
-				retrieveAndSaveTrustedJwtSigningCerts()
-				// hopefully, we now have the necesary certificate files in the appropriate directory
-				// re-initialize the verifier to pick up any new certificate. 
-				
-				// TODO: There is a danger in doing this. Someone could keep sending token with some random kid value to 
-				// get this module to retrieve certificates over https connection slowing down the web server. 
-				// Its kind of a DDOS. We should be able to fix this by making the
-				// above function to return an error for too may attempts of some kind of flag indicating that all the certs
-				// have been pulled. 
-				if err := initJwtVerifier(); err != nil {
-					log.WithError(err).Error("not able to initialize jwt verifier.")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
+				// let us try to load certs from list of URLs with JWT signing certificates that we trust
+				if err = retrieveAndSaveTrustedJwtSigningCerts(); err == nil {
+
+					// hopefully, we now have the necesary certificate files in the appropriate directory
+					// re-initialize the verifier to pick up any new certificate.
+					if err = initJwtVerifier(); err != nil {
+						log.WithError(err).Error("attempt to reinitialize jwt verifier failed")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					_, err = jwtVerifier.ValidateTokenAndGetClaims(strings.TrimSpace(splitAuthHeader[1]), &claims)
+
 				}
 				
 			}
+		}
+
+		if err != nil {
 			// this is a validation failure. Let us log the message and return unauthorized
 			log.WithError(err).Error("token validation Failure")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+
 		r = SetUserRoles(r, &claims)
 		next.ServeHTTP(w, r)
 		})

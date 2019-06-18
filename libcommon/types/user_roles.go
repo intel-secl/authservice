@@ -14,3 +14,8 @@ type UserRole struct {
 type UserRoles struct {
 	Roles []UserRole `json:"roles"`
 }
+
+type UserCred struct {
+	UserName string `json:"user_name"`
+	Password string `json:"password"`
+}

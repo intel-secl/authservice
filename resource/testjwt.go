@@ -30,14 +30,5 @@ func getJwtFromToken() errorHandlerFunc {
 			return err
 		}
 		return nil
-
-		/*
-			verStr := fmt.Sprintf("%s-%s, auth: %s", version.Version, version.GitHash, r.Header.Get("Authorization"))
-			w.Write([]byte(verStr))
-			splitToken := strings.Split(r.Header.Get("Authorization"), "Bearer")
-			if len(splitToken) > 1 {
-				w.Write([]byte(splitToken[1]))
-			}
-		*/
 	}
 }
