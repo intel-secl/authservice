@@ -94,7 +94,7 @@ func getJwtSigningMethod(privKey crypto.PrivateKey) (jwt.SigningMethod, error) {
 		if bitLen != 3072 && bitLen != 4096 {
 			return nil, fmt.Errorf("RSA keylength for JWT signing must be 3072 or 4096")
 		}
-		return jwt.GetSigningMethod("HS384"), nil
+		return jwt.GetSigningMethod("RS384"), nil
 	case *ecdsa.PrivateKey:
 		bitLen := key.Curve.Params().BitSize
 		if bitLen != 256 && bitLen != 384 {

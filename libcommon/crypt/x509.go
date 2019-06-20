@@ -33,7 +33,7 @@ func GenerateKeyPair(keyType string, keyLength int) (crypto.PrivateKey, crypto.P
 		if err != nil {
 			return nil, nil, fmt.Errorf("could not generate rsa key pair Error: %s", err)
 		}
-		return k, k.PublicKey, nil
+		return k, &k.PublicKey, nil
 	// if the keytype is not "rsa", then we will always use ecdsa as this is the preferred
 	//
 	default:
