@@ -9,6 +9,7 @@ import (
 	"intel/isecl/authservice/types"
 
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 type PostgresRoleRepository struct {
@@ -29,7 +30,18 @@ func (r *PostgresRoleRepository) Create(role types.Role) (*types.Role, error) {
 
 func (r *PostgresRoleRepository) Retrieve(role types.Role) (*types.Role, error) {
 	err := r.db.Where(&role).First(&role).Error
-	return &role, err
+	if err!=nil{
+        return nil, err
+	}
+	return &role,nil
+}
+
+func (r *PostgresRoleRepository) RetrieveAll(role types.Role) (types.Roles, error) {
+	var roles types.Roles
+	err := r.db.Where(&role).Find(&roles).Error
+
+	log.WithField("db hosts", roles).Trace("RetrieveAll")
+	return roles, err
 }
 
 func (r *PostgresRoleRepository) Update(role types.Role) error {

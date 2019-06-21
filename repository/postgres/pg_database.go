@@ -27,7 +27,7 @@ func (pd *PostgresDatabase) ExecuteSql(sql *string) error {
 func (pd *PostgresDatabase) ExecuteSqlFile(file string) error {
 	c, err := ioutil.ReadFile(file)
 	if err != nil {
-	   return fmt.Errorf("could not read sql file - %s, error : %s", file, err. Error())
+		return fmt.Errorf("could not read sql file - %s, error : %s", file, err.Error())
 	}
 	sql := string(c)
 	if err := pd.ExecuteSql(&sql); err != nil {
@@ -37,18 +37,12 @@ func (pd *PostgresDatabase) ExecuteSqlFile(file string) error {
 }
 
 func (pd *PostgresDatabase) Migrate() error {
-	pd.DB.AutoMigrate(types.Host{}, types.Report{}, types.User{}, types.Role{})
-	pd.DB.Table("reports").
-		AddForeignKey("host_id", "hosts(id)", "SET NULL", "SET NULL")
+	pd.DB.AutoMigrate(types.Host{}, types.User{}, types.Role{})
 	return nil
 }
 
 func (pd *PostgresDatabase) HostRepository() repository.HostRepository {
 	return &PostgresHostRepository{db: pd.DB}
-}
-
-func (pd *PostgresDatabase) ReportRepository() repository.ReportRepository {
-	return &PostgresReportRepository{db: pd.DB}
 }
 
 func (pd *PostgresDatabase) UserRepository() repository.UserRepository {
@@ -98,7 +92,7 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 	return &PostgresDatabase{DB: db}, nil
 }
 
-func VerifyConnection(host string, port int, dbname, user, password, sslMode, sslCert string)  error {
+func VerifyConnection(host string, port int, dbname, user, password, sslMode, sslCert string) error {
 
 	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
 	if sslMode != "disable" && sslMode != "require" && sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "verify-full" {

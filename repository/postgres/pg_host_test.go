@@ -166,36 +166,3 @@ func TestHostDelete(t *testing.T) {
 	assert.NoError(err)
 	assert.Len(all, 0)
 }
-
-func TestHostDeleteWithReport(t *testing.T) {
-	db := dialDatabase(t)
-	assert := assert.New(t)
-	// If you somehow run this on production, god bless your poor soul
-	db.DB.Exec("DROP TABLE if exists hosts,reports cascade;")
-	db.Migrate()
-	host := types.Host{}
-	host.Hostname = "10.0.0.1"
-	host.OS = "linux"
-	host.Status = "Reserve for future implementation"
-	host.Version = "1.0"
-	host.Build = "1234"
-	created, err := db.HostRepository().Create(host)
-	assert.NotEmpty(created.ID)
-	assert.NoError(err)
-
-	report := types.Report{}
-	report.Detection.PID = 1
-	report.HostID = created.ID
-	createdReport, _ := db.ReportRepository().Create(report)
-
-	err = db.HostRepository().Delete(*created)
-	assert.NoError(err)
-
-	all, err := db.HostRepository().RetrieveAll(types.Host{})
-	assert.NoError(err)
-	assert.Len(all, 0)
-
-	f, err := db.ReportRepository().Retrieve(types.Report{ID: createdReport.ID})
-	assert.NoError(err)
-	assert.Zero(f.HostID)
-}

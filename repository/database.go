@@ -7,7 +7,6 @@ package repository
 type AASDatabase interface {
 	Migrate() error
 	HostRepository() HostRepository
-	ReportRepository() ReportRepository
 	UserRepository() UserRepository
 	RoleRepository() RoleRepository
 	Close()

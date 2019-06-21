@@ -5,16 +5,14 @@
 package resource
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"intel/isecl/lib/common/crypt"
-	"intel/isecl/lib/common/validation"
 	consts "intel/isecl/authservice/constants"
 	"intel/isecl/authservice/context"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
+	"intel/isecl/lib/common/validation"
 	"net/http"
 
 	_ "github.com/gorilla/context"
@@ -22,7 +20,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func SetHosts(r *mux.Router, db repository.AASDatabase) {
@@ -104,39 +101,10 @@ func createHost(db repository.AASDatabase) errorHandlerFunc {
 		if err != nil {
 			return err
 		}
-		// create the user and roles that represents the new domain. API endpoints that are restricted to updates only from the newly created
-		// hosts shall be protected with the role.
-		rand, err := crypt.GetRandomBytes(consts.PasswordRandomLength)
-		if err != nil {
-			return err
-		}
-
-		randStr := base64.StdEncoding.EncodeToString(rand)
-		hash, err := bcrypt.GenerateFromPassword([]byte(randStr), bcrypt.DefaultCost)
-		if err != nil {
-			return err
-		}
-		uuid, err := repository.UUID()
-		if err != nil {
-			return err
-		}
-		host_user_role := types.Role{ID: uuid, Name: consts.HostSelfUpdateGroupName,
-			Domain: created.ID}
-		host_user := types.User{Name: created.ID, PasswordHash: hash,
-			Roles: []types.Role{host_user_role}}
-
-		user, err := db.UserRepository().Create(host_user)
-		if err != nil {
-			return err
-		}
-		resp := types.HostCreateResponse{}
-		resp.Host = *created
-		resp.User = user.ID
-		resp.Token = randStr
 
 		w.WriteHeader(http.StatusCreated) // HTTP 201
 		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(&resp)
+		err = json.NewEncoder(w).Encode(*created)
 		if err != nil {
 			return err
 		}
@@ -153,10 +121,6 @@ func getHost(db repository.AASDatabase) errorHandlerFunc {
 		actionAllowed := false
 		for _, role := range roles {
 			if role.Name == consts.AdminGroupName {
-				actionAllowed = true
-				break
-			}
-			if role.Name == consts.HostSelfUpdateGroupName && role.Domain == id {
 				actionAllowed = true
 				break
 			}
@@ -292,16 +256,6 @@ func deleteHostUserRole(db repository.AASDatabase, del_h *types.Host) error {
 
 	if err = db.UserRepository().Delete(*del_u); err != nil {
 		log.WithError(err).WithField("id", id).Info("failed to delete user")
-		return err
-	}
-	del_r, err := db.RoleRepository().Retrieve(types.Role{Domain: id})
-	if err != nil {
-		log.WithError(err).WithField("id", id).Info("attempt to delete invalid host")
-		return &resourceError{Message: "failed to delete: double check input host id",
-			StatusCode: http.StatusBadRequest}
-	}
-	if err = db.RoleRepository().Delete(*del_r); err != nil {
-		log.WithError(err).WithField("id", id).Info("failed to delete role")
 		return err
 	}
 	return nil

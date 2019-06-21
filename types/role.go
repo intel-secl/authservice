@@ -6,15 +6,21 @@ package types
 
 import "time"
 
+type RoleInfo struct {
+	Service string `json:"service,omitempty"`
+	// Name: UpdateHost
+	Name string `json:"name" gorm:"not null"`
+	// 1234-88769876-28768
+	Context string `json:"context,omitempty"`
+}
+
 type Role struct {
 	ID        string    `json:"id" gorm:"primary_key;type:uuid"`
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
 
-	// Name: UpdateHost
-	Name string `json:"rolename" gorm:"not null"`
-	// 1234-88769876-28768
-	Domain string `json:"roledomain,omitempty"`
+	//embed
+	RoleInfo
 }
 
 type Roles []Role

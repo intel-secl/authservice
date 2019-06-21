@@ -8,12 +8,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	cos "intel/isecl/lib/common/os"
-	"intel/isecl/lib/common/setup"
-	"intel/isecl/lib/common/validation"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
 	"intel/isecl/authservice/repository/postgres"
+	cos "intel/isecl/lib/common/os"
+	"intel/isecl/lib/common/setup"
+	"intel/isecl/lib/common/validation"
 	"io"
 	"os"
 	"strings"
@@ -36,17 +36,6 @@ func (db Database) Run(c setup.Context) error {
 	envDBSSLCert, _ := c.GetenvString("AAS_DB_SSLCERT", "Database SSL Certificate")
 	envDBSSLCertSrc, _ := c.GetenvString("AAS_DB_SSLCERTSRC", "Database SSL Cert file source file")
 
-	envDBRotateMaxRow := constants.DefaultDBRotationMaxRowCnt
-	envDBRotateTableCnt := constants.DefaultDBRotationMaxTableCnt
-	maxrow, err := c.GetenvInt("AAS_DB_REPORT_MAX_ROWS", "Database Rotation Partition Size")
-	if err == nil {
-		envDBRotateMaxRow = maxrow
-	}
-	maxTable, err := c.GetenvInt("AAS_DB_REPORT_NUM_ROTATIONS", "Database Rotation Partition Count")
-	if err == nil {
-		envDBRotateTableCnt = maxTable
-	}
-
 	fs := flag.NewFlagSet("database", flag.ContinueOnError)
 	fs.StringVar(&db.Config.Postgres.Hostname, "db-host", envHost, "Database Hostname")
 	fs.IntVar(&db.Config.Postgres.Port, "db-port", envPort, "Database Port")
@@ -56,7 +45,7 @@ func (db Database) Run(c setup.Context) error {
 	fs.StringVar(&db.Config.Postgres.SSLMode, "db-sslmode", envDBSSLMode, "SSL mode of connection to database")
 	fs.StringVar(&db.Config.Postgres.SSLCert, "db-sslcert", envDBSSLCert, "SSL certificate of database")
 	fs.StringVar(&envDBSSLCertSrc, "db-sslcertsrc", envDBSSLCertSrc, "DB SSL certificate to be copied from")
-	err = fs.Parse(db.Flags)
+	err := fs.Parse(db.Flags)
 	if err != nil {
 		return err
 	}
@@ -89,19 +78,19 @@ func (db Database) Run(c setup.Context) error {
 		return err
 	}
 	p.Migrate()
-
-	if err := p.ExecuteSqlFile("/opt/authservice/dbscripts/db_rotation.sql"); err != nil{
-		return err
-	}
-	sql := "DELETE FROM rotate_reports_args;"
-	if err := p.ExecuteSql(&sql); err != nil{
-		return err
-	}
-	sql = fmt.Sprintf("INSERT INTO rotate_reports_args (max_row_count, num_rotations) VALUES (%d, %d);", envDBRotateMaxRow, envDBRotateTableCnt)
-	if err := p.ExecuteSql(&sql); err != nil{
-		return err
-	}
-
+	/*
+		if err := p.ExecuteSqlFile("/opt/authservice/dbscripts/db_rotation.sql"); err != nil{
+			return err
+		}
+		sql := "DELETE FROM rotate_reports_args;"
+		if err := p.ExecuteSql(&sql); err != nil{
+			return err
+		}
+		sql = fmt.Sprintf("INSERT INTO rotate_reports_args (max_row_count, num_rotations) VALUES (%d, %d);", envDBRotateMaxRow, envDBRotateTableCnt)
+		if err := p.ExecuteSql(&sql); err != nil{
+			return err
+		}
+	*/
 	return db.Config.Save()
 }
 

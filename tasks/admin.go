@@ -7,10 +7,10 @@ package tasks
 import (
 	"flag"
 	"fmt"
-	"intel/isecl/lib/common/setup"
 	consts "intel/isecl/authservice/constants"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
+	"intel/isecl/lib/common/setup"
 	"io"
 
 	log "github.com/sirupsen/logrus"
@@ -40,7 +40,7 @@ func (a Admin) Run(c setup.Context) error {
 	}
 	defer db.Close()
 
-	adminRole, err := createRole(db, consts.AdminGroupName)
+	adminRole, err := createRole(db, consts.ServiceName, consts.AdminGroupName, "")
 	if err != nil {
 		return err
 	}

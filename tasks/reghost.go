@@ -40,7 +40,7 @@ func (a RegHost) Run(c setup.Context) error {
 	}
 	defer db.Close()
 
-	registerHostRole, err := createRole(db, consts.RegisterHostGroupName)
+	registerHostRole, err := createRole(db, consts.ServiceName, consts.RegisterHostGroupName, "")
 	if err != nil {
 		return err
 	}

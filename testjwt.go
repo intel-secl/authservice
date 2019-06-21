@@ -17,7 +17,7 @@ func (a *App) TestTokenAuth() error {
 	fmt.Println("Inside the TestTokenAuth Function")
 
 	//certReq, privKeyDer, err := CreateKeyPairAndCertificateRequest("AAS JWT Signing", "", "ecdsa", 0)
-	cert, privKeyDer, err := crypt.CreateKeyPairAndCertificate("AAS JWT Signing", "127.0.0.1", "rsa", 3072 )
+	cert, privKeyDer, err := crypt.CreateKeyPairAndCertificate("AAS JWT Signing", "", "", 0)
 	if err != nil {
 		return err
 	}

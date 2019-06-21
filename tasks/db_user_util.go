@@ -2,21 +2,21 @@ package tasks
 
 import (
 	"errors"
-	"intel/isecl/lib/common/validation"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
+	"intel/isecl/lib/common/validation"
 
 	"golang.org/x/crypto/bcrypt"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func createRole(db repository.AASDatabase, roleName string) (*types.Role, error) {
+func createRole(db repository.AASDatabase, service, name, context string) (*types.Role, error) {
 
-	role, err := db.RoleRepository().Retrieve(types.Role{Name: roleName})
+	role, err := db.RoleRepository().Retrieve(types.Role{RoleInfo: types.RoleInfo{Name: name, Service: service, Context: context}})
 	if err != nil {
 		uuid, _ := repository.UUID()
-		role, err = db.RoleRepository().Create(types.Role{ID: uuid, Name: roleName})
+		role, err = db.RoleRepository().Create(types.Role{ID: uuid, RoleInfo: types.RoleInfo{Name: name, Service: service, Context: context}})
 	}
 	return role, err
 }

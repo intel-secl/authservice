@@ -405,6 +405,14 @@ func (a *App) startServer() error {
 		}
 	}(resource.SetTestJwt)
 
+	sr = r.PathPrefix("/aas/").Subrouter()
+	sr.Use(middleware.NewTokenAuth())
+	func(setters ...func(*mux.Router, repository.AASDatabase)) {
+		for _, setter := range setters {
+			setter(sr, aasDB)
+		}
+	}(resource.SetRoles)
+
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		CipherSuites: []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,

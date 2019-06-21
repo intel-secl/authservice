@@ -35,6 +35,7 @@ const (
 	DefaultDBRotationMaxRowCnt    = 100000
 	DefaultDBRotationMaxTableCnt  = 10
 	DefaultSSLCertFilePath        = ConfigDir + "aasdbcert.pem"
+	ServiceName                   = "AAS"
 )
 
 const (
