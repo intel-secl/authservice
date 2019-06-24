@@ -388,7 +388,7 @@ func (a *App) startServer() error {
 		for _, setter := range setters {
 			setter(sr, aasDB)
 		}
-	}(resource.SetVersion, resource.SetJwtToken)
+	}(resource.SetVersion)
 
 	sr = r.PathPrefix("/aas").Subrouter()
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
@@ -411,7 +411,7 @@ func (a *App) startServer() error {
 		for _, setter := range setters {
 			setter(sr, aasDB)
 		}
-	}(resource.SetRoles)
+	}(resource.SetRoles, resource.SetUsers)
 
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,

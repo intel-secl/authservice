@@ -6,10 +6,11 @@ package resource
 
 import (
 	"encoding/json"
-	ct "intel/isecl/authservice/libcommon/types"
+	"intel/isecl/authservice/libcommon/context"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 func SetTestJwt(r *mux.Router) {
@@ -18,16 +19,16 @@ func SetTestJwt(r *mux.Router) {
 
 func getJwtFromToken() errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		var roles *ct.UserRoles
-		if rv := r.Context().Value("userroles"); rv != nil {
-			if rl, ok := rv.(*ct.UserRoles); ok {
-				roles = rl
-			}
-		}
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(roles)
+		roles, err := context.GetUserRoles(r)
 		if err != nil {
-			return err
+			log.WithError(err).Error("could not get user roles from http context")
+			return &resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(roles)
+		if err != nil {
+			return &resourceError{Message: "could not encode json structure", StatusCode: http.StatusInternalServerError}
 		}
 		return nil
 	}

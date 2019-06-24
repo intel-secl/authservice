@@ -9,21 +9,32 @@ import (
 	"fmt"
 	"time"
 
-	"intel/isecl/lib/common/crypt"
 	"intel/isecl/authservice/constants"
+	"intel/isecl/lib/common/crypt"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
+// UserCreate struct is body of a POST request while creating users
+type UserCreate struct {
+	Name     string `json:"username"`
+	Password string `json:"password"`
+}
+
+// User struct is the database schema of a Users table
 type User struct {
-	ID           string     `gorm:"primary_key;type:uuid"`
+	ID           string     `json:"user_id" gorm:"primary_key;type:uuid"`
 	CreatedAt    time.Time  `json:"-"`
 	UpdatedAt    time.Time  `json:"-"`
 	DeletedAt    *time.Time `json:"-"`
-	Name         string
-	PasswordHash []byte
-	Roles        []Role `gorm:"many2many:user_roles"`
+	Name         string     `json:"username"`
+	PasswordHash []byte     `json:"-"`
+	PasswordSalt []byte     `json:"-"`
+	PasswordCost int        `json:"-"`
+	Roles        []Role     `json:"roles,omitempty"gorm:"many2many:user_roles"`
 }
+
+type Users []User
 
 func (u *User) CheckPassword(password []byte) error {
 	return bcrypt.CompareHashAndPassword(u.PasswordHash, password)

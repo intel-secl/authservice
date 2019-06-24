@@ -14,8 +14,10 @@ import (
 	"intel/isecl/authservice/libcommon/jwt"
 
 	"intel/isecl/authservice/repository"
+	authcommon "intel/isecl/authservice/common"
 	"intel/isecl/authservice/constants"
 	"intel/isecl/authservice/config"
+	"intel/isecl/authservice/types"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -23,6 +25,11 @@ import (
 )
 
 var tokFactory *jwtauth.JwtFactory 
+
+type roleClaims struct {
+	Roles types.Roles `json:"roles"`
+}
+
 func SetJwtToken(r *mux.Router, db repository.AASDatabase) {
 	r.Handle("/token", createJwtToken(db)).Methods("POST")
 }
@@ -73,18 +80,28 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 		if err != nil {
 			return err
 		}
+		u :=  db.UserRepository()
 
-		//TODO: validate the username and password. Since this is not in place, we are going to skip and generate a sample token
-		ur := []ct.UserRole {ct.UserRole{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, ct.UserRole{"TDS","HostUpdater","HostA"}, ct.UserRole{"WLS","Administrator",""}}
-		claims := ct.UserRoles{ur}
+		if httpStatus, err := authcommon.HttpHandleUserAuth(u, uc.UserName, uc.Password); err != nil {
+			return &resourceError{Message: "", StatusCode: httpStatus}
+		}
 
-		jwt, err := tokFactory.Create(&claims, uc.UserName, 0)
+		roles, err := u.GetRoles(types.User{Name: uc.UserName})
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.WithError(err).Errorf("could not generate token")
-			return nil
+			log.WithError(err).Error("Database error: unable to retrive roles")
+			return &resourceError{Message: "", StatusCode: http.StatusInternalServerError}
+			
 		}
 		
+		//ur := []ct.RoleInfo {ct.RoleInfo{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, ct.RoleInfo{"TDS","HostUpdater","HostA"}, ct.RoleInfo{"WLS","Administrator",""}}
+		//claims := roleClaims{Roles: roles.Role}
+
+		jwt, err := tokFactory.Create(&roleClaims{roles}, uc.UserName, 0)
+		if err != nil {
+			log.WithError(err).Errorf("could not generate token")
+			return &resourceError{Message: "", StatusCode: http.StatusInternalServerError}
+		}
+		fmt.Println(string(jwt))
 
 		w.Header().Set("Content-Type", "application/jwt")
 		w.Write([]byte(jwt))

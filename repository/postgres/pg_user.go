@@ -11,6 +11,7 @@ import (
 	"intel/isecl/authservice/types"
 
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 type PostgresUserRepository struct {
@@ -31,7 +32,21 @@ func (r *PostgresUserRepository) Create(u types.User) (*types.User, error) {
 
 func (r *PostgresUserRepository) Retrieve(u types.User) (*types.User, error) {
 	err := r.db.Where(&u).First(&u).Error
-	return &u, err
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (r *PostgresUserRepository) RetrieveAll(u types.User) (types.Users, error) {
+	var users types.Users
+	err := r.db.Where(&u).Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+
+	log.WithField("db users", users).Trace("RetrieveAll")
+	return users, err
 }
 
 func (r *PostgresUserRepository) Update(u types.User) error {
@@ -45,8 +60,13 @@ func (r *PostgresUserRepository) Delete(u types.User) error {
 	return r.db.Delete(&u).Error
 }
 
+func (r *PostgresUserRepository) GetRolesById(u types.User) (userRoles []types.Role, err error) {
+	err = r.db.Select("roles.id, roles.service, roles.name, roles.context").Joins("INNER JOIN user_roles on user_roles.role_id = roles.id INNER JOIN users on user_roles.user_id = users.id").Where(&u).Find(&userRoles).Error
+	return userRoles, err
+}
+
 func (r *PostgresUserRepository) GetRoles(u types.User) (userRoles []types.Role, err error) {
-	err = r.db.Select("roles.name, roles.domain").Joins("INNER JOIN user_roles on user_roles.role_id = roles.id INNER JOIN users on user_roles.user_id = users.id").Where(&u).Find(&userRoles).Error
+	err = r.db.Select("roles.service, roles.name, roles.context").Joins("INNER JOIN user_roles on user_roles.role_id = roles.id INNER JOIN users on user_roles.user_id = users.id").Where(&u).Find(&userRoles).Error
 	return userRoles, err
 }
 

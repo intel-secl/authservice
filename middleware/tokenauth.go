@@ -5,14 +5,13 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"intel/isecl/authservice/libcommon/jwt"
 	cos "intel/isecl/authservice/libcommon/os"
 	ct "intel/isecl/authservice/libcommon/types"
 
-	_"intel/isecl/authservice/context"
+	"intel/isecl/authservice/libcommon/context"
 	"intel/isecl/authservice/constants"
 	_"intel/isecl/authservice/repository"
 	_"intel/isecl/authservice/types"
@@ -39,23 +38,6 @@ func initJwtVerifier() (err error){
 	}
 	return nil
 
-}
-
-type httpContextKey string
-
-//var userRoleKey = httpContextKey("userroles")
-
-func SetUserRoles(r *http.Request, val *ct.UserRoles) *http.Request {
-
-	ctx := context.WithValue(r.Context(), "userroles", val)
-	return r.WithContext(ctx)
-}
-
-func GetUserRoles(r *http.Request) *ct.UserRoles {
-	if rv := r.Context().Value("userroles"); rv != nil {
-		return rv.(*ct.UserRoles)
-	}
-	return nil
 }
 
 func retrieveAndSaveTrustedJwtSigningCerts() error{
@@ -100,7 +82,7 @@ func NewTokenAuth() mux.MiddlewareFunc {
 		// error object and the move onto the next check. 
 		
 		// the second item in the slice should be the jwtToken. let try to validate
-		claims := ct.UserRoles{}
+		claims := ct.RoleSlice{}
 		_, err := jwtVerifier.ValidateTokenAndGetClaims(strings.TrimSpace(splitAuthHeader[1]), &claims)
 		if err != nil {
 			// lets check if the failure is because we could not find a public key used to sign the token
@@ -132,7 +114,7 @@ func NewTokenAuth() mux.MiddlewareFunc {
 			return
 		}
 
-		r = SetUserRoles(r, &claims)
+		r = context.SetUserRoles(r, claims.Roles)
 		next.ServeHTTP(w, r)
 		})
 	}

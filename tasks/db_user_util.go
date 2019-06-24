@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"errors"
+	ct "intel/isecl/authservice/libcommon/types"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"intel/isecl/lib/common/validation"
@@ -13,10 +14,10 @@ import (
 
 func createRole(db repository.AASDatabase, service, name, context string) (*types.Role, error) {
 
-	role, err := db.RoleRepository().Retrieve(types.Role{RoleInfo: types.RoleInfo{Name: name, Service: service, Context: context}})
+	role, err := db.RoleRepository().Retrieve(types.Role{RoleInfo: ct.RoleInfo{Name: name, Service: service, Context: context}})
 	if err != nil {
 		uuid, _ := repository.UUID()
-		role, err = db.RoleRepository().Create(types.Role{ID: uuid, RoleInfo: types.RoleInfo{Name: name, Service: service, Context: context}})
+		role, err = db.RoleRepository().Create(types.Role{ID: uuid, RoleInfo: ct.RoleInfo{Name: name, Service: service, Context: context}})
 	}
 	return role, err
 }
@@ -44,7 +45,7 @@ func addDBUser(db repository.AASDatabase, username string, password string, role
 	} else {
 		uuid, _ = repository.UUID()
 	}
-	err = db.UserRepository().Update(types.User{ID: uuid, Name: username, PasswordHash: hash, Roles: roles})
+	err = db.UserRepository().Update(types.User{ID: uuid, Name: username, PasswordHash: hash, PasswordCost: bcrypt.DefaultCost, Roles: roles})
 	if err != nil {
 		log.WithError(err).Error("failed to create or update register host user in db")
 		return err

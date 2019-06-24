@@ -15,37 +15,38 @@ import (
 	_ "github.com/gorilla/context"
 	"github.com/gorilla/handlers"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/gorilla/mux"
 )
 
-func SetRoles(r *mux.Router, db repository.AASDatabase) {
-	r.Handle("/roles", handlers.ContentTypeHandler(createRole(db), "application/json")).Methods("POST")
-	r.Handle("/roles", queryRoles(db)).Methods("GET")
-	r.Handle("/roles/{id}", deleteRole(db)).Methods("DELETE")
-	r.Handle("/roles/{id}", getRole(db)).Methods("GET")
-	r.Handle("/roles/{id}", handlers.ContentTypeHandler(updateRole(db), "application/json")).Methods("PATCH")
+func SetUsers(r *mux.Router, db repository.AASDatabase) {
+	r.Handle("/users", handlers.ContentTypeHandler(createUser(db), "application/json")).Methods("POST")
+	r.Handle("/users", queryUsers(db)).Methods("GET")
+	r.Handle("/users/{id}", deleteUser(db)).Methods("DELETE")
+	r.Handle("/users/{id}", getUser(db)).Methods("GET")
+	r.Handle("/users/{id}", handlers.ContentTypeHandler(updateUser(db), "application/json")).Methods("PATCH")
 }
 
-func createRole(db repository.AASDatabase) errorHandlerFunc {
+func createUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
-		var rl types.Role
+		var uc types.UserCreate
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
-		err := dec.Decode(&rl.RoleInfo)
+		err := dec.Decode(&uc)
 		if err != nil {
 			return err
 		}
-		// validate role
-		if rl.Name == "" {
-			return errors.New("rolename is invalid")
+		// validate user
+		if uc.Name == "" {
+			return errors.New("username is invalid")
 		}
 		/*
-			valid_err = validation.ValidateRolename(h.Rolename)
-			if valid_err != nil {
-				return fmt.Errorf("rolename validation fail: %s", valid_err.Error())
-			}
+			 valid_err = validation.ValidateUsername(h.Username)
+			 if valid_err != nil {
+				 return fmt.Errorf("username validation fail: %s", valid_err.Error())
+			 }
 		*/
 
 		// Check query authority
@@ -61,12 +62,17 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 			log.Error("No roles found in token")
 		}
 
-		existingRole, err := db.RoleRepository().Retrieve(types.Role{RoleInfo: ct.RoleInfo{Service: rl.Service, Name: rl.Name, Context: rl.Context}})
-		if existingRole != nil {
-			return &resourceError{Message: "same role exists", StatusCode: http.StatusForbidden}
+		existingUser, err := db.UserRepository().Retrieve(types.User{Name: uc.Name})
+		if existingUser != nil {
+			return &resourceError{Message: "same user exists", StatusCode: http.StatusForbidden}
 		}
 
-		created, err := db.RoleRepository().Create(rl)
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(uc.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+
+		created, err := db.UserRepository().Create(types.User{Name: uc.Name, PasswordHash: passwordHash, PasswordCost: bcrypt.DefaultCost})
 		if err != nil {
 			return err
 		}
@@ -81,7 +87,7 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 	}
 }
 
-func getRole(db repository.AASDatabase) errorHandlerFunc {
+func getUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		id := mux.Vars(r)["id"]
@@ -98,14 +104,14 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 			log.Error("No roles found in token")
 		}
 
-		rl, err := db.RoleRepository().Retrieve(types.Role{ID: id})
+		u, err := db.UserRepository().Retrieve(types.User{ID: id})
 		if err != nil {
-			log.WithError(err).WithField("id", id).Info("failed to retrieve role")
+			log.WithError(err).WithField("id", id).Info("failed to retrieve user")
 			return err
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(rl)
+		err = json.NewEncoder(w).Encode(u)
 		if err != nil {
 			log.WithError(err).Error("failed to encode json response")
 			return err
@@ -114,7 +120,7 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 	}
 }
 
-func deleteRole(db repository.AASDatabase) errorHandlerFunc {
+func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		id := mux.Vars(r)["id"]
 		// Check query authority
@@ -130,15 +136,15 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 			log.Error("No roles found in token")
 		}
 
-		del_rl, err := db.RoleRepository().Retrieve(types.Role{ID: id})
-		if del_rl == nil || err != nil {
-			log.WithError(err).WithField("id", id).Info("attempt to delete invalid role")
-			return &resourceError{Message: "failed to delete: double check input role id",
+		del_usr, err := db.UserRepository().Retrieve(types.User{ID: id})
+		if del_usr == nil || err != nil {
+			log.WithError(err).WithField("id", id).Info("attempt to delete invalid user")
+			return &resourceError{Message: "failed to delete: double check input user id",
 				StatusCode: http.StatusBadRequest}
 		}
 
-		if err := db.RoleRepository().Delete(*del_rl); err != nil {
-			log.WithError(err).WithField("id", id).Info("failed to delete role")
+		if err := db.UserRepository().Delete(*del_usr); err != nil {
+			log.WithError(err).WithField("id", id).Info("failed to delete user")
 			return err
 		}
 
@@ -147,7 +153,7 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 	}
 }
 
-func queryRoles(db repository.AASDatabase) errorHandlerFunc {
+func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		// Check query authority
 		var privilege *ct.RoleSlice
@@ -163,32 +169,26 @@ func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 		}
 
 		// check for query parameters
-		log.WithField("query", r.URL.Query()).Trace("query roles")
-		service := r.URL.Query().Get("service")
-		roleName := r.URL.Query().Get("name")
-		context := r.URL.Query().Get("context")
+		log.WithField("query", r.URL.Query()).Trace("query users")
+		userName := r.URL.Query().Get("name")
 
-		filter := types.Role{
-			RoleInfo: ct.RoleInfo{
-				Service: service,
-				Name:    roleName,
-				Context: context,
-			},
+		filter := types.User{
+			Name: userName,
 		}
 
-		roles, err := db.RoleRepository().RetrieveAll(filter)
+		users, err := db.UserRepository().RetrieveAll(filter)
 		if err != nil {
-			log.WithError(err).WithField("filter", filter).Info("failed to retrieve roles")
+			log.WithError(err).WithField("filter", filter).Info("failed to retrieve users")
 			return err
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(roles)
+		json.NewEncoder(w).Encode(users)
 		return nil
 	}
 }
 
-func updateRole(db repository.AASDatabase) errorHandlerFunc {
+func updateUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return &resourceError{Message: "", StatusCode: http.StatusNotImplemented}
 	}

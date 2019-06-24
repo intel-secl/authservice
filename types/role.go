@@ -4,18 +4,13 @@
  */
 package types
 
-import "time"
-
-type RoleInfo struct {
-	Service string `json:"service,omitempty"`
-	// Name: UpdateHost
-	Name string `json:"name" gorm:"not null"`
-	// 1234-88769876-28768
-	Context string `json:"context,omitempty"`
-}
+import (
+	. "intel/isecl/authservice/libcommon/types"
+	"time"
+)
 
 type Role struct {
-	ID        string    `json:"id" gorm:"primary_key;type:uuid"`
+	ID        string    `json:"role_id,omitempty" gorm:"primary_key;type:uuid"`
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
 

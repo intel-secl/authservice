@@ -57,8 +57,8 @@ func (a *App) TestTokenAuth() error {
 		fmt.Println(err)
 		return err
 	}
-	ur := []ct.UserRole {ct.UserRole{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, ct.UserRole{"TDS","HostUpdater","HostA"}, ct.UserRole{"WLS","Administrator",""}}
-	claims := ct.UserRoles{ur}
+	ur := []ct.RoleInfo {ct.RoleInfo{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, ct.RoleInfo{"TDS","HostUpdater","HostA"}, ct.RoleInfo{"WLS","Administrator",""}}
+	claims := ct.RoleSlice{ur}
 	fmt.Println(claims)
 	jwt, err := factory.Create(&claims,"Vinil's JWT", 0)
 	if err != nil {
@@ -81,7 +81,7 @@ func (a *App) ValidateToken(certPem []byte, jwtString string) error {
 	if err != nil {
 		return err
 	}
-	claims := ct.UserRoles{}
+	claims := ct.RoleSlice{}
 	_, err = v.ValidateTokenAndGetClaims(jwtString, &claims)
 	if err != nil {
 		if noCertErr, ok := err.(*jwtauth.MatchingCertNotFoundError); ok {

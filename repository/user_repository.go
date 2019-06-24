@@ -9,6 +9,7 @@ import "intel/isecl/authservice/types"
 type UserRepository interface {
 	Create(types.User) (*types.User, error)
 	Retrieve(types.User) (*types.User, error)
+	RetrieveAll(user types.User) (types.Users, error)
 	Update(types.User) error
 	Delete(types.User) error
 	GetRoles(types.User) ([]types.Role, error)

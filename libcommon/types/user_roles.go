@@ -4,18 +4,11 @@
  */
 package types
 
-type UserRole struct {
-	// Name: UpdateHost
-	Service string `json:"service,omitempty"`
-	Name    string `json:"name"`
-	Scope   string `json:"scope,omitempty"`
-}
-
-type UserRoles struct {
-	Roles []UserRole `json:"roles"`
+type RoleSlice struct {
+	Roles []RoleInfo `json:"roles"`
 }
 
 type UserCred struct {
-	UserName string `json:"user_name"`
+	UserName string `json:"username"`
 	Password string `json:"password"`
 }
