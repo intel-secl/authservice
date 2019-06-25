@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
+	cmw "intel/isecl/authservice/libcommon/middleware"
 	"intel/isecl/authservice/middleware"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/repository/postgres"
@@ -398,7 +399,7 @@ func (a *App) startServer() error {
 	}(resource.SetJwtToken)
 
 	sr = r.PathPrefix("/aas/test/").Subrouter()
-	sr.Use(middleware.NewTokenAuth())
+	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir))
 	func(setters ...func(*mux.Router)) {
 		for _, setter := range setters {
 			setter(sr)
@@ -406,7 +407,7 @@ func (a *App) startServer() error {
 	}(resource.SetTestJwt)
 
 	sr = r.PathPrefix("/aas/").Subrouter()
-	sr.Use(middleware.NewTokenAuth())
+	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir))
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
 		for _, setter := range setters {
 			setter(sr, aasDB)

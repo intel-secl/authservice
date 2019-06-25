@@ -260,7 +260,7 @@ func SavePemCertWithShortSha1FileName(certPem []byte, dir string) error {
 		return err
 	}
 	// open file with restricted permissions
-	filePath := filepath.Join(dir, sha1Hex[:9])
+	filePath := filepath.Join(dir, sha1Hex[:9]+".pem")
 	certOut, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0)
 	if err != nil {
 		return fmt.Errorf("could not open private key file for writing: %v", err)

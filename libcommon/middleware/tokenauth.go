@@ -12,11 +12,6 @@ import (
 	ct "intel/isecl/authservice/libcommon/types"
 
 	"intel/isecl/authservice/libcommon/context"
-	"intel/isecl/authservice/constants"
-	_"intel/isecl/authservice/repository"
-	_"intel/isecl/authservice/types"
-
-	_ "github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"strings"
@@ -25,9 +20,9 @@ import (
 var jwtVerifier jwtauth.Verifier
 var jwtCertDownloadAttempted bool
 
-func initJwtVerifier() (err error){
+func initJwtVerifier(signingCertsDir, trustedCAsDir string) (err error){
 	
-	certPems, err := cos.GetDirFileContents(constants.TrustedJWTSigningCertsDir, "*.pem" )
+	certPems, err := cos.GetDirFileContents(signingCertsDir, "*.pem" )
 	if err != nil {
 		return err
 	}
@@ -51,7 +46,7 @@ func retrieveAndSaveTrustedJwtSigningCerts() error{
 	return nil
 }
 
-func NewTokenAuth() mux.MiddlewareFunc {
+func NewTokenAuth(signingCertsDir, trustedCAsDir string) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -60,7 +55,7 @@ func NewTokenAuth() mux.MiddlewareFunc {
 		// there is a case when the jwtVerifier is not loaded with the right certificates. 
 		// In this case, we need to reattempt. So lets run this in a loop
 		if jwtVerifier == nil  {
-			if err := initJwtVerifier(); err != nil {
+			if err := initJwtVerifier(signingCertsDir, trustedCAsDir); err != nil {
 				log.WithError(err).Error("not able to initialize jwt verifier.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -95,7 +90,7 @@ func NewTokenAuth() mux.MiddlewareFunc {
 
 					// hopefully, we now have the necesary certificate files in the appropriate directory
 					// re-initialize the verifier to pick up any new certificate.
-					if err = initJwtVerifier(); err != nil {
+					if err = initJwtVerifier(signingCertsDir, trustedCAsDir); err != nil {
 						log.WithError(err).Error("attempt to reinitialize jwt verifier failed")
 						w.WriteHeader(http.StatusInternalServerError)
 						return
