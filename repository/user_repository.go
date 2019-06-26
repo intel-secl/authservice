@@ -12,6 +12,7 @@ type UserRepository interface {
 	RetrieveAll(user types.User) (types.Users, error)
 	Update(types.User) error
 	Delete(types.User) error
-	GetRoles(types.User) ([]types.Role, error)
-	AddRoles(types.User, []types.Role) error
+	GetRoles(types.User, *types.Role, bool) ([]types.Role, error)
+	AddRoles(types.User, types.RoleIDs, bool) error
+	DeleteRole(types.User, string) error
 }

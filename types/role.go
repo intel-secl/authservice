@@ -18,4 +18,8 @@ type Role struct {
 	RoleInfo
 }
 
+type RoleIDs struct {
+	RoleUUIDs []string `json:"role_ids"`
+}
+
 type Roles []Role

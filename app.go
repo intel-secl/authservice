@@ -655,7 +655,7 @@ func (a *App) TestNewDBFunctions() error {
 		log.WithError(err).Error("failed to open database")
 		return err
 	}
-	users, err := db.UserRepository().GetRoles(types.User{Name: "admin"})
+	users, err := db.UserRepository().GetRoles(types.User{Name: "admin"}, nil, true)
 	if err != nil {
 		fmt.Println(err)
 		return err
