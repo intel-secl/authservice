@@ -21,7 +21,7 @@ Based on the privileges of the user, a user(typically an admin) need the ability
 *Update will not be part of Phase 1*
 
 ### Create, Read, Update, Delete Users
-Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles. 
+Based on the privileges of the user, a user(typically an admin) need the ability to create, read, update and delete roles.
 
 *Update will not be part of Phase 1*
 
@@ -31,16 +31,16 @@ A user can be assigned one or more roles. When the user no longer needs the role
 *Update will not be part of Phase 1*
 
 ### Associate a `scope` when assigning a role permission
-When a role is associated with a user, a `scope` may be associated with that user-role mapping. This is to provide relevant context to the application that needs extra infromation in addition to the user role association. An example of this when a certificte request is made to CMS with a CSR, in addition to having the `CMS:CertRequestor` role, there should be some contextual information that indicates which certificates the user may obtain. 
+When a role is associated with a user, a `scope` may be associated with that user-role mapping. This is to provide relevant context to the application that needs extra infromation in addition to the user role association. An example of this when a certificte request is made to CMS with a CSR, in addition to having the `CMS:CertRequestor` role, there should be some contextual information that indicates which certificates the user may obtain.
 
-### Obtain a token 
+### Obtain a token
 A user can obtain a token with credentials (user name as password). The returned token will contain roles and scope. Beofre the token is provided to the user, the following must be completed
-1. The user name and password shall be verified 
-2. Obtain list of roles and scope that is associated with the user. 
+1. The user name and password shall be verified
+2. Obtain list of roles and scope that is associated with the user.
 
 The user can choose to restrict the token by the following attributes - not in scope for Phase 1
     1. service
-    2. Role 
+    2. Role
     3. time (so instance, I only want a token that is valid for 5 mins to carry out a specific task )
 
 
@@ -50,12 +50,12 @@ A user should be able to install the AAS service. As part of the installation pr
   2. Install root certificate of CMS
   3. Request TLS Certificate from CMS, store it and configure https with TLS certificate a
   4. Request JWT signing certificate from CMS, store it - to be used for token signing
-  5. Create an admin user. 
+  5. Create an admin user.
   6. Preload roles in AAS
   7. Preload users in AAS
   8. Preload user-roles in AAS
   9. A daemon is configured to run the AAS service and started
-  
+
 ## API Endpoints
 
 ## Token related
@@ -69,12 +69,12 @@ Retrieve a token with supplied user credentials. Return a map of roles assiociat
 
 ```json
 {
-    "user_name": "user name",
+    "username": "user name",
     "password": "password of user"
 }
 ```
 
-The following fileds are optional and will not be part of Phase 1 implementation 
+The following fileds are optional and will not be part of Phase 1 implementation
 
 ```json
 {
@@ -85,11 +85,11 @@ The following fileds are optional and will not be part of Phase 1 implementation
 }
 ```
 
-These optional fields are used to restrict how long and where the token may be used. 
+These optional fields are used to restrict how long and where the token may be used.
 
 Example Response:
 
-eyJhbGciOiJFUzM4NCIsImtpZCI6IjRmMjM4NTFkOTVmZjc5MGJkODRhNjBkZTAxMjg5NzYzZjVjZmJkMjkiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W3sic2VydmljZSI6IkNNUyIsIm5hbWUiOiJDZXJ0aWZpY2F0ZVJlcXVlc3RlciIsInNjb3BlIjoiQ046YWFzLmlzZWNsLmludGVsLmNvbSJ9LHsic2VydmljZSI6IlREUyIsIm5hbWUiOiJIb3N0VXBkYXRlciIsInNjb3BlIjoiSG9zdEEifSx7InNlcnZpY2UiOiJXTFMiLCJuYW1lIjoiQWRtaW5pc3RyYXRvciJ9XSwiZXhwIjoxNTYwMDYyODk2LCJpYXQiOjE1NTk5NzY0OTYsImlzcyI6IkFBUyBKV1QgU2lnbmluZyIsInN1YiI6IlZpbmlsJ3MgSldUIn0.TD42FmUV4baSOIiDwh0gIbgmIh0AtUcWv3FKegdDOH9QT1ofETOoxp9B1_D0WNbCA52UID0GxYdU5i-hD_hIhnpq-tPPzLXXPBGZbr-DrVWGWLAhiuKORCMwPzBbaD-D
+eyJhbGciOiJFUzM4NCIsImtpZCI6ImZjOGU1Y2UwMmM4NTBlMjc3ZWRmNWEwOTc3NGM2Y2M4ODJlYzg0NmIiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W3sic2VydmljZSI6IkNNUyIsIm5hbWUiOiJDZXJ0aWZpY2F0ZVJlcXVlc3RvciIsImNvbnRleHQiOiJDTj13bHMuaXNlY2wuaW50ZWwuY29tIn0seyJzZXJ2aWNlIjoiVERTIiwibmFtZSI6Ikhvc3RVcGRhdGVyIiwiY29udGV4dCI6Ikhvc3RBIn0seyJzZXJ2aWNlIjoiV0xTIiwibmFtZSI6IkNlcnRpZmljYXRlUmVxdWVzdG9yIiwiY29udGV4dCI6IkNOPXdscy5pc2VjbC5pbnRlbC5jb20ifV0sImV4cCI6MTU2MTY4MDE4NywiaWF0IjoxNTYxNTkzNzg3LCJpc3MiOiJBQVMgSldUIElzc3VlciIsInN1YiI6InZpbmlsIn0.akv_xcSciKs2wR_dRHG-IOU0mdo9S2ATZ2tg0-kr-Ph6W2HS7qk0sVZwUTFQgT6uPY1UhcXo2QYoziSToT-hnZBNnu8a4MI2dXeUSGOISzfw6NIAWlCDbC_TMJfF1IuX
 
 The above token correspond to the following
 
@@ -97,7 +97,7 @@ HEADER:ALGORITHM & TOKEN TYPE
 ```json
 {
   "alg": "ES384",
-  "kid": "4f23851d95ff790bd84a60de01289763f5cfbd29",
+  "kid": "fc8e5ce02c850e277edf5a09774c6cc882ec846b",
   "typ": "JWT"
 }
 ```
@@ -107,23 +107,24 @@ PAYLOAD:DATA
   "roles": [
     {
       "service": "CMS",
-      "name": "CertificateRequester",
-      "scope": "CN:aas.isecl.intel.com"
+      "name": "CertificateRequestor",
+      "context": "CN=wls.isecl.intel.com"
     },
     {
       "service": "TDS",
       "name": "HostUpdater",
-      "scope": "HostA"
+      "context": "HostA"
     },
     {
       "service": "WLS",
-      "name": "Administrator"
+      "name": "CertificateRequestor",
+      "context": "CN=wls.isecl.intel.com"
     }
   ],
-  "exp": 1560062896,
-  "iat": 1559976496,
-  "iss": "AAS JWT Signing",
-  "sub": "Vinil's JWT"
+  "exp": 1561680187,
+  "iat": 1561593787,
+  "iss": "AAS JWT Issuer",
+  "sub": "vinil"
 }
 ```
 VERIFY SIGNATURE
@@ -143,14 +144,15 @@ Create a user in AAS
 
 ```json
 {
-    "id": "user[@domain]",
+    "username": "user[@domain]",
     "password": "password",
 }
 ```
 Example Response:
 ```json
 {
-    "user_id" : "user_uuid"
+    "user_id" : "7c8f2399-e1b3-4e91-8b25-1d7703c91c79",
+    "username": "wls_admin"
 }
 ```
 
@@ -166,17 +168,17 @@ Example Response:
 [
     {
         "user_id": "123e4567-e89b-12d3-a456-426655440000",
-        "user_name": "system_user@wls",
+        "username": "system_user@wls",
     },
     {
         "id": "223e4567-e89b-12d3-a456-426655440000",
-        "user_name": "admin",
+        "username": "admin",
     },
 ]
 ```
 Available Query parameters:
 
-- userName=(user_name)
+- name=(username)
 
 ### GET `/aas/users/{id-uuidv4}`
 
@@ -191,8 +193,8 @@ Example Response:
 
 ```json
 {
-    "id": "223e4567-e89b-12d3-a456-426655440000",
-    "user_name": "admin",
+    "user_id": "223e4567-e89b-12d3-a456-426655440000",
+    "username": "admin",
 },
 ```
 
@@ -207,7 +209,7 @@ Response: success/failure
 deletes user from database with specific user id. Deleting a record using this method is a 2-step process as we need to first obtain the user uuid using the `GET` method.
 
 
-### DELETE `/aas/users?username=myname@intel.com`
+### DELETE `/aas/users?username=myname@intel.com` - Not implemented
 
 - Authorization: `Bearer Token`
 
@@ -215,7 +217,7 @@ Response: success/failure
 
 Not sure if we should have this interface ??
 *Will not be part of Phase 1*
-### POST `/aas/users/{userid}/change_password`
+### POST `/aas/users/{userid}/change_password` - Not implemented
 (not available in intial version)
 
 used to change password for the user if they know the existing password.
@@ -238,21 +240,25 @@ Response : success/ failure
 ## Role Management
 ### POST `/aas/roles`
 
-Create a role in AAS
+Create a role in AAS. In the below, the context is optional. Usage of context depends on the microservice.
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
 
 ```json
 {
-    "service" : "can be used to identify microservice - example TDS|WLS",
-    "name": "role_name",
+    "service": "CMS",
+    "name": "CertificateRequestor",
+    "context": "CN=wls.isecl.intel.com"
 }
 ```
 Example Response:
 ```json
 {
-    "role_id" : "role_uuid"
+    "role_id":"e4faf9b0-606d-4a50-a3b8-bb7fbd1d6e2e",
+    "service":"CMS",
+    "name":"CertificateRequestor",
+    "context":"CN=wls.isecl.intel.com"
 }
 ```
 ### GET `/aas/roles`
@@ -266,23 +272,28 @@ Example Response:
 ```json
 [
     {
-        "role_id": "123e4567-e89b-12d3-a456-426655440000",
-        "role_domain" : "WLS",
-        "name": "Administrator",
-        "role_scope": ""    
+        "role_id": "7faf7c0c-3701-4844-aeb2-df81449fab0a",
+        "service": "AAS",
+        "name": "Administrators"
     },
     {
-        "id": "223e4567-e89b-12d3-a456-426655440000",
-        "role_domain" : "AAS",
-        "name": "RoleManager",
-        "role_scope": "TDS"    
+        "role_id": "e66ffa0e-1ffa-475c-a6fc-c8f12487b6c0",
+        "service": "TDS",
+        "name": "RegisterHosts"
     },
+    {
+        "role_id": "1c17bd44-9797-428d-9eb2-747ea786f461",
+        "service": "CMS",
+        "name": "CertificateRequestor",
+        "context": "CN=wls.isecl.intel.com"
+    }
 ]
 ```
 Available Query parameters:
 
-- roleDomain=(role_domain)
-- roleName=(role_name)
+- service=(service name - only get roles where for this queried service)
+- name=(role name)
+- context=(only looking for roles matching certain context)
 
 ### GET `/aas/roles/{id-uuidv4}`
 
@@ -294,14 +305,13 @@ Retrieve information regarding a specific role
 - `GET /aas/roles/123e4567-e89b-12d3-a456-426655440000`
 
 Example Response:
-
 ```json
-{
-    "role_id": "123e4567-e89b-12d3-a456-426655440000",
-    "role_domain" : "WLS",
-    "name" : "Administrators",
-    "role_scope": "",
-}
+    {
+        "role_id": "1c17bd44-9797-428d-9eb2-747ea786f461",
+        "service": "CMS",
+        "name": "CertificateRequestor",
+        "context": "CN=wls.isecl.intel.com"
+    }
 ```
 
 ### DELETE `/aas/roles/{id}`
@@ -313,34 +323,45 @@ DELETE a role in AAS
 ## User Role Management
 ### POST /api/users/{userid}/roles
 
-Assign a role to the user
+Assign a role to the user. User roles association is only allowed using ids. You have to call `GET /aas/roles` to determine th ids
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
 
 ```json
-{
-    [
-
-        {
-            "role_id": "role_uuid",
-            "scope": "scope text",
-        }
-
-    ]
-}
+    {
+        "role_ids": ["uuid_1", "uuid_2", "uuid_3"]
+    }
 ```
+You can assign a single role by having a single uuid in the array as below
+```json
+    {
+        "role_ids": ["uuid_1"]
+    }
+```
+
+### DELETE /api/users/{userid}/roles/{role_id}
+
+Delete a role association with the user. Right now, there are no bulk operation to delete multiple role associations
+
+- Authorization: `Bearer Token`
+- Content-Type: `application/json`
+
 
 ## Database Schema
 
 ### roles
 |   Column   |           Type           | Collation | Nullable |
 |------------|--------------------------|-----------|----------|
-| id         | uuid                     |           | not null |
-| created_at | timestamp with time zone |           |          |
-| updated_at | timestamp with time zone |           |          |
-| service     | text                     |           |          |
-| name       | text                     |           | not null |
+ id         | uuid                     |           | not null |
+ created_at | timestamp with time zone |           |          |
+ updated_at | timestamp with time zone |           |          |
+ service    | text                     |           |          |
+ name       | text                     |           | not null |
+ context    | text                     |           |          |
+Indexes:
+    "roles_pkey" PRIMARY KEY, btree (id)
+
 
 Indexes:
     "roles_pkey" PRIMARY KEY, btree (id)
@@ -348,14 +369,17 @@ Indexes:
 ### users
 |   Column   |           Type           | Collation | Nullable |
 |------------|--------------------------|-----------|----------|
-| id            | uuid                     |           | not null |
-| created_at    | timestamp with time zone |           |          |
-| updated_at    | timestamp with time zone |           |          |
-| deleted_at    | timestamp with time zone |           |          |
-| name          | text                     |           |          |
-| password_hash | byte                    |           |          |
-| password_salt | byte                    |           |          |
-| password_cost | int                    |           |          |
+ id            | uuid                     |           | not null |
+ created_at    | timestamp with time zone |           |          |
+ updated_at    | timestamp with time zone |           |          |
+ deleted_at    | timestamp with time zone |           |          |
+ name          | text                     |           |          |
+ password_hash | bytea                    |           |          |
+ password_salt | bytea                    |           |          |
+ password_cost | integer                  |           |          |
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+
 
 
 Indexes:
@@ -364,10 +388,10 @@ Indexes:
 ### user_roles
 |   Column   |           Type           | Collation | Nullable |
 |------------|--------------------------|-----------|----------|
-| user_id  | uuid |           | not null |
-| role_id  | uuid |           | not null |
-| scope | text |           |  |
-
+ user_id | uuid |           | not null |
+ role_id | uuid |           | not null |
+Indexes:
+    "user_roles_pkey" PRIMARY KEY, btree (user_id, role_id)
 
 
 
@@ -406,7 +430,7 @@ All necessary setup options should be readable from environment variables, so th
 
 Currently, there are no requirements for  `AAS` for clients to present certificates. Authentication to clients uses basic authentication.
 
-`AAS` server certificate shall be stored in a the following location `/etc/authservice/cert.pem`. During AAS installation time, the AAS has to request a certificate from the CMS. In order to do this, the installation needs a token that is signed by CMS that has privileges to request an AAS TLS certificate. 
+`AAS` server certificate shall be stored in a the following location `/etc/authservice/cert.pem`. During AAS installation time, the AAS has to request a certificate from the CMS. In order to do this, the installation needs a token that is signed by CMS that has privileges to request an AAS TLS certificate.
 
 # AAS Features
 ## Authentication and Authorization
@@ -422,7 +446,8 @@ The authenticaiton defender is a designed to thwart disctionary based attacks by
 Available setup tasks:
 - database
 - admin
-- server
+- jwt
+- cms
 - tls
 - all
 
@@ -433,8 +458,6 @@ Available setup tasks:
 ```
 Environment variables `AAS_DB_HOSTNAME`, `AAS_DB_PORT`, `AAS_DB_USERNAME`, `AAS_DB_PASSWORD`, `AAS_DB_NAME` can be used instead of command line flags
 
-##### Database Rotation
-Before running this setup, environment variables `AAS_DB_REPORT_MAX_ROWS` and `AAS_DB_REPORT_NUM_ROTATIONS` can be set for configuring database rotation. It will use default values, `AAS_DB_REPORT_MAX_ROWS=100000` and `AAS_DB_REPORT_NUM_ROTATIONS=10` as default value if they are not present while the command is running.
 
 ##### SSL/ TLS Connection to database
 Communication with database shall by default be over a secure channel even if the database is on the same server as `AAS`. There are several parameters that may be used for this. The following provides an explanation of how this may be used
