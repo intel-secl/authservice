@@ -255,6 +255,7 @@ func GetPKCS8PrivKeyDerFromFile(filePath string) ([]byte, error) {
 }
 
 func SavePemCertWithShortSha1FileName(certPem []byte, dir string) error {
+
 	sha1Hex, err := GetCertHashFromPemInHex(certPem, crypto.SHA1)
 	if err != nil {
 		return err
@@ -268,9 +269,6 @@ func SavePemCertWithShortSha1FileName(certPem []byte, dir string) error {
 	// private key should not be world readable
 	os.Chmod(filePath, 0640)
 	defer certOut.Close()
-	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certPem}); err != nil {
-		return fmt.Errorf("could not pem encode the private key: %v", err)
-	}
-
+	certOut.Write(certPem)
 	return nil
 }

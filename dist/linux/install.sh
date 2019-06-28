@@ -4,36 +4,22 @@
 echo PWD IS $(pwd)
 if [ -f ~/authservice.env ]; then 
     echo Reading Installation options from `realpath ~/authservice.env`
-    source ~/authservice.env
+    env_file=~/authservice.env
 elif [ -f ../authservice.env ]; then
     echo Reading Installation options from `realpath ../authservice.env`
-    source ../authservice.env
+    env_file=../authservice.env
+fi
+
+if [ -n $env_file ]; then
+    source $env_file
+    env_file_exports=$(cat $env_file | grep -E '^[A-Z0-9_]+\s*=' | cut -d = -f 1)
+    if [ -n "$env_file_exports" ]; then eval export $env_file_exports; fi
 else
     echo No .env file found
     AAS_NOSETUP="true"
 fi
 
-# Export all known variables
-export AAS_DB_HOSTNAME
-export AAS_DB_PORT
-export AAS_DB_USERNAME
-export AAS_DB_PASSWORD
-export AAS_DB_NAME
-export AAS_DB_SSLMODE
-export AAS_DB_SSLCERT
-export AAS_DB_SSLCERTSRC
-export AAS_DB_REPORT_MAX_ROWS
-export AAS_DB_REPORT_NUM_ROTATIONS
-
-export AAS_PORT
-
-export AAS_ADMIN_USERNAME
-export AAS_ADMIN_PASSWORD
-
-export AAS_REG_HOST_USERNAME
-export AAS_REG_HOST_PASSWORD
-
-export AAS_TLS_HOSTS
+SERVICE_USERNAME=aas
 
 if [[ $EUID -ne 0 ]]; then 
     echo "This installer must be run as root"
@@ -41,9 +27,10 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 echo "Setting up Auth Service Linux User..."
-id -u aas 2> /dev/null || useradd aas
+id -u $SERVICE_USERNAME 2> /dev/null || useradd $SERVICE_USERNAME
 
 echo "Installing Auth Service..."
+
 
 COMPONENT_NAME=authservice
 PRODUCT_HOME=/opt/$COMPONENT_NAME
@@ -51,27 +38,36 @@ BIN_PATH=$PRODUCT_HOME/bin
 DB_SCRIPT_PATH=$PRODUCT_HOME/dbscripts
 LOG_PATH=/var/log/$COMPONENT_NAME/
 CONFIG_PATH=/etc/$COMPONENT_NAME/
+CERTS_PATH=$CONFIG_PATH/certs
+CERTDIR_TOKENSIGN=$CERTS_PATH/tokensign
+CERTDIR_TRUSTEDJWTCERTS=$CERTS_PATH/trustedjwt
+CERTDIR_TRUSTEDJWTCAS=$CERTS_PATH/trustedca
 
-mkdir -p $BIN_PATH && chown aas:aas $BIN_PATH/
-cp $COMPONENT_NAME $BIN_PATH/ && chown aas:aas $BIN_PATH/*
-chmod 750 $BIN_PATH/*
+for directory in $BIN_PATH $DB_SCRIPT_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $CERTDIR_TOKENSIGN $CERTDIR_TRUSTEDJWTCERTS $CERTDIR_TRUSTEDJWTCAS; do
+  # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
+  mkdir -p $directory
+  if [ $? -ne 0 ]; then
+    echo_failure "Cannot create directory: $directory"
+    exit 1
+  fi
+  chown -R $SERVICE_USERNAME:$SERVICE_USERNAME $directory
+  chmod 700 $directory
+  chmod g+s $directory
+
+done
+
+
+cp $COMPONENT_NAME $BIN_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $BIN_PATH/*
+chmod 700 $BIN_PATH/*
 ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
 
-mkdir -p $DB_SCRIPT_PATH && chown aas:aas $DB_SCRIPT_PATH/
-cp db_rotation.sql $DB_SCRIPT_PATH/ && chown aas:aas $DB_SCRIPT_PATH/*
+cp db_rotation.sql $DB_SCRIPT_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $DB_SCRIPT_PATH/*
 
-# Create configuration directory in /etc
-mkdir -p $CONFIG_PATH && chown aas:aas $CONFIG_PATH
-chmod 700 $CONFIG_PATH
-chmod g+s $CONFIG_PATH
-
-# Create logging dir in /var/log
-mkdir -p $LOG_PATH && chown aas:aas $LOG_PATH
+# make log files world readable
 chmod 661 $LOG_PATH
-chmod g+s $LOG_PATH
 
 # Install systemd script
-cp authservice.service $PRODUCT_HOME && chown aas:aas $PRODUCT_HOME/authservice.service && chown aas:aas $PRODUCT_HOME
+cp authservice.service $PRODUCT_HOME && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME/authservice.service && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME
 
 # Enable systemd service
 systemctl disable authservice.service > /dev/null 2>&1

@@ -268,12 +268,14 @@ func (a *App) Run(args []string) error {
 			a.printUsage()
 			os.Exit(1)
 		}
+
 		if args[2] != "admin" &&
 			args[2] != "database" &&
 			args[2] != "server" &&
 			args[2] != "all" &&
 			args[2] != "tls" &&
-			args[2] != "reghost" {
+			args[2] != "reghost" &&
+			args[2] != "jwt" {
 			a.printUsage()
 			return errors.New("No such setup task")
 		}
@@ -329,6 +331,11 @@ func (a *App) Run(args []string) error {
 						p.Migrate()
 						return p, nil
 					},
+					ConsoleWriter: os.Stdout,
+				},
+				tasks.JWT{
+					Flags:         flags,
+					Config:        a.configuration(),
 					ConsoleWriter: os.Stdout,
 				},
 			},
@@ -642,6 +649,9 @@ func validateSetupArgs(cmd string, args []string) error {
 		if len(args) != 0 {
 			return errors.New("Please setup the arguments with env")
 		}
+
+	case "jwt":
+		return nil
 	}
 
 	return nil
