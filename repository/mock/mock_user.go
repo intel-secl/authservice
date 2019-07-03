@@ -51,14 +51,14 @@ func (m *MockUserRepository) Delete(user types.User) error {
 	return nil
 }
 
-func (m *MockUserRepository) GetRoles(user types.User, role *types.Role, includeID bool) ([]types.Role, error) {
+func (m *MockUserRepository) GetRoles(user types.User, role *types.Role, svcFltr []string, includeID bool) ([]types.Role, error) {
 	return nil, nil
 }
 
-func (m *MockUserRepository) AddRoles(u types.User, roleList types.RoleIDs, mustAddAllRoles bool) error {
+func (m *MockUserRepository) AddRoles(u types.User, roleList types.Roles, mustAddAllRoles bool) error {
 	return nil
 }
 
-func (m *MockUserRepository) DeleteRole(u types.User, roleID string) error {
+func (m *MockUserRepository) DeleteRole(u types.User, roleID string, svcFltr []string) error {
 	return nil
 }

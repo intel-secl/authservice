@@ -39,7 +39,7 @@ func NewBasicAuth(u repository.UserRepository) mux.MiddlewareFunc {
 				return
 			}
 
-			roles, err := u.GetRoles(types.User{Name: username}, nil, false)
+			roles, err := u.GetRoles(types.User{Name: username}, nil, []string{}, false)
 			if err != nil {
 				log.WithError(err).Error("Database error: unable to retrive roles")
 				w.WriteHeader(http.StatusInternalServerError)

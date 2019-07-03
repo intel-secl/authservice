@@ -6,6 +6,11 @@ package resource
 
 import (
 	"fmt"
+	consts "intel/isecl/authservice/constants"
+	comctx "intel/isecl/authservice/libcommon/context"
+
+	"intel/isecl/authservice/libcommon/auth"
+	ct "intel/isecl/authservice/libcommon/types"
 	"net/http"
 
 	"github.com/jinzhu/gorm"
@@ -52,4 +57,41 @@ type resourceError struct {
 
 func (e resourceError) Error() string {
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
+}
+
+func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, retNilCtxForEmptyCtx bool) (*map[string]*ct.RoleInfo, error) {
+	// Check query authority
+	privileges, err := comctx.GetUserRoles(r)
+	if err != nil {
+		log.WithError(err).Error("could not get user roles from http context")
+		return nil,
+			&resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
+	}
+
+	// this function check if the user requesting to perform operation has the right roles.
+	reqRoles := make([]ct.RoleInfo, len(roleNames))
+	for i, role := range roleNames {
+		reqRoles[i] = ct.RoleInfo{Service: consts.ServiceName, Name: role}
+	}
+
+	ctxMap, foundRole := auth.ValidatePermissionAndGetRoleContext(privileges, reqRoles, retNilCtxForEmptyCtx)
+	if !foundRole {
+		return nil, &privilegeError{Message: "", StatusCode: http.StatusUnauthorized}
+	}
+
+	return ctxMap, nil
+}
+
+func AuthorizeEndPointAndGetServiceFilter(r *http.Request, roleNames []string) ([]string, error) {
+	ctxMap, err := AuthorizeEndpoint(r, roleNames, true, true)
+	if err != nil {
+		return nil, err
+	}
+	svcFltr := []string{}
+	if ctxMap != nil {
+		for _, val := range *ctxMap {
+			svcFltr = append(svcFltr, val.Context)
+		}
+	}
+	return svcFltr, nil
 }

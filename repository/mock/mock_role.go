@@ -11,7 +11,7 @@ import (
 type MockRoleRepository struct {
 	CreateFunc      func(types.Role) (*types.Role, error)
 	RetrieveFunc    func(types.Role) (*types.Role, error)
-	RetrieveAllFunc func(types.Role) (types.Roles, error)
+	RetrieveAllFunc func(types.Role, []string, []string) (types.Roles, error)
 	UpdateFunc      func(types.Role) error
 	DeleteFunc      func(types.Role) error
 }
@@ -30,9 +30,9 @@ func (m *MockRoleRepository) Retrieve(role types.Role) (*types.Role, error) {
 	return nil, nil
 }
 
-func (m *MockRoleRepository) RetrieveAll(role types.Role) (types.Roles, error) {
+func (m *MockRoleRepository) RetrieveAll(role types.Role, idFilter []string, svcFilter []string) (types.Roles, error) {
 	if m.RetrieveAllFunc != nil {
-		return m.RetrieveAllFunc(role)
+		return m.RetrieveAllFunc(role, idFilter, svcFilter)
 	}
 	return nil, nil
 }

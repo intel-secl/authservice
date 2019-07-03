@@ -47,6 +47,14 @@ const (
 
 	// privileges granted: GET_HOST, POST_REPORT
 	HostSelfUpdateGroupName = "HostSelfUpdate"
+
+	RoleAndUserManagerGroupName = "RoleAndUserManager"
+
+	RoleManagerGroupName = "RoleManager"
+
+	UserManagerGroupName = "UserManager"
+
+	UserRoleManagerGroupName = "UserRoleManager"
 )
 
 // State represents whether or not a daemon is running or not
@@ -58,3 +66,7 @@ const (
 	// Running means the daemon is active
 	Running State = true
 )
+
+func GetDefaultAdministratorRoles() []string {
+	return []string{"RoleManager", "UserManager", "UserRoleManager"}
+}

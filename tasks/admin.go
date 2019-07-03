@@ -40,11 +40,17 @@ func (a Admin) Run(c setup.Context) error {
 	}
 	defer db.Close()
 
-	adminRole, err := createRole(db, consts.ServiceName, consts.AdminGroupName, "")
-	if err != nil {
-		return err
+	var adminRoles types.Roles
+
+	for _, roleName := range consts.GetDefaultAdministratorRoles() {
+		role, err := createRole(db, consts.ServiceName, roleName, "")
+		if err != nil {
+			return fmt.Errorf("could not create role in database - error %v", err)
+		}
+		adminRoles = append(adminRoles, *role)
 	}
-	err = addDBUser(db, *username, *password, []types.Role{*adminRole})
+
+	err = addDBUser(db, *username, *password, adminRoles)
 	if err != nil {
 		return err
 	}

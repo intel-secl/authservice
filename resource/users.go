@@ -7,7 +7,7 @@ package resource
 import (
 	"encoding/json"
 	"errors"
-	"intel/isecl/authservice/libcommon/context"
+	consts "intel/isecl/authservice/constants"
 	ct "intel/isecl/authservice/libcommon/types"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
@@ -52,18 +52,10 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 				 return fmt.Errorf("username validation fail: %s", valid_err.Error())
 			 }
 		*/
-
-		// Check query authority
-		var privilege *ct.RoleSlice
-		if rv := r.Context().Value("userroles"); rv != nil {
-			if rl, ok := rv.(*ct.RoleSlice); ok {
-				privilege = rl
-			}
-		}
-
-		// TODO: check for the right roles and change following check
-		if privilege == nil {
-			log.Error("No roles found in token")
+		// authorize rest api endpoint based on token
+		_, err = AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		if err != nil {
+			return err
 		}
 
 		existingUser, err := db.UserRepository().Retrieve(types.User{Name: uc.Name})
@@ -95,17 +87,10 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		id := mux.Vars(r)["id"]
-		// Check query authority
-		var privilege *ct.RoleSlice
-		if rv := r.Context().Value("userroles"); rv != nil {
-			if rl, ok := rv.(*ct.RoleSlice); ok {
-				privilege = rl
-			}
-		}
-
-		// TODO: check for the right roles and change following check
-		if privilege == nil {
-			log.Error("No roles found in token")
+		// authorize rest api endpoint based on token
+		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		if err != nil {
+			return err
 		}
 
 		u, err := db.UserRepository().Retrieve(types.User{ID: id})
@@ -127,17 +112,11 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		id := mux.Vars(r)["id"]
-		// Check query authority
-		var privilege *ct.RoleSlice
-		if rv := r.Context().Value("userroles"); rv != nil {
-			if rl, ok := rv.(*ct.RoleSlice); ok {
-				privilege = rl
-			}
-		}
 
-		// TODO: check for the right roles and change following check
-		if privilege == nil {
-			log.Error("No roles found in token")
+		// authorize rest api endpoint based on token
+		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		if err != nil {
+			return err
 		}
 
 		del_usr, err := db.UserRepository().Retrieve(types.User{ID: id})
@@ -159,17 +138,11 @@ func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 
 func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		// Check query authority
-		var privilege *ct.RoleSlice
-		if rv := r.Context().Value("userroles"); rv != nil {
-			if rl, ok := rv.(*ct.RoleSlice); ok {
-				privilege = rl
-			}
-		}
 
-		// TODO: check for the right roles and change following check
-		if privilege == nil {
-			log.Error("No roles found in token")
+		// authorize rest api endpoint based on token
+		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		if err != nil {
+			return err
 		}
 
 		// check for query parameters
@@ -217,14 +190,25 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 
 		// validation.ValidateUUIDslice(rids.RoleUUIDs)
 
-		roles, err := context.GetUserRoles(r)
+		// authorize rest api endpoint based on token
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
-			log.WithError(err).Error("could not get user roles from http context")
-			return &resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
+			return err
 		}
 
-		// TODO: check for the right roles before proceeding - remove following line
-		log.Errorf("not checking user authorization - roles available %v", roles)
+		// we need to retrieve roles to add by their ids. So we pass in empty filter for role
+		// We restrict roles by the privilege use the filter by id
+		roles, err := db.RoleRepository().RetrieveAll(types.Role{}, rids.RoleUUIDs, svcFltr)
+		if err != nil {
+			log.WithError(err).Info("failed to retrieve roles")
+			return err
+		}
+
+		if len(roles) == 0 {
+			log.Errorf("could not find matching role or user does not have authorization - requested roles - %s", rids.RoleUUIDs)
+			return &resourceError{Message: "",
+				StatusCode: http.StatusUnauthorized}
+		}
 
 		u, err := db.UserRepository().Retrieve(types.User{ID: id})
 		if err != nil {
@@ -232,7 +216,7 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 			return err
 		}
 
-		err = db.UserRepository().AddRoles(*u, rids, true)
+		err = db.UserRepository().AddRoles(*u, roles, true)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
@@ -249,15 +233,11 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		var roleFilter *types.Role
 		//todo: validate id and role_id in uuid format
 
-		// get the roles from request context
-		roles, err := context.GetUserRoles(r)
+		// authorize rest api endpoint based on token
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
-			log.WithError(err).Error("could not get user roles from http context")
-			return &resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
+			return err
 		}
-
-		// TODO: check for the right roles before proceeding - remove following line
-		log.Errorf("not checking user authorization - roles available %v", roles)
 
 		// check for query parameters
 		log.WithField("query", r.URL.Query()).Trace("query users")
@@ -269,7 +249,7 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 			roleFilter = &types.Role{RoleInfo: ct.RoleInfo{Service: service, Name: roleName, Context: context}}
 		}
 
-		userRoles, err := db.UserRepository().GetRoles(types.User{ID: id}, roleFilter, true)
+		userRoles, err := db.UserRepository().GetRoles(types.User{ID: id}, roleFilter, svcFltr, true)
 		if err != nil {
 			log.WithError(err).Error("failed to retrieve user roles")
 			return err
@@ -289,15 +269,11 @@ func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 
 		//todo: validate id and role_id in uuid format
 
-		// get the roles from request context
-		roles, err := context.GetUserRoles(r)
+		// authorize rest api endpoint based on token
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
-			log.WithError(err).Error("could not get user roles from http context")
-			return &resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
+			return err
 		}
-
-		// TODO: check for the right roles before proceeding - remove following line
-		log.Errorf("not checking user authorization - roles available %v", roles)
 
 		u, err := db.UserRepository().Retrieve(types.User{ID: id})
 		if err != nil {
@@ -305,7 +281,7 @@ func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 			return err
 		}
 
-		err = db.UserRepository().DeleteRole(*u, rid)
+		err = db.UserRepository().DeleteRole(*u, rid, svcFltr)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}

@@ -9,7 +9,7 @@ import (
 )
 
 func GetDirFileContents(dir, pattern string) ([][]byte, error) {
-	dirContents := make([][]byte, 0, 2)
+	dirContents := make([][]byte, 0)
 	//if we are passed in an empty pattern, set pattern to * to match all files
 	if pattern == "" {
 		pattern = "*"

@@ -30,15 +30,22 @@ func (r *PostgresRoleRepository) Create(role types.Role) (*types.Role, error) {
 
 func (r *PostgresRoleRepository) Retrieve(role types.Role) (*types.Role, error) {
 	err := r.db.Where(&role).First(&role).Error
-	if err!=nil{
-        return nil, err
+	if err != nil {
+		return nil, err
 	}
-	return &role,nil
+	return &role, nil
 }
 
-func (r *PostgresRoleRepository) RetrieveAll(role types.Role) (types.Roles, error) {
+func (r *PostgresRoleRepository) RetrieveAll(role types.Role, idFilter []string, serviceFilter []string) (types.Roles, error) {
 	var roles types.Roles
-	err := r.db.Where(&role).Find(&roles).Error
+	tx := r.db.Where(&role)
+	if len(idFilter) > 0 {
+		tx = tx.Where("id in (?) ", idFilter)
+	}
+	if len(serviceFilter) > 0 {
+		tx = tx.Where("service in (?) ", serviceFilter)
+	}
+	err := tx.Find(&roles).Error
 
 	log.WithField("db hosts", roles).Trace("RetrieveAll")
 	return roles, err

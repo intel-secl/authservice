@@ -60,7 +60,7 @@ func (r *PostgresUserRepository) Delete(u types.User) error {
 	return r.db.Delete(&u).Error
 }
 
-func (r *PostgresUserRepository) GetRoles(u types.User, roleFilter *types.Role, includeID bool) (userRoles []types.Role, err error) {
+func (r *PostgresUserRepository) GetRoles(u types.User, roleFilter *types.Role, svcFltr []string, includeID bool) (userRoles []types.Role, err error) {
 	var cols string
 	if includeID {
 		cols = "roles.id, "
@@ -69,6 +69,9 @@ func (r *PostgresUserRepository) GetRoles(u types.User, roleFilter *types.Role, 
 	cols = cols + "roles.service, roles.name, roles.context"
 	tx := r.db.Select(cols).Joins("INNER JOIN user_roles on user_roles.role_id = roles.id INNER JOIN users on user_roles.user_id = users.id").Where(&u)
 
+	if len(svcFltr) > 0 {
+		tx = tx.Where("service in (?) ", svcFltr)
+	}
 	if roleFilter != nil {
 		tx = tx.Where(roleFilter)
 	}
@@ -78,39 +81,26 @@ func (r *PostgresUserRepository) GetRoles(u types.User, roleFilter *types.Role, 
 	return userRoles, err
 }
 
-func (r *PostgresUserRepository) AddRoles(u types.User, roleList types.RoleIDs, mustAddAllRoles bool) error {
+func (r *PostgresUserRepository) AddRoles(u types.User, roles types.Roles, mustAddAllRoles bool) error {
 
-	var roles types.Roles
-	fmt.Println("Inside pg_user add role fn")
-	// lets sanitize the list with roles that already exists in the database.
-	err := r.db.Where("id IN (?)", roleList.RoleUUIDs).Find(&roles).Error
-	if err != nil {
-		return err
-	}
-
-	// if the list of roles retrieved does not match the requested roles, we will return an error for now
-	// TODO: we should be able to gracefully handle the scenario and add only the roles that was found in
-	// the database and return an appropriate error object that the client can make a decision on. We might
-	//
-	if mustAddAllRoles && len(roleList.RoleUUIDs) != len(roles) {
-		log.Errorf("number of retrieved roles : %d, requested roles %v", len(roleList.RoleUUIDs), roleList.RoleUUIDs)
-		log.Infof("roles found in db: %v", roles)
-		return fmt.Errorf("mismatch between requested number of roles to be added and roles found in db")
-	}
 	fmt.Println("Inside pg_user about to append role")
-	if err = r.db.Model(&u).Association("Roles").Append(roles).Error; err != nil {
+	if err := r.db.Model(&u).Association("Roles").Append(roles).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *PostgresUserRepository) DeleteRole(u types.User, roleID string) error {
+func (r *PostgresUserRepository) DeleteRole(u types.User, roleID string, svcFltr []string) error {
 
 	var role types.Role
+	tx := r.db.Where("id IN (?) ", roleID)
+	if len(svcFltr) > 0 {
+		tx = tx.Where("service in (?) ", svcFltr)
+	}
 
 	// lets sanitize the list with roles that already exists in the database.
-	err := r.db.Where("id IN (?) ", roleID).Find(&role).Error
+	err := tx.Find(&role).Error
 	if err != nil {
 		return fmt.Errorf("could not find role id:%s in database", roleID)
 	}
