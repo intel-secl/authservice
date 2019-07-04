@@ -11,6 +11,27 @@ import (
 	"os"
 )
 
+func (a* App) GenerateCertRequest() error {
+	fmt.Println("Inside the TestTokenAuth Function")
+
+	//certReq, privKeyDer, err := CreateKeyPairAndCertificateRequest("AAS JWT Signing", "", "ecdsa", 0)
+	cert, privKeyDer, err := crypt.CreateKeyPairAndCertificateRequest("AAS JWT Signing", "", "", 0)
+	if err != nil {
+		return err
+	}
+
+
+	if err := pem.Encode(os.Stdout, &pem.Block{Type: "PKCS8 PRIVATE KEY", Bytes: privKeyDer}); err != nil {
+		return fmt.Errorf("could not pem encode the private key: %v", err)
+	}
+
+
+	if err := pem.Encode(os.Stdout, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: cert}); err != nil {
+		return fmt.Errorf("could not pem encode certificate request: %v", err)
+	}
+	return nil
+
+}
 
 
 func (a *App) TestTokenAuth() error {
@@ -77,7 +98,7 @@ func (a *App) TestTokenAuth() error {
 
 
 func (a *App) ValidateToken(certPem []byte, jwtString string) error {
-	v, err := jwtauth.NewVerifier(certPem)
+	v, err := jwtauth.NewVerifier(certPem, [][]byte{})
 	if err != nil {
 		return err
 	}

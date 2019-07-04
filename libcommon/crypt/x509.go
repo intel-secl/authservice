@@ -108,7 +108,7 @@ func CreateKeyPairAndCertificateRequest(subject, hostList, keyType string, keyLe
 		}
 	}
 
-	certReq, err = x509.CreateCertificateRequest(rand.Reader, &template, pubKey)
+	certReq, err = x509.CreateCertificateRequest(rand.Reader, &template, privKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Could not create certificate request. error : %s", err)
 	}
@@ -173,13 +173,9 @@ func CreateKeyPairAndCertificate(subject, hostList, keyType string, keyLength in
 	return cert, pkcs8Der, nil
 }
 
-// GetPublicKeyFromCertPem retrieve the public key from a certificate pem block
+// GetPublicKeyFromCert retrieve the public key from a certificate
 // We only support ECDSA and RSA public key
-func GetPublicKeyFromCertPem(certPem []byte) (crypto.PublicKey, error) {
-	cert, err := GetCertFromPem(certPem)
-	if err != nil {
-		return "", err
-	}
+func GetPublicKeyFromCert(cert *x509.Certificate) (crypto.PublicKey, error) {
 	switch cert.PublicKeyAlgorithm {
 	case x509.RSA:
 		if key, ok := cert.PublicKey.(*rsa.PublicKey); ok {
@@ -195,6 +191,16 @@ func GetPublicKeyFromCertPem(certPem []byte) (crypto.PublicKey, error) {
 	return nil, fmt.Errorf("only RSA and ECDSA public keys are supported")
 }
 
+// GetPublicKeyFromCertPem retrieve the public key from a certificate pem block
+// We only support ECDSA and RSA public key
+func GetPublicKeyFromCertPem(certPem []byte) (crypto.PublicKey, error) {
+	cert, err := GetCertFromPem(certPem)
+	if err != nil {
+		return "", err
+	}
+	return GetPublicKeyFromCert(cert)
+}
+
 func GetCertFromPem(certPem []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(certPem)
 	if block == nil {
@@ -207,18 +213,23 @@ func GetCertFromPem(certPem []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-// GetCertHashFromPemInHex returns hash of a certificate from a Pem block
-func GetCertHashFromPemInHex(certPem []byte, hashAlg crypto.Hash) (string, error) {
-	cert, err := GetCertFromPem(certPem)
-	if err != nil {
-		return "", err
-	}
+// GetCertHashInHex returns hash of a certificate from a Pem block
+func GetCertHashInHex(cert *x509.Certificate, hashAlg crypto.Hash) (string, error) {
 	hash, err := crypt.GetHashData(cert.Raw, hashAlg)
 	if err != nil {
 		return "", err
 	}
 
 	return hex.EncodeToString(hash), nil
+}
+
+// GetCertHashFromPemInHex returns hash of a certificate from a Pem block
+func GetCertHashFromPemInHex(certPem []byte, hashAlg crypto.Hash) (string, error) {
+	cert, err := GetCertFromPem(certPem)
+	if err != nil {
+		return "", err
+	}
+	return GetCertHashInHex(cert, hashAlg)
 }
 
 func SavePrivateKeyAsPKCS8(keyDer []byte, filePath string) error {

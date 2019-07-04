@@ -222,6 +222,12 @@ func (a *App) Run(args []string) error {
 			return err
 		}
 		return nil
+	case "certreq":
+		if err := a.GenerateCertRequest(); err != nil {
+			fmt.Printf("certificat request error: %v ", err)
+			return err
+		}
+		return nil
 	//TODO : Remove added for debug - used to debug db queries
 	case "testdb":
 		a.TestNewDBFunctions()
@@ -356,6 +362,11 @@ func (a *App) Run(args []string) error {
 	return nil
 }
 
+func (a *App) RetrieveJWTSigningCerts() error {
+	fmt.Println("TODO: implement the function to retrieve JWT signing certificate")
+	return nil
+}
+
 func (a *App) startServer() error {
 	c := a.configuration()
 
@@ -406,7 +417,7 @@ func (a *App) startServer() error {
 	}(resource.SetJwtToken)
 
 	sr = r.PathPrefix("/aas/test/").Subrouter()
-	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir))
+	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.RetrieveJWTSigningCerts))
 	func(setters ...func(*mux.Router)) {
 		for _, setter := range setters {
 			setter(sr)
@@ -414,7 +425,7 @@ func (a *App) startServer() error {
 	}(resource.SetTestJwt)
 
 	sr = r.PathPrefix("/aas/").Subrouter()
-	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir))
+	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.RetrieveJWTSigningCerts))
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
 		for _, setter := range setters {
 			setter(sr, aasDB)

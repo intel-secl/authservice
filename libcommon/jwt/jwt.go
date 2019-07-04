@@ -269,7 +269,7 @@ func (v *verifierPrivate) ValidateTokenAndGetClaims(tokenString string, customCl
 	return &token, nil
 }
 
-func NewVerifier(signingCertPems interface{}) (Verifier, error) {
+func NewVerifier(signingCertPems interface{}, rootCAPems [][]byte) (Verifier, error) {
 
 	var certPemSlice [][]byte
 
@@ -282,18 +282,38 @@ func NewVerifier(signingCertPems interface{}) (Verifier, error) {
 		certPemSlice = [][]byte{signingCertPems.([]byte)}
 
 	}
+	// build the trust root CAs first
+	roots := x509.NewCertPool()
+	for _, rootPEM := range rootCAPems {
+		roots.AppendCertsFromPEM(rootPEM)
+	}
+
+	verifyRootCAOpts := x509.VerifyOptions{
+		Roots: roots,
+	}
+
 	pubKeyMap := make(map[string]crypto.PublicKey)
 	for _, certPem := range certPemSlice {
 		// TODO - we should validate the certificate here as well
 		// we might just want to take the certificate from the pem here itself
 		// then retrieve the public key, hash and also do the verification right
 		// here. Otherwise we are parsing the certificate multiple times.
-
-		certHash, err := crypt.GetCertHashFromPemInHex(certPem, crypto.SHA1)
+		cert, err := crypt.GetCertFromPem(certPem)
 		if err != nil {
 			continue
 		}
-		pubKey, err := crypt.GetPublicKeyFromCertPem(certPem)
+		// if certificate is not self signed, then we have to validate the cert
+		// this implies that we are allowing self signed certificate.
+		if !(cert.IsCA && cert.BasicConstraintsValid) {
+			if _, err := cert.Verify(verifyRootCAOpts); err != nil {
+				continue
+			}
+		}
+		certHash, err := crypt.GetCertHashInHex(cert, crypto.SHA1)
+		if err != nil {
+			continue
+		}
+		pubKey, err := crypt.GetPublicKeyFromCert(cert)
 		if err != nil {
 			continue
 		}

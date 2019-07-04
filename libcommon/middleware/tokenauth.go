@@ -27,7 +27,10 @@ func initJwtVerifier(signingCertsDir, trustedCAsDir string) (err error){
 		return err
 	}
 
-	jwtVerifier, err = jwtauth.NewVerifier(certPems)
+	rootPems, err := cos.GetDirFileContents(trustedCAsDir, "*.pem" )
+	// rootCAs can be empty - so we do not have to check for error. 
+	
+	jwtVerifier, err = jwtauth.NewVerifier(certPems, rootPems)
 	if err != nil {
 		return err
 	}
@@ -45,8 +48,9 @@ func retrieveAndSaveTrustedJwtSigningCerts() error{
 	jwtCertDownloadAttempted = true
 	return nil
 }
+type RetriveJwtCertFn func() error
 
-func NewTokenAuth(signingCertsDir, trustedCAsDir string) mux.MiddlewareFunc {
+func NewTokenAuth(signingCertsDir, trustedCAsDir string, fnGetJwtCerts RetriveJwtCertFn) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -83,10 +87,10 @@ func NewTokenAuth(signingCertsDir, trustedCAsDir string) mux.MiddlewareFunc {
 			// lets check if the failure is because we could not find a public key used to sign the token
 			// We will be able to check this only if there is a kid (key id) field in the JWT header.
 			// check the details of the jwt library implmentation to see how this is done
-			if _, ok := err.(*jwtauth.MatchingCertNotFoundError); ok {
+			if _, ok := err.(*jwtauth.MatchingCertNotFoundError); ok && fnGetJwtCerts != nil {
 				
 				// let us try to load certs from list of URLs with JWT signing certificates that we trust
-				if err = retrieveAndSaveTrustedJwtSigningCerts(); err == nil {
+				if err = fnGetJwtCerts(); err == nil {
 
 					// hopefully, we now have the necesary certificate files in the appropriate directory
 					// re-initialize the verifier to pick up any new certificate.
