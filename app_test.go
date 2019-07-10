@@ -4,6 +4,7 @@
  */
 package main
 
+/*
 import (
 	"os"
 	"testing"
@@ -90,3 +91,4 @@ func TestUninstall(t *testing.T) {
 	assert.Equal(nil, err)
 	assert.False(exist)
 }
+*/
