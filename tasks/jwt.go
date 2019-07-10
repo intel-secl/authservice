@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
-	"intel/isecl/authservice/libcommon/crypt"
+	"intel/isecl/lib/common/crypt"
 	"intel/isecl/lib/common/setup"
 	"io"
 	"os"

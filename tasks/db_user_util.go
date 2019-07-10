@@ -2,7 +2,7 @@ package tasks
 
 import (
 	"errors"
-	ct "intel/isecl/authservice/libcommon/types"
+	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"intel/isecl/lib/common/validation"

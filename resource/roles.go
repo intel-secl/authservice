@@ -9,7 +9,7 @@ import (
 	"errors"
 	"fmt"
 	consts "intel/isecl/authservice/constants"
-	ct "intel/isecl/authservice/libcommon/types"
+	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"net/http"

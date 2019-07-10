@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	consts "intel/isecl/authservice/constants"
-	ct "intel/isecl/authservice/libcommon/types"
+	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"net/http"
@@ -35,7 +35,7 @@ func SetUsers(r *mux.Router, db repository.AASDatabase) {
 func createUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
-		var uc types.UserCreate
+		var uc ct.UserCreate
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
 		err := dec.Decode(&uc)
@@ -178,7 +178,7 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 
 		//todo: validate id in uuid format
 
-		var rids types.RoleIDs
+		var rids ct.RoleIDs
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
 		err := dec.Decode(&rids)

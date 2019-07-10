@@ -7,10 +7,10 @@ package resource
 import (
 	"fmt"
 	consts "intel/isecl/authservice/constants"
-	comctx "intel/isecl/authservice/libcommon/context"
+	comctx "intel/isecl/lib/common/context"
 
-	"intel/isecl/authservice/libcommon/auth"
-	ct "intel/isecl/authservice/libcommon/types"
+	"intel/isecl/lib/common/auth"
+	ct "intel/isecl/lib/common/types/aas"
 	"net/http"
 
 	"github.com/jinzhu/gorm"

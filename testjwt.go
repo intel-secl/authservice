@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/pem"
 	"fmt"
-	"intel/isecl/authservice/libcommon/jwt"
-	"intel/isecl/authservice/libcommon/crypt"
-	cos "intel/isecl/authservice/libcommon/os"
-	ct "intel/isecl/authservice/libcommon/types"
+	"intel/isecl/lib/common/jwt"
+	"intel/isecl/lib/common/crypt"
+	cos "intel/isecl/lib/common/os"
+	ct "intel/isecl/lib/common/types/aas"
 
 	"os"
 )

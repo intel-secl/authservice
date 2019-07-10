@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"time"
-	ct "intel/isecl/authservice/libcommon/types"
-	"intel/isecl/authservice/libcommon/crypt"
-	"intel/isecl/authservice/libcommon/jwt"
+	ct "intel/isecl/lib/common/types/aas"
+	"intel/isecl/lib/common/crypt"
+	"intel/isecl/lib/common/jwt"
 
 	"intel/isecl/authservice/repository"
 	authcommon "intel/isecl/authservice/common"

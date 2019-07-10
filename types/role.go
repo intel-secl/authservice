@@ -5,7 +5,7 @@
 package types
 
 import (
-	. "intel/isecl/authservice/libcommon/types"
+	. "intel/isecl/lib/common/types/aas"
 	"time"
 )
 
@@ -16,10 +16,6 @@ type Role struct {
 
 	//embed
 	RoleInfo
-}
-
-type RoleIDs struct {
-	RoleUUIDs []string `json:"role_ids"`
 }
 
 type Roles []Role

@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
-	cmw "intel/isecl/authservice/libcommon/middleware"
+	cmw "intel/isecl/lib/common/middleware"
 	"intel/isecl/authservice/middleware"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/repository/postgres"

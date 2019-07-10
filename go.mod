@@ -5,7 +5,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/context v1.1.1
 	github.com/gorilla/handlers v1.4.0
-	github.com/gorilla/mux v1.7.0
+	github.com/gorilla/mux v1.7.3
 	github.com/jinzhu/gorm v1.9.2
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
 	github.com/lib/pq v1.0.0 // indirect
@@ -17,4 +17,4 @@ require (
 	intel/isecl/lib/common v1.0.0-Beta
 )
 
-replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v0.0.0-20190509042616-df42b38ec12b
+replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v0.0.0-20190710091817-b24cddc1c4b3

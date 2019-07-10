@@ -6,7 +6,7 @@ package resource
 
 import (
 	"encoding/json"
-	"intel/isecl/authservice/libcommon/context"
+	"intel/isecl/lib/common/context"
 	"net/http"
 
 	"github.com/gorilla/mux"

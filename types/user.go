@@ -15,12 +15,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// UserCreate struct is body of a POST request while creating users
-type UserCreate struct {
-	Name     string `json:"username"`
-	Password string `json:"password"`
-}
-
 // User struct is the database schema of a Users table
 type User struct {
 	ID           string     `json:"user_id" gorm:"primary_key;type:uuid"`
