@@ -23,7 +23,6 @@ const (
 	TokenSignCertFile             = TokenSignKeysAndCertDir + "jwtsigncert.pem"
 	TrustedJWTSigningCertsDir     = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir            = ConfigDir + "certs/trustedca/"
-	TrustedRootCAFile             = TrustedCAsStoreDir + "root.pem"
 	PIDFile                       = "authservice.pid"
 	ServiceRemoveCmd              = "systemctl disable authservice"
 	HashingAlgorithm              = crypto.SHA384
@@ -36,6 +35,11 @@ const (
 	DefaultDBRotationMaxTableCnt  = 10
 	DefaultSSLCertFilePath        = ConfigDir + "aasdbcert.pem"
 	ServiceName                   = "AAS"
+	DefaultKeyAlgorithm           = "rsa"
+	DefaultKeyAlgorithmLength     = 3072
+	DefaultAasTlsSan              = "127.0.0.1,localhost"
+	DefaultAasTlsCn               = "AAS TLS Certificate"
+	DefaultAasJwtCn               = "AAS JWT Signing Certificate"
 )
 
 const (

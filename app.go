@@ -276,6 +276,8 @@ func (a *App) Run(args []string) error {
 		}
 
 		if args[2] != "admin" &&
+			args[2] != "download_ca_cert" &&
+			args[2] != "download_cert" &&
 			args[2] != "database" &&
 			args[2] != "server" &&
 			args[2] != "all" &&
@@ -295,6 +297,23 @@ func (a *App) Run(args []string) error {
 		flags := args[3:]
 		setupRunner := &setup.Runner{
 			Tasks: []setup.Task{
+				setup.Download_Ca_Cert{
+					Flags:         args,
+					CaCertDirPath: constants.TrustedCAsStoreDir,
+					ConsoleWriter: os.Stdout,
+				},
+				setup.Download_Cert{
+					Flags:              args,
+					KeyFile:            path.Join(a.configDir(), constants.TLSKeyFile),
+					CertFile:           path.Join(a.configDir(), constants.TLSCertFile),
+					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
+					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
+					CommonName:         constants.DefaultAasTlsCn,
+					SanList:            constants.DefaultAasTlsSan,
+					CertType:           "TLS",
+					BearerToken:        "",
+					ConsoleWriter:      os.Stdout,
+				},
 				tasks.Database{
 					Flags:         flags,
 					Config:        a.configuration(),
@@ -317,12 +336,6 @@ func (a *App) Run(args []string) error {
 				tasks.Server{
 					Flags:         flags,
 					Config:        a.configuration(),
-					ConsoleWriter: os.Stdout,
-				},
-				tasks.TLS{
-					Flags:         flags,
-					TLSCertFile:   path.Join(a.configDir(), constants.TLSCertFile),
-					TLSKeyFile:    path.Join(a.configDir(), constants.TLSKeyFile),
 					ConsoleWriter: os.Stdout,
 				},
 				tasks.RegHost{
@@ -573,6 +586,12 @@ func validateSetupArgs(cmd string, args []string) error {
 	switch cmd {
 	default:
 		return errors.New("Unknown command")
+
+	case "download_ca_cert" :
+		return nil
+
+	case "download_cert" :
+		return nil
 
 	case "database":
 
