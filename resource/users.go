@@ -40,7 +40,7 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
-			return err
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
 		
 		if (r.ContentLength == 0) {

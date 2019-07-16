@@ -150,6 +150,7 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 
 func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
 		// authorize rest api endpoint based on token
 		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
 		if err != nil {
