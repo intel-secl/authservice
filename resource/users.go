@@ -67,7 +67,7 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 
 		existingUser, err := db.UserRepository().Retrieve(types.User{Name: uc.Name})
 		if existingUser != nil {
-			return &resourceError{Message: "same user exists", StatusCode: http.StatusForbidden}
+			return &resourceError{Message: "same user exists", StatusCode: http.StatusBadRequest}
 		}
 
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(uc.Password), bcrypt.DefaultCost)

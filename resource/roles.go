@@ -79,7 +79,7 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 
 		existingRole, err := db.RoleRepository().Retrieve(types.Role{RoleInfo: ct.RoleInfo{Service: rl.Service, Name: rl.Name, Context: rl.Context}})
 		if existingRole != nil {
-			return &resourceError{Message: "same role exists", StatusCode: http.StatusForbidden}
+			return &resourceError{Message: "same role exists", StatusCode: http.StatusBadRequest}
 		}
 
 		created, err := db.RoleRepository().Create(rl)
