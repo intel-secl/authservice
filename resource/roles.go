@@ -6,10 +6,10 @@ package resource
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	consts "intel/isecl/authservice/constants"
 	ct "intel/isecl/lib/common/types/aas"
+	"intel/isecl/lib/common/validation"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"net/http"
@@ -33,22 +33,33 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		var rl types.Role
+
+		if (r.ContentLength == 0) {
+			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
+		}
+
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
 		err := dec.Decode(&rl.RoleInfo)
 		if err != nil {
-			return err
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
-		// validate role
-		if rl.Name == "" {
-			return errors.New("rolename is invalid")
+
+		validation_err := ValidateRoleString(rl.Name)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 		}
-		/*
-			valid_err = validation.ValidateRolename(h.Rolename)
-			if valid_err != nil {
-				return fmt.Errorf("rolename validation fail: %s", valid_err.Error())
-			}
-		*/
+
+		validation_err = ValidateServiceString(rl.Service)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+		}
+
+		validation_err = ValidateContextString(rl.Context)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+		}
+
 		// authorize rest api endpoint based on token
 		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
 		if err != nil {
@@ -91,6 +102,11 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 
 		id := mux.Vars(r)["id"]
 
+		validation_err := validation.ValidateUUIDv4(id)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+		}
+
 		// authorize rest api endpoint based on token
 		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
 		if err != nil {
@@ -103,7 +119,8 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 		rl, err := db.RoleRepository().Retrieve(types.Role{ID: id})
 		if err != nil {
 			log.WithError(err).WithField("id", id).Info("failed to retrieve role")
-			return err
+			w.WriteHeader(http.StatusNoContent)
+			return nil
 		}
 
 		// we have obtained the role from db now. If ctxMap is not nil, we need to make sure that user has access to
@@ -129,6 +146,11 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		id := mux.Vars(r)["id"]
 
+		validation_err := validation.ValidateUUIDv4(id)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+		}
+
 		// authorize rest api endpoint based on token
 		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
 		if err != nil {
@@ -138,8 +160,8 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 		del_rl, err := db.RoleRepository().Retrieve(types.Role{ID: id})
 		if del_rl == nil || err != nil {
 			log.WithError(err).WithField("id", id).Info("attempt to delete invalid role")
-			return &resourceError{Message: "failed to delete: double check input role id",
-				StatusCode: http.StatusBadRequest}
+			w.WriteHeader(http.StatusNoContent)
+			return nil
 		}
 
 		// we have obtained the role from db now. If ctxMap is not nil, we need to make sure that user has access to
@@ -163,6 +185,7 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 
 func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		var validation_err error
 
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName})
@@ -176,6 +199,24 @@ func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 		roleName := r.URL.Query().Get("name")
 		context := r.URL.Query().Get("context")
 
+		if len(roleName) != 0 {
+			if validation_err := ValidateRoleString(roleName); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}
+		}
+
+		if len(service) > 0 {
+			if validation_err = ValidateServiceString(service); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}	
+		}
+
+		if len(context) > 0 {
+			if validation_err = ValidateContextString(context); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}
+		}
+
 		filter := types.Role{
 			RoleInfo: ct.RoleInfo{
 				Service: service,
@@ -183,6 +224,7 @@ func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 				Context: context,
 			},
 		}
+
 		fmt.Println("Service filter", svcFltr)
 		roles, err := db.RoleRepository().RetrieveAll(filter, []string{}, svcFltr)
 		if err != nil {
