@@ -314,18 +314,6 @@ func (a *App) Run(args []string) error {
 					BearerToken:        "",
 					ConsoleWriter:      os.Stdout,
 				},
-				setup.Download_Cert{
-					Flags:              args,
-					KeyFile:            path.Join(a.configDir(), "sign-key.pem"),
-					CertFile:           path.Join(a.configDir(), "sign-cert.pem"),
-					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
-					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
-					CommonName:         constants.DefaultAasJwtCn,
-					SanList:            constants.DefaultAasTlsSan,
-					CertType:           "JWT-Signing",
-					BearerToken:        "",
-					ConsoleWriter:      os.Stdout,
-				},
 				tasks.Database{
 					Flags:         flags,
 					Config:        a.configuration(),
