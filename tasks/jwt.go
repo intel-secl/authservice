@@ -88,11 +88,12 @@ func (jwt JWT) Run(c setup.Context) error {
 	}
 
 	// write the token signing certificate to the specified location
-	err = ioutil.WriteFile(constants.TokenSignCertFile, cert, 0644)
+	err = ioutil.WriteFile(constants.TokenSignCertFile, cert, 0640)
 	if err != nil {
 		fmt.Println("Could not store Certificate")
 		return fmt.Errorf("Certificate setup: %v", err)
 	}
+	os.Chmod(constants.TokenSignCertFile, 0640)
 
 	// write the same jwt certificate into the list of trusted jwt signing certificates so that the
 	// token that is issued by AAS can be verified as well using the jwt library
