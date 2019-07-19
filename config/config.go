@@ -41,9 +41,10 @@ type Configuration struct {
 	}
 
 	Token struct {
-		IncludeKid bool
+		IncludeKid        bool
 		TokenDurationMins int
 	}
+	CMSBaseUrl string
 }
 
 var mu sync.Mutex
