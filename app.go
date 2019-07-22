@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
-	cmw "intel/isecl/lib/common/middleware"
 	"intel/isecl/authservice/middleware"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/repository/postgres"
@@ -21,6 +20,7 @@ import (
 	"intel/isecl/authservice/version"
 	"intel/isecl/lib/common/crypt"
 	e "intel/isecl/lib/common/exec"
+	cmw "intel/isecl/lib/common/middleware"
 	"intel/isecl/lib/common/setup"
 	"intel/isecl/lib/common/validation"
 	"io"
@@ -375,8 +375,8 @@ func (a *App) Run(args []string) error {
 	return nil
 }
 
-func (a *App) RetrieveJWTSigningCerts() error {
-	fmt.Println("TODO: implement the function to retrieve JWT signing certificate")
+func (a *App) retrieveJWTSigningCerts() error {
+	//No implementation is required as AAS will already have the jwt certificate created as part of setup task
 	return nil
 }
 
@@ -429,8 +429,15 @@ func (a *App) startServer() error {
 		}
 	}(resource.SetJwtToken)
 
+	sr = r.PathPrefix("/aas/noauth/").Subrouter()
+	func(setters ...func(*mux.Router)) {
+		for _, setter := range setters {
+			setter(sr)
+		}
+	}(resource.SetJwtCertificate)
+
 	sr = r.PathPrefix("/aas/test/").Subrouter()
-	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.RetrieveJWTSigningCerts))
+	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts))
 	func(setters ...func(*mux.Router)) {
 		for _, setter := range setters {
 			setter(sr)
@@ -438,7 +445,7 @@ func (a *App) startServer() error {
 	}(resource.SetTestJwt)
 
 	sr = r.PathPrefix("/aas/").Subrouter()
-	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.RetrieveJWTSigningCerts))
+	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts))
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
 		for _, setter := range setters {
 			setter(sr, aasDB)
@@ -587,10 +594,10 @@ func validateSetupArgs(cmd string, args []string) error {
 	default:
 		return errors.New("Unknown command")
 
-	case "download_ca_cert" :
+	case "download_ca_cert":
 		return nil
 
-	case "download_cert" :
+	case "download_cert":
 		return nil
 
 	case "database":

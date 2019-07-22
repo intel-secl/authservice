@@ -8,9 +8,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"intel/isecl/lib/common/setup"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
+	"intel/isecl/lib/common/setup"
 	"io"
 )
 
@@ -27,6 +27,7 @@ func (s Server) Run(c setup.Context) error {
 		defaultPort = 8443
 	}
 	fs := flag.NewFlagSet("server", flag.ContinueOnError)
+
 	fs.IntVar(&s.Config.Port, "port", defaultPort, "auth service http port")
 	err = fs.Parse(s.Flags)
 	if err != nil {

@@ -15,4 +15,4 @@ require (
 	intel/isecl/lib/common v1.0.0-Beta
 )
 
-replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v0.0.0-20190719000123-3208675c1859
+replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v0.0.0-20190720084224-5df34da2ae50
