@@ -73,13 +73,28 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 			}
 		}
 
+		if (r.ContentLength == 0) {
+			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
+		}
+
 		var uc ct.UserCred
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
 		err := dec.Decode(&uc)
 		if err != nil {
-			return err
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
+
+		validation_err := ValidateUserNameString(uc.UserName)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
+		}
+
+		validation_err = ValidatePasswordString(uc.Password)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
+		}
+
 		u :=  db.UserRepository()
 
 		if httpStatus, err := authcommon.HttpHandleUserAuth(u, uc.UserName, uc.Password); err != nil {
