@@ -6,14 +6,13 @@ package resource
 
 import (
 	"fmt"
-	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/version"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-func SetVersion(r *mux.Router, db repository.AASDatabase) {
+func SetVersion(r *mux.Router) {
 	r.Handle("/version", getVersion()).Methods("GET")
 }
 

@@ -24,7 +24,7 @@ func (s Server) Run(c setup.Context) error {
 	fmt.Fprintln(s.ConsoleWriter, "Running server setup...")
 	defaultPort, err := c.GetenvInt("AAS_PORT", "auth service http port")
 	if err != nil {
-		defaultPort = 8443
+		defaultPort = constants.DefaultHttpPort
 	}
 	fs := flag.NewFlagSet("server", flag.ContinueOnError)
 
@@ -41,8 +41,6 @@ func (s Server) Run(c setup.Context) error {
 	s.Config.AuthDefender.MaxAttempts = constants.DefaultAuthDefendMaxAttempts
 	s.Config.AuthDefender.IntervalMins = constants.DefaultAuthDefendIntervalMins
 	s.Config.AuthDefender.LockoutDurationMins = constants.DefaultAuthDefendLockoutMins
-
-	s.Config.HeartbeatIntervalMins = constants.DefaultHeartbeatInt
 
 	return s.Config.Save()
 }

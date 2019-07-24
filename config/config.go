@@ -20,9 +20,9 @@ import (
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
 type Configuration struct {
-	configFile     string
-	Port           int
-	Postgres       struct {
+	configFile string
+	Port       int
+	Postgres   struct {
 		DBName   string
 		Username string
 		Password string
@@ -31,8 +31,7 @@ type Configuration struct {
 		SSLMode  string
 		SSLCert  string
 	}
-	LogLevel              log.Level
-	HeartbeatIntervalMins uint16
+	LogLevel log.Level
 
 	AuthDefender struct {
 		MaxAttempts         int

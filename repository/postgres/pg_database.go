@@ -37,12 +37,8 @@ func (pd *PostgresDatabase) ExecuteSqlFile(file string) error {
 }
 
 func (pd *PostgresDatabase) Migrate() error {
-	pd.DB.AutoMigrate(types.Host{}, types.User{}, types.Role{})
+	pd.DB.AutoMigrate(types.User{}, types.Role{})
 	return nil
-}
-
-func (pd *PostgresDatabase) HostRepository() repository.HostRepository {
-	return &PostgresHostRepository{db: pd.DB}
 }
 
 func (pd *PostgresDatabase) UserRepository() repository.UserRepository {

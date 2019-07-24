@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
-	"intel/isecl/authservice/middleware"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/repository/postgres"
 	"intel/isecl/authservice/resource"
@@ -282,7 +281,6 @@ func (a *App) Run(args []string) error {
 			args[2] != "server" &&
 			args[2] != "all" &&
 			args[2] != "tls" &&
-			args[2] != "reghost" &&
 			args[2] != "jwt" {
 			a.printUsage()
 			return errors.New("No such setup task")
@@ -338,20 +336,6 @@ func (a *App) Run(args []string) error {
 					Config:        a.configuration(),
 					ConsoleWriter: os.Stdout,
 				},
-				tasks.RegHost{
-					Flags: flags,
-					DatabaseFactory: func() (repository.AASDatabase, error) {
-						pg := &a.configuration().Postgres
-						p, err := postgres.Open(pg.Hostname, pg.Port, pg.DBName, pg.Username, pg.Password, pg.SSLMode, pg.SSLCert)
-						if err != nil {
-							log.WithError(err).Error("failed to open postgres connection for setup task")
-							return nil, err
-						}
-						p.Migrate()
-						return p, nil
-					},
-					ConsoleWriter: os.Stdout,
-				},
 				tasks.JWT{
 					Flags:         flags,
 					Config:        a.configuration(),
@@ -401,26 +385,16 @@ func (a *App) startServer() error {
 	log.Trace("Migrating Database")
 	aasDB.Migrate()
 
-	log.Tracef("Heartbeat interval: %d", c.HeartbeatIntervalMins)
-
 	// Create public routes that does not need any authentication
 	r := mux.NewRouter()
 
 	// Create Router, set routes
-	sr := r.PathPrefix("/aas").Subrouter()
-	sr.Use(middleware.NewBasicAuth(aasDB.UserRepository()))
-	func(setters ...func(*mux.Router, repository.AASDatabase)) {
+	sr := r.PathPrefix("/aas/noauth").Subrouter()
+	func(setters ...func(*mux.Router)) {
 		for _, setter := range setters {
-			setter(sr, aasDB)
+			setter(sr)
 		}
-	}(resource.SetHosts, resource.SetVersion)
-
-	sr = r.PathPrefix("/aas/noauth").Subrouter()
-	func(setters ...func(*mux.Router, repository.AASDatabase)) {
-		for _, setter := range setters {
-			setter(sr, aasDB)
-		}
-	}(resource.SetVersion)
+	}(resource.SetVersion, resource.SetJwtCertificate)
 
 	sr = r.PathPrefix("/aas").Subrouter()
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
@@ -428,13 +402,6 @@ func (a *App) startServer() error {
 			setter(sr, aasDB)
 		}
 	}(resource.SetJwtToken)
-
-	sr = r.PathPrefix("/aas/noauth/").Subrouter()
-	func(setters ...func(*mux.Router)) {
-		for _, setter := range setters {
-			setter(sr)
-		}
-	}(resource.SetJwtCertificate)
 
 	sr = r.PathPrefix("/aas/test/").Subrouter()
 	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts))

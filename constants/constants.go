@@ -27,7 +27,6 @@ const (
 	ServiceRemoveCmd              = "systemctl disable authservice"
 	HashingAlgorithm              = crypto.SHA384
 	PasswordRandomLength          = 20
-	DefaultHeartbeatInt           = 5
 	DefaultAuthDefendMaxAttempts  = 5
 	DefaultAuthDefendIntervalMins = 5
 	DefaultAuthDefendLockoutMins  = 15
@@ -35,6 +34,7 @@ const (
 	DefaultDBRotationMaxTableCnt  = 10
 	DefaultSSLCertFilePath        = ConfigDir + "aasdbcert.pem"
 	ServiceName                   = "AAS"
+	DefaultHttpPort               = 8444
 	DefaultKeyAlgorithm           = "rsa"
 	DefaultKeyAlgorithmLength     = 3072
 	DefaultAasTlsSan              = "127.0.0.1,localhost"
