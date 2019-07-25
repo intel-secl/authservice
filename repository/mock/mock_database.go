@@ -9,17 +9,12 @@ import (
 )
 
 type MockDatabase struct {
-	MockHostRepository   MockHostRepository
-	MockUserRepository   MockUserRepository
-	MockRoleRepository  MockRoleRepository
+	MockUserRepository MockUserRepository
+	MockRoleRepository MockRoleRepository
 }
 
 func (m *MockDatabase) Migrate() error {
 	return nil
-}
-
-func (m *MockDatabase) HostRepository() repository.HostRepository {
-	return &m.MockHostRepository
 }
 
 func (m *MockDatabase) UserRepository() repository.UserRepository {

@@ -5,10 +5,7 @@
 package client
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"intel/isecl/authservice/types"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -52,57 +49,6 @@ func (c *Client) dispatchRequest(req *http.Request) (*http.Response, error) {
 		req.Header.Add("Authorization", "Bearer "+string(c.JWTToken))
 	}
 	return c.httpClient().Do(req)
-}
-
-func (c *Client) GetHost(id string) (*types.Host, error) {
-	hosts, err := c.resolvePath("hosts/" + id)
-	if err != nil {
-		return nil, err
-	}
-	req, _ := http.NewRequest(http.MethodGet, hosts, nil)
-	rsp, err := c.dispatchRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	if rsp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to retrieve host with id %s: HTTP Code: %d", id, rsp.StatusCode)
-	}
-	var fetched types.Host
-	err = json.NewDecoder(rsp.Body).Decode(&fetched)
-	if err != nil {
-		return nil, err
-	}
-	return &fetched, nil
-}
-
-func (c *Client) AddHost(h types.HostInfo) (*types.HostCreateResponse, error) {
-	hosts, err := c.resolvePath("hosts")
-	if err != nil {
-		return nil, err
-	}
-
-	// to fix: you can stream the marshalling directly to HTTP using a buffer
-	payload, err := json.Marshal(&h)
-	if err != nil {
-		return nil, err
-	}
-	req, _ := http.NewRequest(http.MethodPost, hosts, bytes.NewBuffer(payload))
-	req.Header.Set("Content-Type", "application/json")
-	rsp, err := c.dispatchRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	if rsp.StatusCode != http.StatusCreated {
-		msg, _ := ioutil.ReadAll(rsp.Body)
-		return nil, fmt.Errorf("failed to create host: %s: HTTP Code: %d", string(msg), rsp.StatusCode)
-	}
-	// parse it and return
-	var created types.HostCreateResponse
-	err = json.NewDecoder(rsp.Body).Decode(&created)
-	if err != nil {
-		return nil, err
-	}
-	return &created, nil
 }
 
 func (c *Client) GetJwtSigningCert() ([]byte, error) {
