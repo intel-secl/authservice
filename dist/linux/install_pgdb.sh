@@ -153,15 +153,15 @@ echo "Setting up postgres database ..."
 # start the database service
 service postgresql-11 start &>> $log_file
 
-sudo -u postgres psql postgres -c "alter system set log_connections = 'on';" &>> $log_file
-sudo -u postgres psql postgres -c "alter system set log_disconnections = 'on';" &>> $log_file
-sudo -u postgres psql postgres -c "CREATE EXTENSION \"uuid-ossp\";" &>> $log_file
-sudo -u postgres psql postgres -c "CREATE USER ${ISECL_PGDB_USERNAME} WITH PASSWORD '${ISECL_PGDB_USERPASSWORD}';" &>> $log_file
-sudo -u postgres psql postgres -c "CREATE DATABASE ${ISECL_PGDB_DBNAME}" &>> $log_file
-sudo -u postgres psql postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${ISECL_PGDB_DBNAME} TO ${ISECL_PGDB_USERNAME};" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOSUPERUSER;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOCREATEROLE;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOCREATEDB;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOREPLICATION;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOBYPASSRLS;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOINHERIT;" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "alter system set log_connections = 'on';" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "alter system set log_disconnections = 'on';" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "CREATE EXTENSION \"uuid-ossp\";" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "CREATE USER ${ISECL_PGDB_USERNAME} WITH PASSWORD '${ISECL_PGDB_USERPASSWORD}';" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "CREATE DATABASE ${ISECL_PGDB_DBNAME}" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${ISECL_PGDB_DBNAME} TO ${ISECL_PGDB_USERNAME};" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOSUPERUSER;" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOCREATEROLE;" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOCREATEDB;" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOREPLICATION;" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOBYPASSRLS;" &>> $log_file
+sudo -E PGDATA=$PGDATA -E PGHOST=$PGHOST -E PGPORT=$PGPORT -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOINHERIT;" &>> $log_file
