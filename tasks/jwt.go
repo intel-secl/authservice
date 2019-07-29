@@ -70,7 +70,7 @@ func (jwt JWT) Run(c setup.Context) error {
 
 	// let us call the method available in the common setup task to obtain certificate and
 	privKeyDer, cert, err := setup.GetCertificateFromCMS("JWT-Signing", constants.DefaultKeyAlgorithm,
-		constants.DefaultKeyAlgorithmLength, jwt.Config.CMSBaseUrl, envJwtCertSub, "", envBearerToken)
+		constants.DefaultKeyAlgorithmLength, jwt.Config.CMSBaseUrl, envJwtCertSub, "", constants.TrustedCAsStoreDir,envBearerToken)
 	//cert, privKeyDer, err := crypt.CreateKeyPairAndCertificate(envJwtCertSub, "", "", 0)
 	if err != nil {
 		return err

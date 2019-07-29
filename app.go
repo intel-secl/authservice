@@ -309,6 +309,7 @@ func (a *App) Run(args []string) error {
 					CommonName:         constants.DefaultAasTlsCn,
 					SanList:            constants.DefaultAasTlsSan,
 					CertType:           "TLS",
+					CaCertsDir:         constants.TrustedCAsStoreDir,
 					BearerToken:        "",
 					ConsoleWriter:      os.Stdout,
 				},
