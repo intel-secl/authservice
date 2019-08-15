@@ -5,304 +5,379 @@ info:
 servers:
   - url: http://authservice.com:8443/aas/
 paths:
-  /hosts:
+  /roles:
     get:
+      security:
+        - bearerAuth: []
       parameters: 
-        - name: hostname
+        - name: service
           in: query
-          description: Query matching hostname
+          description: Query matching service
           schema:
             type: string
-        - name: version
+        - name: name
           in: query
-          description: Query matching version
+          description: Query matching role name
           schema:
             type: string
-        - name: build
+        - name: context
           in: query
-          description: Query matching build number
+          description: Query matching context
           schema:
             type: string
-        - name: os
-          in: query
-          description: Query matching OS type
-          schema:
-            type: string
-        - name: status
-          in: query
-          description: Query matching host status
-          schema:
-            type: string
-      summary: Query hosts
-      description: Perform queries on the list of hosts
+      summary: Query Roles
+      description: Perform queries on the list of roles
       tags: 
-        - Hosts
+        - Roles
       responses:
         '200':
-          description: Successfully queried hosts
+          description: Successfully queried roles
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Host'
+                  $ref: '#/components/schemas/Role'
     post:
-      summary: Create host (Internal usage only)
-      description: Create a new host entry. Hostnames must be unique across different hosts.
+      security:
+        - bearerAuth: []
+      summary: Create a role
+      description: Create a role. A roles consists of three parts - service, name and context(optional). Service denotes the microservice that the role belongs to
       tags:
-        - Hosts
+        - Roles
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Host'
+              $ref: '#/components/schemas/RoleInfo'
       responses:
         '201':
-          description: Successfully created new host entry
+          description: Successfully created a role
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Host'
-  /hosts/{id}:
+                $ref: '#/components/schemas/Role'
+        '401':
+          description: Credentials supplied not authorized to create specified roles
+  /roles/{role_id}:
     get:
-      summary: Get host
-      description: Get a single host by ID
+      security:
+        - bearerAuth: []
+      summary: Get role
+      description: Get a specific role by ID
       parameters: 
-        - $ref: '#/components/parameters/HostID'
+        - $ref: '#/components/parameters/RoleID'
       tags:
-        - Hosts
+        - Roles
       responses:
         '200':
-          description: Successfully retrieved host
+          description: Successfully retrieved roles
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Host'
+                $ref: '#/components/schemas/Role'
+        '401':
+          description: Credentials supplied not authorized to create specified role
         '404':
-          description: Host with id not found
+          description: Role with id not found
+        
     delete:
-      summary: Delete Host
-      description: Delete a single host by ID
+      security:
+        - bearerAuth: []
+      summary: Delete Role
+      description: Delete a single role by ID
       parameters: 
-       - $ref: '#/components/parameters/HostID'
+       - $ref: '#/components/parameters/RoleID'
       tags:
-        - Hosts
+        - Roles
       responses:
         '204':
-          description: Successfully deleted host
-        '400':
-          description: Host with id not found
-    patch:
-      summary: Update Host (NOT YET IMPLEMENTED)
-      description: Update a host by ID 
-      parameters: 
-        - $ref: '#/components/parameters/HostID'
-      tags: 
-        - Hosts
-      responses:
-        '200':
-          description: TBD
+          description: Successfully deleted role
+        '404':
+          description: Role with id not found
           
-  /reports:
+  /users:
     get:
-      summary: Query reports
-      description: Query all reports by filter criteria
+      security:
+        - bearerAuth: []
       parameters: 
-        - name: hostname
+        - name: name
           in: query
-          description: query by host origination 
+          description: Query matching name
           schema:
             type: string
-        - name: hostid
-          in: query
-          description: query by host id
-          schema:
-            type: string
-            format: uuid
-        - name: from
-          in: query
-          description: query by date starting from (RFC3339 date)
-          schema:
-            type: string
-            format: date
-        - name: to
-          in: query
-          description: query by date up until to (RFC3339 date)
-          schema:
-            type: string
-            format: date
-      tags:
-        - Reports
+      summary: Query Users
+      description: Perform queries on the list of users
+      tags: 
+        - Users
       responses:
         '200':
-          description: Successfully queried reports
+          description: Successfully queried users
           content:
             application/json:
               schema:
                 type: array
-                items: 
-                  $ref: '#/components/schemas/Report'
+                items:
+                  $ref: '#/components/schemas/User'
     post:
-      description: Create a new report
-      summary: Create Report (Internal usage only)
+      security:
+        - bearerAuth: []
+      summary: Create a user
+      description: Create a user. A user can be of the following format admin, admin@WLS, admin@tds.intel.com
       tags:
-        - Reports
+        - Users
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Report'
+              $ref: '#/components/schemas/UserCreate'
       responses:
         '201':
-          description: Successfully created report
+          description: Successfully created a user
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Report'
-  /reports/{id}:
+                $ref: '#/components/schemas/Role'
+        '401':
+          description: Credentials supplied not authorized to create specified user
+  /users/{user_id}:
     get:
-      tags:
-       - Reports
+      security:
+        - bearerAuth: []
+      summary: Get user
+      description: Get a specific user by ID
       parameters: 
-       - $ref: '#/components/parameters/ReportID'
-      summary: Get report by ID
-      description: Get a single report by its ID
+        - $ref: '#/components/parameters/UserID'
+      tags:
+        - Users
       responses:
         '200':
-          description: Successfully retrieved report by id
+          description: Successfully retrieved users
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Report'
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Credentials supplied not authorized to create specified user
         '404':
-          description: Report with id not found
-
-  /heartbeat:
-    post:
-      description: Receieve heartbeat from host
+          description: User with id not found
+        
+    delete:
+      security:
+        - bearerAuth: []
+      summary: Delete User
+      description: Delete a single user by ID
+      parameters: 
+       - $ref: '#/components/parameters/UserID'
       tags:
-        - Heartbeat
+        - Users
+      responses:
+        '204':
+          description: Successfully deleted user
+        '404':
+          description: User with id not found
+  /users/{user_id}/roles:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Query roles associated with user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/parameters/UserID'
+        - name: service
+          in: query
+          description: Query matching service
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: Query matching role name
+          schema:
+            type: string
+        - name: context
+          in: query
+          description: Query matching context
+          schema:
+            type: string
+      description: Query roles that are associated with the user
+      tags:
+        - UserRoles
+      responses:
+        '200':
+          description: Successfully queried roles that are associated with the user. If there are no roles associated with the user, an empty array would be returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '401':
+          description: unauthorized
+        '404':
+          description: user_id could not be found
+    post:
+      security:
+        - bearerAuth: []
+      summary: associate roles to a user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/parameters/UserID'
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Heartbeat'
+              $ref: '#/components/schemas/RoleIDs'
+      description: associate roles with a user
+      tags:
+        - UserRoles
       responses:
-        '200':
-          description: Successfully updated host status
+        '201':
+          description: Successfully associated roles with uses         
+  /users/{user_id}/roles/{role_id}:
+    delete:
+      security:
+        - bearerAuth: []
+      summary: removes role association from the user
+      description: removes a role that is associated with the user
+      tags:
+        - UserRoles
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/parameters/UserID'
+        - name: role_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/parameters/RoleID'
+      responses:
+        '204':
+          description: Successfully removed user association
+        '401':
+          description: unauthorized
+        '404':
+          description: user_id could not be found or role_id not associated with user
+  /token:
+    post:
+      summary: Obtain a token by supplying the user credentials
+      description: Creates a token based on the user credientials that are supplied in the post body. 
+      tags:
+        - Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '201':
+          description: Successfully created a token
           content:
-            application/json:
+            application/jwt:
               schema:
-                $ref: '#/components/schemas/Heartbeat'
+                type: string
+        '401':
+          description: Not authorized based on supplied credentials
+
 
 components: 
   parameters:
-    HostID:
-      name: id
+    RoleID:
+      name: role_id
       in: path
-      description: Host ID
+      description: Role ID
       required: true
       schema:
         type: string
         format: uuid
-    ReportID:
-      name: id
+    UserID:
+      name: user_id
       in: path
-      description: Report ID
+      description: User ID
       required: true
       schema:
         type: string
         format: uuid
+  securitySchemes:
+    bearerAuth:            
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
-    Host:
+    RoleInfo:
       type: object
       required:
-        - id
-        - hostname
-        - version
-        - build
-        - os
-        - status
+        - service
+        - name
       properties:
-        id:
+        service: 
           type: string
-          format: uuid
-        hostname: 
+        name:
           type: string
-        version:
+        context: 
           type: string
-        build: 
-          type: string
-        os:
-          type: string
-        status:
-          type: string
-    Report:
+  
+    Role:
       type: object
       required:
-        - id
-        - host_id
-        - detection
+        - role_id
+        - service
+        - name
       properties:
-        id:
+        role_id: 
           type: string
           format: uuid
-        host_id: 
+        service: 
           type: string
-          format: uuid
-        detection:
-          type: object
-          required:
-            - description
-            - pid
-            - tid
-            - process_name
-            - process_image_path
-            - process_cmd_line
-            - timestamp
-            - severity
-            - profile_name
-            - cve_ids
-            - threat_class
-          properties:
-            description:
-              type: string
-            pid:
-              type: integer
-            tid:
-              type: integer
-            process_name:
-              type: string
-            process_image_path:
-              type: string
-            process_cmd_line:
-              type: string
-            timestamp:
-              type: integer
-            severity:
-              type: integer
-            profile_name:
-              type: string
-            cve_ids: 
-              type: array
-              items:
-                type: string
-            threat_class:
-              type: string
-        error:
-          type: object
-          properties:
-            description:
-              type: string
-    Heartbeat:
+        name:
+          type: string
+        context: 
+          type: string
+    RoleIDs:
       type: object
       required:
-        - id
-        - interval
+        - role_ids
       properties:
-        id:
+        role_ids:
+          type: array
+          items: 
+            $ref: '#/components/parameters/RoleID'
+    UserCreate:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username: 
+          type: string
+        password:
+          type: string
+    User:
+      type: object
+      required:
+        - user_id
+        - username
+      properties:
+        user_id: 
           type: string
           format: uuid
-        interval:
-          type: uint16
-
+        username: 
+          type: string
+    TokenRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username: 
+          type: string
+        password:
+          type: string
+    
