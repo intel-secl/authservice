@@ -36,13 +36,19 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 
 		var uc ct.UserCreate
 
+		// authorize rest api endpoint based on token
+		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		if err != nil {
+			return err
+		}
+		
 		if (r.ContentLength == 0) {
 			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
 		}
 
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
-		err := dec.Decode(&uc)
+		err = dec.Decode(&uc)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
@@ -56,12 +62,6 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 		validation_err = ValidatePasswordString(uc.Password)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-		}
-
-		// authorize rest api endpoint based on token
-		_, err = AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
-		if err != nil {
-			return err
 		}
 
 		existingUser, err := db.UserRepository().Retrieve(types.User{Name: uc.Name})
@@ -91,18 +91,17 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 
 func getUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		// authorize rest api endpoint based on token
+		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		if err != nil {
+			return err
+		}
 
 		id := mux.Vars(r)["id"]
 
 		validation_err := validation.ValidateUUIDv4(id)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-		}
-
-		// authorize rest api endpoint based on token
-		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
-		if err != nil {
-			return err
 		}
 
 		u, err := db.UserRepository().Retrieve(types.User{ID: id})
@@ -124,17 +123,17 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 
 func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		// authorize rest api endpoint based on token
+		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		if err != nil {
+			return err
+		}
+
 		id := mux.Vars(r)["id"]
 
 		validation_err := validation.ValidateUUIDv4(id)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-		}
-
-		// authorize rest api endpoint based on token
-		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
-		if err != nil {
-			return err
 		}
 
 		del_usr, err := db.UserRepository().Retrieve(types.User{ID: id})
@@ -198,6 +197,12 @@ func updateUser(db repository.AASDatabase) errorHandlerFunc {
 func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		// authorize rest api endpoint based on token
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		if err != nil {
+			return err
+		}
+		
 		id := mux.Vars(r)["id"]
 
 		validation_err := validation.ValidateUUIDv4(id)
@@ -212,7 +217,7 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		var rids ct.RoleIDs
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
-		err := dec.Decode(&rids)
+		err = dec.Decode(&rids)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
@@ -226,12 +231,6 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 			if validation_err != nil {
 				return &resourceError{Message: "One or more role ids is not a valid uuid", StatusCode: http.StatusBadRequest}
 			}
-		}
-
-		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
-		if err != nil {
-			return err
 		}
 
 		// we need to retrieve roles to add by their ids. So we pass in empty filter for role
@@ -267,6 +266,11 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 
 func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		// authorize rest api endpoint based on token
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		if err != nil {
+			return err
+		}
 
 		id := mux.Vars(r)["id"]
 		var roleFilter *types.Role
@@ -274,12 +278,6 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		validation_err := validation.ValidateUUIDv4(id)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-		}
-
-		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
-		if err != nil {
-			return err
 		}
 
 		// check for query parameters
@@ -323,6 +321,12 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		// authorize rest api endpoint based on token
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		if err != nil {
+			return err
+		}
+
 		id := mux.Vars(r)["id"]
 		rid := mux.Vars(r)["role_id"]
 
@@ -334,12 +338,6 @@ func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 		validation_err = validation.ValidateUUIDv4(rid)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-		}
-
-		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
-		if err != nil {
-			return err
 		}
 
 		u, err := db.UserRepository().Retrieve(types.User{ID: id})

@@ -76,7 +76,7 @@ func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, re
 
 	ctxMap, foundRole := auth.ValidatePermissionAndGetRoleContext(privileges, reqRoles, retNilCtxForEmptyCtx)
 	if !foundRole {
-		return nil, &privilegeError{Message: "", StatusCode: http.StatusUnauthorized}
+		return nil, &privilegeError{Message: "", StatusCode: http.StatusForbidden}
 	}
 
 	return ctxMap, nil

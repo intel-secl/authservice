@@ -33,13 +33,30 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 
 		var rl types.Role
 
+		// authorize rest api endpoint based on token
+		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
+		if err != nil {
+			return err
+		}
+
+		// we have the role now. If ctxMap is not nil, we need to make sure that the right privilege is
+		// available to create a role with the requested service
+		if ctxMap != nil {
+			if _, ok := (*ctxMap)[rl.Service]; !ok {
+				log.Errorf("restricted role - not allowed to create role is service : %s", rl.Service)
+				return &privilegeError{Message: "", StatusCode: http.StatusForbidden}
+			}
+		}
+
+		// at this point, we should have privilege to create the requested role. So, lets proceed
+
 		if (r.ContentLength == 0) {
 			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
 		}
 
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
-		err := dec.Decode(&rl.RoleInfo)
+		err = dec.Decode(&rl.RoleInfo)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
@@ -58,23 +75,6 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 		}
-
-		// authorize rest api endpoint based on token
-		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
-		if err != nil {
-			return err
-		}
-
-		// we have the role now. If ctxMap is not nil, we need to make sure that the right privilege is
-		// available to create a role with the requested service
-		if ctxMap != nil {
-			if _, ok := (*ctxMap)[rl.Service]; !ok {
-				log.Errorf("restricted role - not allowed to create role is service : %s", rl.Service)
-				return &privilegeError{Message: "", StatusCode: http.StatusUnauthorized}
-			}
-		}
-
-		// at this point, we should have privilege to create the requested role. So, lets proceed
 
 		existingRole, err := db.RoleRepository().Retrieve(types.Role{RoleInfo: ct.RoleInfo{Service: rl.Service, Name: rl.Name, Context: rl.Context}})
 		if existingRole != nil {
@@ -99,17 +99,17 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 func getRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		// authorize rest api endpoint based on token
+		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
+		if err != nil {
+			return err
+		}
+
 		id := mux.Vars(r)["id"]
 
 		validation_err := validation.ValidateUUIDv4(id)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-		}
-
-		// authorize rest api endpoint based on token
-		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
-		if err != nil {
-			return err
 		}
 
 		// at this point, we should get the role and later check if user has permission to read this role.
@@ -127,7 +127,7 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 		if ctxMap != nil {
 			if _, ok := (*ctxMap)[rl.Service]; !ok {
 				log.Errorf("restricted role - cannot allow role read roles in service : %s", rl.Service)
-				return &privilegeError{Message: "", StatusCode: http.StatusUnauthorized}
+				return &privilegeError{Message: "", StatusCode: http.StatusForbidden}
 			}
 		}
 
@@ -143,17 +143,17 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 
 func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		// authorize rest api endpoint based on token
+		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
+		if err != nil {
+			return err
+		}
+		
 		id := mux.Vars(r)["id"]
 
 		validation_err := validation.ValidateUUIDv4(id)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-		}
-
-		// authorize rest api endpoint based on token
-		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
-		if err != nil {
-			return err
 		}
 
 		del_rl, err := db.RoleRepository().Retrieve(types.Role{ID: id})
@@ -168,7 +168,7 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 		if ctxMap != nil {
 			if _, ok := (*ctxMap)[del_rl.Service]; !ok {
 				log.Errorf("restricted role - cannot allow deleting roles in service : %s", del_rl.Service)
-				return &privilegeError{Message: "", StatusCode: http.StatusUnauthorized}
+				return &privilegeError{Message: "", StatusCode: http.StatusForbidden}
 			}
 		}
 
