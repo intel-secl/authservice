@@ -13,7 +13,6 @@ import (
 	"net/http"
 	_ "time"
 
-	_ "github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )

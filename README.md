@@ -57,7 +57,6 @@ make installer
 | Name     | Repo URL                    | Minimum Version Required           |
 | -------- | --------------------------- | :--------------------------------: |
 | uuid     | github.com/google/uuid      | v1.1.1                             |
-| context  | github.com/gorilla/context  | v1.1.1                             |
 | handlers | github.com/gorilla/handlers | v1.4.0                             |
 | mux      | github.com/gorilla/mux      | v1.7.0                             |
 | gorm     | github.com/jinzhu/gorm      | v1.9.2                             |

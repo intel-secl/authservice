@@ -6,6 +6,7 @@
 package main
 
 import (
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
 	"intel/isecl/lib/common/jwt"
@@ -20,7 +21,12 @@ func (a* App) GenerateCertRequest() error {
 	fmt.Println("Inside the TestTokenAuth Function")
 
 	//certReq, privKeyDer, err := CreateKeyPairAndCertificateRequest("AAS JWT Signing", "", "ecdsa", 0)
-	cert, privKeyDer, err := crypt.CreateKeyPairAndCertificateRequest("AAS JWT Signing", "", "", 0)
+	cert, privKeyDer, err := crypt.CreateKeyPairAndCertificateRequest(pkix.Name{CommonName:"AAS JWT Signing",
+		Organization: []string{"INTEL"},
+		Country: []string{"US"},
+		Province: []string{"SC"},
+		Locality: []string{"SF"}},
+	    "", "", 0)
 	if err != nil {
 		return err
 	}
@@ -47,7 +53,7 @@ func (a *App) TestTokenAuth() error {
 	if err != nil {
 		return err
 	}
-	
+
 	//todo - after testing funnctionality writing to file, uncomment section as we have to create file in a particular dir
 	/*
 	err = os.MkdirAll(constants.TokenSignKeysAndCertDir, os.ModeDir)
@@ -63,11 +69,11 @@ func (a *App) TestTokenAuth() error {
 	os.Chmod(constants.TokenSignKeyFile, 0640)
 	defer keyOut.Close()
 	*/
-	 
+
 	if err := pem.Encode(os.Stdout, &pem.Block{Type: "PKCS8 PRIVATE KEY", Bytes: privKeyDer}); err != nil {
 		return fmt.Errorf("could not pem encode the private key: %v", err)
 	}
-	
+
 	//if err := pem.Encode(os.Stdout, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: certReq}); err != nil {
 	//	return fmt.Errorf("could not pem encode certificate request: %v", err)
 	//}

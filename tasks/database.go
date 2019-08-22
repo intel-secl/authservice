@@ -27,6 +27,7 @@ type Database struct {
 
 func (db Database) Run(c setup.Context) error {
 	fmt.Fprintln(db.ConsoleWriter, "Running database setup...")
+
 	envHost, _ := c.GetenvString("AAS_DB_HOSTNAME", "Database Hostname")
 	envPort, _ := c.GetenvInt("AAS_DB_PORT", "Database Port")
 	envUser, _ := c.GetenvString("AAS_DB_USERNAME", "Database Username")

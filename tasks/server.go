@@ -22,6 +22,7 @@ type Server struct {
 
 func (s Server) Run(c setup.Context) error {
 	fmt.Fprintln(s.ConsoleWriter, "Running server setup...")
+
 	defaultPort, err := c.GetenvInt("AAS_PORT", "auth service http port")
 	if err != nil {
 		defaultPort = constants.DefaultHttpPort

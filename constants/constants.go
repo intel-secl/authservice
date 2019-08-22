@@ -40,6 +40,10 @@ const (
 	DefaultAasTlsSan              = "127.0.0.1,localhost"
 	DefaultAasTlsCn               = "AAS TLS Certificate"
 	DefaultAasJwtCn               = "AAS JWT Signing Certificate"
+	DefaultAasCertOrganization        = "INTEL"
+	DefaultAasCertCountry             = "US"
+	DefaultAasCertProvince            = "SF"
+	DefaultAasCertLocality            = "SC"
 )
 
 const (

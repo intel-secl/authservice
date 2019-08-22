@@ -6,6 +6,7 @@
 package tasks
 
 import (
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
 	"flag"
@@ -34,28 +35,25 @@ func (jwt JWT) Run(c setup.Context) error {
 	// 3. pem encode cert and save to TokenSignCertFile
 	// 4. save to TrustedJWTSigningCertsDir with SavePemCertWithShortSha1FileName
 	fmt.Fprintln(jwt.ConsoleWriter, "Running jwt setup...")
+	if jwt.Config.Subject.JWTCertCommonName == "" {
+		jwt.Config.Subject.JWTCertCommonName, _ = c.GetenvString("AAS_JWT_CERT_CN", "AAS JWT Certificate Subject")
+		if jwt.Config.Subject.JWTCertCommonName == "" {
+			jwt.Config.Subject.JWTCertCommonName = constants.DefaultAasJwtCn
+		}
+	}
 
-	envJwtCertSub, _ := c.GetenvString("AAS_JWT_CERT_SUBJECT", "AAS JWT Certificate Subject")
 	envJwtIncludeKid, _ := c.GetenvString("AAS_JWT_INCLUDE_KEYID", "AAS include key id in JWT Token")
 	envJwtTokenDurationMins, _ := c.GetenvInt("AAS_JWT_TOKEN_DURATION_MINS", "AAS JWT Token duration in mins")
 	envBearerToken, _ := c.GetenvString("BEARER_TOKEN", "bearer token")
-	envCMSBaseUrl, _ := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
 	//set up the defaults
-	if envJwtCertSub == "" {
-		envJwtCertSub = "AAS JWT Signing Certificate"
-	}
 
 	jwt.Config.Token.IncludeKid = true
 	if strings.ToLower(envJwtIncludeKid) == "false" {
 		jwt.Config.Token.IncludeKid = false
 	}
 
-	if envCMSBaseUrl != "" {
-		jwt.Config.CMSBaseUrl = envCMSBaseUrl
-	}
-
 	fs := flag.NewFlagSet("jwt", flag.ContinueOnError)
-	fs.StringVar(&envJwtCertSub, "subj", envJwtCertSub, "JWT Signing Certificate Subject")
+	fs.StringVar(&jwt.Config.Subject.JWTCertCommonName, "subj", jwt.Config.Subject.JWTCertCommonName, "JWT Signing Certificate Common Name")
 	fs.StringVar(&envBearerToken, "token", envBearerToken, "Bearer Token for requesting certificates from CMS")
 	fs.StringVar(&jwt.Config.CMSBaseUrl, "cms-url", jwt.Config.CMSBaseUrl, "CMS Base URL")
 	fs.IntVar(&jwt.Config.Token.TokenDurationMins, "valid-mins", envJwtTokenDurationMins, "JWT Token validation minutes")
@@ -75,7 +73,14 @@ func (jwt JWT) Run(c setup.Context) error {
 
 	// let us call the method available in the common setup task to obtain certificate and
 	privKeyDer, cert, err := setup.GetCertificateFromCMS("JWT-Signing", constants.DefaultKeyAlgorithm,
-		constants.DefaultKeyAlgorithmLength, jwt.Config.CMSBaseUrl, envJwtCertSub, "", constants.TrustedCAsStoreDir,envBearerToken)
+		constants.DefaultKeyAlgorithmLength, jwt.Config.CMSBaseUrl,
+		pkix.Name{CommonName: jwt.Config.Subject.JWTCertCommonName,
+			Organization: []string{jwt.Config.Subject.Organization},
+			Country:      []string{jwt.Config.Subject.Country},
+			Province:     []string{jwt.Config.Subject.Province},
+			Locality:     []string{jwt.Config.Subject.Province},
+		},
+		"", constants.TrustedCAsStoreDir,envBearerToken)
 	//cert, privKeyDer, err := crypt.CreateKeyPairAndCertificate(envJwtCertSub, "", "", 0)
 	if err != nil {
 		return err

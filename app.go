@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509/pkix"
 	"errors"
 	"flag"
 	"fmt"
@@ -209,8 +210,8 @@ func (a *App) configureLogs() {
 }
 
 func (a *App) Run(args []string) error {
+	var err error
 	a.configureLogs()
-
 	if len(args) < 2 {
 		a.printUsage()
 		os.Exit(1)
@@ -222,6 +223,7 @@ func (a *App) Run(args []string) error {
 	default:
 		a.printUsage()
 		return errors.New("Unrecognized command: " + args[1])
+
 	case "list":
 		if len(args) < 3 {
 			a.printUsage()
@@ -281,11 +283,12 @@ func (a *App) Run(args []string) error {
 	case "version":
 		fmt.Fprintf(a.consoleWriter(), "Auth Service %s-%s\n", version.Version, version.GitHash)
 	case "setup":
-
 		if len(args) <= 2 {
 			a.printUsage()
 			os.Exit(1)
 		}
+
+		a.Config = config.Global()
 
 		if args[2] != "admin" &&
 			args[2] != "download_ca_cert" &&
@@ -304,12 +307,14 @@ func (a *App) Run(args []string) error {
 			return valid_err
 		}
 
+
 		task := strings.ToLower(args[2])
 		flags := args[3:]
 		setupRunner := &setup.Runner{
 			Tasks: []setup.Task{
 				setup.Download_Ca_Cert{
 					Flags:         args,
+					CmsBaseURL:    a.Config.CMSBaseUrl,
 					CaCertDirPath: constants.TrustedCAsStoreDir,
 					ConsoleWriter: os.Stdout,
 				},
@@ -319,7 +324,14 @@ func (a *App) Run(args []string) error {
 					CertFile:           path.Join(a.configDir(), constants.TLSCertFile),
 					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
-					CommonName:         constants.DefaultAasTlsCn,
+					CmsBaseURL:         a.Config.CMSBaseUrl,
+					Subject:         	pkix.Name{
+						Country:            []string{a.Config.Subject.Country},
+						Organization:       []string{a.Config.Subject.Organization},
+						Locality:           []string{a.Config.Subject.Locality},
+						Province:           []string{a.Config.Subject.Province},
+						CommonName:         a.Config.Subject.TLSCertCommonName,
+					},
 					SanList:            constants.DefaultAasTlsSan,
 					CertType:           "TLS",
 					CaCertsDir:         constants.TrustedCAsStoreDir,
@@ -358,7 +370,6 @@ func (a *App) Run(args []string) error {
 			},
 			AskInput: false,
 		}
-		var err error
 		if task == "all" {
 			err = setupRunner.RunTasks()
 		} else {

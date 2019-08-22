@@ -14,7 +14,6 @@ import (
 	"intel/isecl/authservice/types"
 	"net/http"
 
-	_ "github.com/gorilla/context"
 	"github.com/gorilla/handlers"
 	log "github.com/sirupsen/logrus"
 
