@@ -310,16 +310,19 @@ func (a *App) Run(args []string) error {
 
 		task := strings.ToLower(args[2])
 		flags := args[3:]
+		if args[2] == "download_cert" && len(args) > 3 {
+			flags = args[4:]
+		}
 		setupRunner := &setup.Runner{
 			Tasks: []setup.Task{
 				setup.Download_Ca_Cert{
-					Flags:         args,
+					Flags:         flags,
 					CmsBaseURL:    a.Config.CMSBaseUrl,
 					CaCertDirPath: constants.TrustedCAsStoreDir,
 					ConsoleWriter: os.Stdout,
 				},
 				setup.Download_Cert{
-					Flags:              args,
+					Flags:              flags,
 					KeyFile:            path.Join(a.configDir(), constants.TLSKeyFile),
 					CertFile:           path.Join(a.configDir(), constants.TLSCertFile),
 					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
