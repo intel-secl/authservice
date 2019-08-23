@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	consts "intel/isecl/authservice/constants"
-	ct "intel/isecl/lib/common/types/aas"
-	"intel/isecl/lib/common/validation"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
+	ct "intel/isecl/lib/common/types/aas"
+	"intel/isecl/lib/common/validation"
 	"net/http"
 
 	"github.com/gorilla/handlers"
@@ -31,12 +31,19 @@ func SetRoles(r *mux.Router, db repository.AASDatabase) {
 func createRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
-		var rl types.Role
-
 		// authorize rest api endpoint based on token
 		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
 		if err != nil {
 			return err
+		}
+
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+
+		rl := types.Role{}
+		err = dec.Decode(&rl.RoleInfo)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
 		// we have the role now. If ctxMap is not nil, we need to make sure that the right privilege is
@@ -50,15 +57,8 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 
 		// at this point, we should have privilege to create the requested role. So, lets proceed
 
-		if (r.ContentLength == 0) {
+		if r.ContentLength == 0 {
 			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
-		}
-
-		dec := json.NewDecoder(r.Body)
-		dec.DisallowUnknownFields()
-		err = dec.Decode(&rl.RoleInfo)
-		if err != nil {
-			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
 		validation_err := ValidateRoleString(rl.Name)
@@ -148,7 +148,7 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 		if err != nil {
 			return err
 		}
-		
+
 		id := mux.Vars(r)["id"]
 
 		validation_err := validation.ValidateUUIDv4(id)
@@ -207,7 +207,7 @@ func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 		if len(service) > 0 {
 			if validation_err = ValidateServiceString(service); validation_err != nil {
 				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-			}	
+			}
 		}
 
 		if len(context) > 0 {
