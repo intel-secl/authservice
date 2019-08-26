@@ -34,7 +34,7 @@ func TestCreateAdmin(t *testing.T) {
 		role = &r
 		return role, nil
 	}
-	m.MockRoleRepository.RetrieveFunc = func(r types.Role) (*types.Role, error) {
+	m.MockRoleRepository.RetrieveFunc = func(r *types.RoleSearch) (*types.Role, error) {
 		if role == nil {
 			return nil, errors.New("Record not found")
 		}

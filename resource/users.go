@@ -7,11 +7,12 @@ package resource
 import (
 	"encoding/json"
 	consts "intel/isecl/authservice/constants"
-	ct "intel/isecl/lib/common/types/aas"
-	"intel/isecl/lib/common/validation"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
+	ct "intel/isecl/lib/common/types/aas"
+	"intel/isecl/lib/common/validation"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/handlers"
 	log "github.com/sirupsen/logrus"
@@ -210,7 +211,7 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
-		if (r.ContentLength == 0) {
+		if r.ContentLength == 0 {
 			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
 		}
 
@@ -223,7 +224,7 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		}
 
 		if len(rids.RoleUUIDs) == 0 {
-			return &resourceError {Message: "At least one role id is required", StatusCode: http.StatusBadRequest}
+			return &resourceError{Message: "At least one role id is required", StatusCode: http.StatusBadRequest}
 		}
 
 		for _, rid := range rids.RoleUUIDs {
@@ -235,7 +236,12 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 
 		// we need to retrieve roles to add by their ids. So we pass in empty filter for role
 		// We restrict roles by the privilege use the filter by id
-		roles, err := db.RoleRepository().RetrieveAll(types.Role{}, rids.RoleUUIDs, svcFltr)
+		roles, err := db.RoleRepository().RetrieveAll(&types.RoleSearch{
+			IDFilter:      rids.RoleUUIDs,
+			ServiceFilter: svcFltr,
+			AllContexts:   true,
+		})
+
 		if err != nil {
 			log.WithError(err).Info("failed to retrieve roles")
 			return &resourceError{Message: "One or more role ids does not exist", StatusCode: http.StatusBadRequest}
@@ -273,7 +279,6 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		}
 
 		id := mux.Vars(r)["id"]
-		var roleFilter *types.Role
 
 		validation_err := validation.ValidateUUIDv4(id)
 		if validation_err != nil {
@@ -285,6 +290,8 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		roleName := r.URL.Query().Get("name")
 		service := r.URL.Query().Get("service")
 		context := r.URL.Query().Get("context")
+		contextContains := r.URL.Query().Get("contextContains")
+		queryAllContexts := r.URL.Query().Get("allContexts")
 
 		if len(roleName) != 0 {
 			if validation_err := ValidateRoleString(roleName); validation_err != nil {
@@ -295,7 +302,7 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		if len(service) > 0 {
 			if validation_err = ValidateServiceString(service); validation_err != nil {
 				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-			}	
+			}
 		}
 
 		if len(context) > 0 {
@@ -304,9 +311,20 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 			}
 		}
 
-		roleFilter = &types.Role{RoleInfo: ct.RoleInfo{Service: service, Name: roleName, Context: context}}
+		// set allContexts to true - override if we get a valid entry from query parameter
+		allContexts := true
+		if getAllContexts, err := strconv.ParseBool(queryAllContexts); err == nil {
+			allContexts = getAllContexts
+		}
 
-		userRoles, err := db.UserRepository().GetRoles(types.User{ID: id}, roleFilter, svcFltr, true)
+		roleSearchFilter := &types.RoleSearch{
+			RoleInfo:        ct.RoleInfo{Service: service, Name: roleName, Context: context},
+			ContextContains: contextContains,
+			AllContexts:     allContexts,
+			ServiceFilter:   svcFltr,
+		}
+
+		userRoles, err := db.UserRepository().GetRoles(types.User{ID: id}, roleSearchFilter, true)
 		if err != nil {
 			log.WithError(err).Error("failed to retrieve user roles")
 			return err

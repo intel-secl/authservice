@@ -60,8 +60,9 @@ func (r *PostgresUserRepository) Delete(u types.User) error {
 	return r.db.Delete(&u).Error
 }
 
-func (r *PostgresUserRepository) GetRoles(u types.User, roleFilter *types.Role, svcFltr []string, includeID bool) (userRoles []types.Role, err error) {
+func (r *PostgresUserRepository) GetRoles(u types.User, rs *types.RoleSearch, includeID bool) (userRoles []types.Role, err error) {
 	var cols string
+
 	if includeID {
 		cols = "roles.id, "
 	}
@@ -69,11 +70,9 @@ func (r *PostgresUserRepository) GetRoles(u types.User, roleFilter *types.Role, 
 	cols = cols + "roles.service, roles.name, roles.context"
 	tx := r.db.Select(cols).Joins("INNER JOIN user_roles on user_roles.role_id = roles.id INNER JOIN users on user_roles.user_id = users.id").Where(&u)
 
-	if len(svcFltr) > 0 {
-		tx = tx.Where("service in (?) ", svcFltr)
-	}
-	if roleFilter != nil {
-		tx = tx.Where(roleFilter)
+	if rs != nil {
+
+		tx = buildRoleSearchQuery(tx, rs)
 	}
 
 	err = tx.Find(&userRoles).Error
@@ -83,7 +82,7 @@ func (r *PostgresUserRepository) GetRoles(u types.User, roleFilter *types.Role, 
 
 func (r *PostgresUserRepository) AddRoles(u types.User, roles types.Roles, mustAddAllRoles bool) error {
 
-	fmt.Println("Inside pg_user about to append role")
+	log.Trace("Adding role User:", u, "Roles:", roles)
 	if err := r.db.Model(&u).Association("Roles").Append(roles).Error; err != nil {
 		return err
 	}

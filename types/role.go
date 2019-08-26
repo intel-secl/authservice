@@ -18,4 +18,13 @@ type Role struct {
 	RoleInfo
 }
 
+type RoleSearch struct {
+	//embed
+	RoleInfo
+	ContextContains string
+	AllContexts     bool
+	ServiceFilter   []string
+	IDFilter        []string
+}
+
 type Roles []Role

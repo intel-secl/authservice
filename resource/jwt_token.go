@@ -101,7 +101,7 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 			return &resourceError{Message: "", StatusCode: httpStatus}
 		}
 
-		roles, err := u.GetRoles(types.User{Name: uc.UserName}, nil, []string{}, false)
+		roles, err := u.GetRoles(types.User{Name: uc.UserName}, nil, false)
 		if err != nil {
 			log.WithError(err).Error("Database error: unable to retrive roles")
 			return &resourceError{Message: "", StatusCode: http.StatusInternalServerError}
@@ -116,7 +116,6 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 			log.WithError(err).Errorf("could not generate token")
 			return &resourceError{Message: "", StatusCode: http.StatusInternalServerError}
 		}
-		fmt.Println(string(jwt))
 
 		w.Header().Set("Content-Type", "application/jwt")
 		w.Write([]byte(jwt))

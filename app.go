@@ -341,18 +341,18 @@ func (a *App) Run(args []string) error {
 					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
 					CmsBaseURL:         a.Config.CMSBaseUrl,
-					Subject:         	pkix.Name{
-						Country:            []string{a.Config.Subject.Country},
-						Organization:       []string{a.Config.Subject.Organization},
-						Locality:           []string{a.Config.Subject.Locality},
-						Province:           []string{a.Config.Subject.Province},
-						CommonName:         a.Config.Subject.TLSCertCommonName,
+					Subject: pkix.Name{
+						Country:      []string{a.Config.Subject.Country},
+						Organization: []string{a.Config.Subject.Organization},
+						Locality:     []string{a.Config.Subject.Locality},
+						Province:     []string{a.Config.Subject.Province},
+						CommonName:   a.Config.Subject.TLSCertCommonName,
 					},
-					SanList:            constants.DefaultAasTlsSan,
-					CertType:           "TLS",
-					CaCertsDir:         constants.TrustedCAsStoreDir,
-					BearerToken:        "",
-					ConsoleWriter:      os.Stdout,
+					SanList:       constants.DefaultAasTlsSan,
+					CertType:      "TLS",
+					CaCertsDir:    constants.TrustedCAsStoreDir,
+					BearerToken:   "",
+					ConsoleWriter: os.Stdout,
 				},
 				tasks.Database{
 					Flags:         flags,
@@ -703,7 +703,7 @@ func (a *App) TestNewDBFunctions() error {
 		log.WithError(err).Error("failed to open database")
 		return err
 	}
-	users, err := db.UserRepository().GetRoles(types.User{Name: "admin"}, nil, []string{}, true)
+	users, err := db.UserRepository().GetRoles(types.User{Name: "admin"}, nil, true)
 	if err != nil {
 		fmt.Println(err)
 		return err

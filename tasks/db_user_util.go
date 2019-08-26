@@ -19,7 +19,10 @@ import (
 
 func createRole(db repository.AASDatabase, service, name, context string) (*types.Role, error) {
 
-	role, err := db.RoleRepository().Retrieve(types.Role{RoleInfo: ct.RoleInfo{Name: name, Service: service, Context: context}})
+	role, err := db.RoleRepository().Retrieve(&types.RoleSearch{
+					RoleInfo: ct.RoleInfo{Name: name, Service: service, Context: context},
+					AllContexts : false,
+				})
 	if err != nil {
 		uuid, _ := repository.UUID()
 		role, err = db.RoleRepository().Create(types.Role{ID: uuid, RoleInfo: ct.RoleInfo{Name: name, Service: service, Context: context}})

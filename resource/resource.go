@@ -59,7 +59,7 @@ func (e resourceError) Error() string {
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
 }
 
-func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, retNilCtxForEmptyCtx bool) (*map[string]*ct.RoleInfo, error) {
+func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, retNilCtxForEmptyCtx bool) (*map[string]ct.RoleInfo, error) {
 	// Check query authority
 	privileges, err := comctx.GetUserRoles(r)
 	if err != nil {

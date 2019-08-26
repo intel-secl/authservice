@@ -6,13 +6,13 @@ package resource
 
 import (
 	"encoding/json"
-	"fmt"
 	consts "intel/isecl/authservice/constants"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/lib/common/validation"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/handlers"
 	log "github.com/sirupsen/logrus"
@@ -76,7 +76,13 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
-		existingRole, err := db.RoleRepository().Retrieve(types.Role{RoleInfo: ct.RoleInfo{Service: rl.Service, Name: rl.Name, Context: rl.Context}})
+		// at this point, we should have privilege to create the requested role. So, lets proceed
+
+		existingRole, err := db.RoleRepository().Retrieve(&types.RoleSearch{
+			RoleInfo:    ct.RoleInfo{Service: rl.Service, Name: rl.Name, Context: rl.Context},
+			AllContexts: false,
+		})
+
 		if existingRole != nil {
 			return &resourceError{Message: "same role exists", StatusCode: http.StatusBadRequest}
 		}
@@ -115,7 +121,8 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 		// at this point, we should get the role and later check if user has permission to read this role.
 		// this is not as efficient. It retrieves a record from the database even though the user does
 		// not have privilege to read the record.
-		rl, err := db.RoleRepository().Retrieve(types.Role{ID: id})
+		rl, err := db.RoleRepository().Retrieve(&types.RoleSearch{AllContexts: true, IDFilter: []string{id}})
+
 		if err != nil {
 			log.WithError(err).WithField("id", id).Info("failed to retrieve role")
 			w.WriteHeader(http.StatusNoContent)
@@ -156,7 +163,7 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
-		del_rl, err := db.RoleRepository().Retrieve(types.Role{ID: id})
+		del_rl, err := db.RoleRepository().Retrieve(&types.RoleSearch{AllContexts: true, IDFilter: []string{id}})
 		if del_rl == nil || err != nil {
 			log.WithError(err).WithField("id", id).Info("attempt to delete invalid role")
 			w.WriteHeader(http.StatusNoContent)
@@ -197,6 +204,8 @@ func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 		service := r.URL.Query().Get("service")
 		roleName := r.URL.Query().Get("name")
 		context := r.URL.Query().Get("context")
+		contextContains := r.URL.Query().Get("contextContains")
+		queryAllContexts := r.URL.Query().Get("allContexts")
 
 		if len(roleName) != 0 {
 			if validation_err := ValidateRoleString(roleName); validation_err != nil {
@@ -216,16 +225,30 @@ func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 			}
 		}
 
-		filter := types.Role{
+		if len(contextContains) > 0 {
+			if validation_err = ValidateContextString(contextContains); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}
+		}
+
+		// set allContexts to true - override if we get a valid entry from query parameter
+		allContexts := true
+		if getAllContexts, err := strconv.ParseBool(queryAllContexts); err == nil {
+			allContexts = getAllContexts
+		}
+
+		filter := types.RoleSearch{
 			RoleInfo: ct.RoleInfo{
 				Service: service,
 				Name:    roleName,
 				Context: context,
 			},
+			ContextContains: contextContains,
+			ServiceFilter:   svcFltr,
+			AllContexts:     allContexts,
 		}
 
-		fmt.Println("Service filter", svcFltr)
-		roles, err := db.RoleRepository().RetrieveAll(filter, []string{}, svcFltr)
+		roles, err := db.RoleRepository().RetrieveAll(&filter)
 		if err != nil {
 			log.WithError(err).WithField("filter", filter).Info("failed to retrieve roles")
 			return err

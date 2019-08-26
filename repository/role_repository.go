@@ -8,8 +8,8 @@ import "intel/isecl/authservice/types"
 
 type RoleRepository interface {
 	Create(types.Role) (*types.Role, error)
-	Retrieve(types.Role) (*types.Role, error)
-	RetrieveAll(role types.Role, idFilter []string, serviceFilter []string) (types.Roles, error)
+	Retrieve(*types.RoleSearch) (*types.Role, error)
+	RetrieveAll(*types.RoleSearch) (types.Roles, error)
 	Update(types.Role) error
 	Delete(types.Role) error
 }

@@ -51,7 +51,7 @@ func (m *MockUserRepository) Delete(user types.User) error {
 	return nil
 }
 
-func (m *MockUserRepository) GetRoles(user types.User, role *types.Role, svcFltr []string, includeID bool) ([]types.Role, error) {
+func (m *MockUserRepository) GetRoles(user types.User, rs *types.RoleSearch, includeID bool) ([]types.Role, error) {
 	return nil, nil
 }
 
