@@ -5,10 +5,7 @@
 package main
 
 import (
-	"fmt"
-	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
-	"intel/isecl/lib/common/setup"
 	"os"
 	"path"
 )
@@ -24,7 +21,6 @@ func openLogFiles() (logFile *os.File, httpLogFile *os.File) {
 }
 
 func main() {
-	var context setup.Context
 	l, h := openLogFiles()
 	defer l.Close()
 	defer h.Close()
@@ -32,15 +28,8 @@ func main() {
 		LogWriter:     l,
 		HTTPLogWriter: h,
 	}
-	// save configuration from config.yml
-	loadedConfig := config.Global()
-	err := loadedConfig.SaveConfiguration(context)
-	if err != nil {
-		fmt.Println("Error saving configuration: " + err.Error())
-		os.Exit(1)
-	}
 
-	err = app.Run(os.Args)
+	err := app.Run(os.Args)
 	if err != nil {
 		os.Exit(1)
 	}

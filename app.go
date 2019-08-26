@@ -65,7 +65,7 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "    authservice <command> [arguments]")
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "Avaliable Commands:")
+	fmt.Fprintln(w, "Available Commands:")
 	fmt.Fprintln(w, "    help|-h|-help    Show this help message")
 	fmt.Fprintln(w, "    setup [task]     Run setup task")
 	fmt.Fprintln(w, "    start            Start authservice")
@@ -75,9 +75,11 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "    uninstall        Uninstall authservice")
 	fmt.Fprintln(w, "    version          Show the version of authservice")
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "Avaliable Tasks for setup:")
+	fmt.Fprintln(w, "Available Tasks for setup:")
+	fmt.Fprintln(w, "    authservice setup all")
+	fmt.Fprintln(w, "        - Runs all setup tasks")
 	fmt.Fprintln(w, "    authservice setup database [-force] [--arguments=<argument_value>]")
-	fmt.Fprintln(w, "        - Avaliable arguments are:")
+	fmt.Fprintln(w, "        - Available arguments are:")
 	fmt.Fprintln(w, "            - db-host    alternatively, set environment variable AAS_DB_HOSTNAME")
 	fmt.Fprintln(w, "            - db-port    alternatively, set environment variable AAS_DB_PORT")
 	fmt.Fprintln(w, "            - db-user    alternatively, set environment variable AAS_DB_USERNAME")
@@ -114,13 +116,17 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "        - Option [--force] overwrites any existing files, and always downloads new root CA cert")
 	fmt.Fprintln(w, "        - Environment variable CMS_BASE_URL=<url> for CMS API url")
 	fmt.Fprintln(w, "    authservice setup download_cert TLS [--force]")
-	fmt.Fprintln(w, "        - Genrates Key pair and CSR, gets it signed from CMS")
+	fmt.Fprintln(w, "        - Generates Key pair and CSR, gets it signed from CMS")
 	fmt.Fprintln(w, "        - Option [--force] overwrites any existing files, and always downloads newly signed TLS cert")
 	fmt.Fprintln(w, "        - Environment variable CMS_BASE_URL=<url> for CMS API url")
 	fmt.Fprintln(w, "        - Environment variable BEARER_TOKEN=<token> for authenticating with CMS")
 	fmt.Fprintln(w, "        - Environment variable KEY_PATH=<key_path> to override default specified in config")
 	fmt.Fprintln(w, "        - Environment variable CERT_PATH=<cert_path> to override default specified in config")
-	fmt.Fprintln(w, "        - Environment variable COMMON_NAME=<CN> to override default specified in config")
+	fmt.Fprintln(w, "        - Environment variable AAS_TLS_CERT_CN=<TLS CERT COMMON NAME> to override default specified in config")
+	fmt.Fprintln(w, "        - Environment variable AAS_CERT_ORG=<CERTIFICATE ORGANIZATION> to override default specified in config")
+	fmt.Fprintln(w, "        - Environment variable AAS_CERT_COUNTRY=<CERTIFICATE COUNTRY> to override default specified in config")
+	fmt.Fprintln(w, "        - Environment variable AAS_CERT_LOCALITY=<CERTIFICATE LOCALITY> to override default specified in config")
+	fmt.Fprintln(w, "        - Environment variable AAS_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config")
 	fmt.Fprintln(w, "        - Environment variable SAN_LIST=<san> list of hosts which needs access to service")
 	fmt.Fprintln(w, "")
 }
@@ -210,7 +216,6 @@ func (a *App) configureLogs() {
 }
 
 func (a *App) Run(args []string) error {
-	var err error
 	a.configureLogs()
 	if len(args) < 2 {
 		a.printUsage()
@@ -283,12 +288,11 @@ func (a *App) Run(args []string) error {
 	case "version":
 		fmt.Fprintf(a.consoleWriter(), "Auth Service %s-%s\n", version.Version, version.GitHash)
 	case "setup":
+		var context setup.Context
 		if len(args) <= 2 {
 			a.printUsage()
 			os.Exit(1)
 		}
-
-		a.Config = config.Global()
 
 		if args[2] != "admin" &&
 			args[2] != "download_ca_cert" &&
@@ -307,12 +311,21 @@ func (a *App) Run(args []string) error {
 			return valid_err
 		}
 
+		a.Config = config.Global()
+		err := a.Config.SaveConfiguration(context)
+		if err != nil {
+			fmt.Println("Error saving configuration: " + err.Error())
+			os.Exit(1)
+		}
 
 		task := strings.ToLower(args[2])
 		flags := args[3:]
 		if args[2] == "download_cert" && len(args) > 3 {
 			flags = args[4:]
 		}
+
+		a.Config = config.Global()
+
 		setupRunner := &setup.Runner{
 			Tasks: []setup.Task{
 				setup.Download_Ca_Cert{
