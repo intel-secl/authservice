@@ -538,8 +538,8 @@ The daemon will create and use the following files on the OS:
 2. /var/log/authservice/http.log
 3. /etc/authservice/config.yaml (Configuration)
 4. /usr/\*/bin/authservice (executable binary)
-5. /etc/authservice/key.pem (TLS key)
-6. /etc/authservice/cert.pem (TLS cert)
+5. /etc/authservice/tls.key (TLS key)
+6. /etc/authservice/tls-cert.pem (TLS cert)
 
 ## Container Installation - Not currently tested/ supported
 
