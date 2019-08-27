@@ -7,9 +7,9 @@ package tasks
 
 import (
 	"errors"
-	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
+	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/lib/common/validation"
 
 	"golang.org/x/crypto/bcrypt"
@@ -20,9 +20,9 @@ import (
 func createRole(db repository.AASDatabase, service, name, context string) (*types.Role, error) {
 
 	role, err := db.RoleRepository().Retrieve(&types.RoleSearch{
-					RoleInfo: ct.RoleInfo{Name: name, Service: service, Context: context},
-					AllContexts : false,
-				})
+		RoleInfo:    ct.RoleInfo{Name: name, Service: service, Context: context},
+		AllContexts: false,
+	})
 	if err != nil {
 		uuid, _ := repository.UUID()
 		role, err = db.RoleRepository().Create(types.Role{ID: uuid, RoleInfo: ct.RoleInfo{Name: name, Service: service, Context: context}})
@@ -38,7 +38,11 @@ func addDBUser(db repository.AASDatabase, username string, password string, role
 	if password == "" {
 		return errors.New("db user setup: Password cannot be empty")
 	}
-	valid_err := validation.ValidateAccount(username, password)
+	valid_err := validation.ValidateUserNameString(username)
+	if valid_err != nil {
+		return valid_err
+	}
+	valid_err = validation.ValidatePasswordString(password)
 	if valid_err != nil {
 		return valid_err
 	}

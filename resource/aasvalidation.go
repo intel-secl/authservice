@@ -45,21 +45,3 @@ func ValidateContextString(contextString string) error {
 
 	return nil
 }
-
-// ValidateUserNameString is used to check if the string is a valid AAS user name string
-func ValidateUserNameString(userNameString string) error {
-	if !aasUsernameReg.MatchString(userNameString) {
-		return errors.New("Invalid user name string provided")
-	}
-
-	return nil
-}
-
-// ValidatePasswordString is used to check if the string is a valid AAS password string
-func ValidatePasswordString(passwordString string) error {
-	if !aasPasswordReg.MatchString(passwordString) {
-		return errors.New("Invalid password string provided")
-	}
-
-	return nil
-}

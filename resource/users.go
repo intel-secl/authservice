@@ -55,12 +55,12 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 		}
 
 		// validate user fields
-		validation_err := ValidateUserNameString(uc.Name)
+		validation_err := validation.ValidateUserNameString(uc.Name)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
-		validation_err = ValidatePasswordString(uc.Password)
+		validation_err = validation.ValidatePasswordString(uc.Password)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 		}
@@ -168,7 +168,7 @@ func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 		userName := r.URL.Query().Get("name")
 
 		if len(userName) != 0 {
-			if validation_err := ValidateUserNameString(userName); validation_err != nil {
+			if validation_err := validation.ValidateUserNameString(userName); validation_err != nil {
 				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 			}
 		}

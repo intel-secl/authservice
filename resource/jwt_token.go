@@ -12,6 +12,7 @@ import (
 	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/lib/common/crypt"
 	"intel/isecl/lib/common/jwt"
+	"intel/isecl/lib/common/validation"
 
 	"intel/isecl/authservice/repository"
 	authcommon "intel/isecl/authservice/common"
@@ -85,12 +86,12 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
-		validation_err := ValidateUserNameString(uc.UserName)
+		validation_err := validation.ValidateUserNameString(uc.UserName)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
 		}
 
-		validation_err = ValidatePasswordString(uc.Password)
+		validation_err = validation.ValidatePasswordString(uc.Password)
 		if validation_err != nil {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
 		}
