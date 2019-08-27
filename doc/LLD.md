@@ -381,6 +381,8 @@ Available Query parameters:
 - service=(service name - only get roles where for this queried service)
 - name=(role name)
 - context=(only looking for roles matching certain context)
+- contextContains=(substring to match context) - if both context and contextContains are present, context is used and cotextContains is ignored
+- allContexts=<true|false> - false means that record(s) returned would be the ones where the context field is empty
 
 ### GET `/aas/roles/{id-uuidv4}`
 
@@ -468,6 +470,35 @@ Available Query parameters:
 - service=(service name - only get roles where for this queried service)
 - name=(role name)
 - context=(only looking for roles matching certain context)
+- contextContains=(substring to match context) - if both context and contextContains are present, context is used and cotextContains is ignored
+- allContexts=<true|false> - false means that record(s) returned would be the ones where the context field is empty
+
+### GET aas/noauth/jwt-certificates
+
+Get the JWT Signing Certificate which may be used to verify the token that has been signed by AAS
+
+- Authorization: `none`
+
+Example Response:
+
+```text
+-----BEGIN CERTIFICATE-----
+MIIEBzCCAm+gAwIBAgIBAzANBgkqhkiG9w0BAQwFADBHMQswCQYDVQQGEwJVUzEL
+.....
+xGp0ClD5tg5oTSPLVYZrye/dY1wvbMmSYxU7zsEwzwqba1Cl3mSNe8YURvOQXpl/
+jYHfg7o1fmBEx9IJKFp43ezxyV5Cw/gvQQLR
+-----END CERTIFICATE-----
+```
+### GET aas/noauth/version
+
+Get version of AAS
+- Authorization: `none`
+
+Example Response:
+
+```text
+v0.0.0-4563a0a
+```
 
 
 ## Database Schema
@@ -515,13 +546,17 @@ Indexes:
 Indexes:
     "user_roles_pkey" PRIMARY KEY, btree (user_id, role_id)
 
-
-
-
-
 Indexes:
     "user_roles_pkey" PRIMARY KEY, btree (user_id, role_id)
 
+
+## Logging
+
+Logging features of AAS are not fully developed. This shall be addressed in a subsequent release. For now, most of the logs pertaining to AAS service/ daemon are logged in the journalctl. You may view the logs by using
+
+```shell
+journalctl -u authservice
+```
 
 # Auth Service Installaton
 
