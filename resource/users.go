@@ -311,6 +311,12 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 			}
 		}
 
+		if len(contextContains) > 0 {
+                        if validation_err = ValidateContextString(contextContains); validation_err != nil {
+                                return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+                        }
+                }
+
 		// set allContexts to true - override if we get a valid entry from query parameter
 		allContexts := true
 		if getAllContexts, err := strconv.ParseBool(queryAllContexts); err == nil {
