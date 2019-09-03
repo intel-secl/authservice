@@ -52,12 +52,14 @@ func (jwt JWT) Run(c setup.Context) error {
 		jwt.Config.Token.IncludeKid = false
 	}
 
+	force := false
 	fs := flag.NewFlagSet("jwt", flag.ContinueOnError)
 	fs.StringVar(&jwt.Config.Subject.JWTCertCommonName, "subj", jwt.Config.Subject.JWTCertCommonName, "JWT Signing Certificate Common Name")
 	fs.StringVar(&envBearerToken, "token", envBearerToken, "Bearer Token for requesting certificates from CMS")
 	fs.StringVar(&jwt.Config.CMSBaseUrl, "cms-url", jwt.Config.CMSBaseUrl, "CMS Base URL")
 	fs.IntVar(&jwt.Config.Token.TokenDurationMins, "valid-mins", envJwtTokenDurationMins, "JWT Token validation minutes")
 	fs.BoolVar(&jwt.Config.Token.IncludeKid, "keyid", jwt.Config.Token.IncludeKid, "JWT include Key ID")
+	fs.BoolVar(&force, "force", force, "Force redo setup")
 	err := fs.Parse(jwt.Flags)
 	if err != nil {
 		return err
@@ -71,6 +73,11 @@ func (jwt JWT) Run(c setup.Context) error {
 		return errors.New("JWT Certificate setup: BEARER_TOKEN needed for downloading certificates from CMS")
 	}
 
+	if jwt.Validate(c) == nil &&
+		!force {
+		return nil
+	}
+
 	// let us call the method available in the common setup task to obtain certificate and
 	privKeyDer, cert, err := setup.GetCertificateFromCMS("JWT-Signing", constants.DefaultKeyAlgorithm,
 		constants.DefaultKeyAlgorithmLength, jwt.Config.CMSBaseUrl,
@@ -80,7 +87,7 @@ func (jwt JWT) Run(c setup.Context) error {
 			Province:     []string{jwt.Config.Subject.Province},
 			Locality:     []string{jwt.Config.Subject.Province},
 		},
-		"", constants.TrustedCAsStoreDir,envBearerToken)
+		"", constants.TrustedCAsStoreDir, envBearerToken)
 	//cert, privKeyDer, err := crypt.CreateKeyPairAndCertificate(envJwtCertSub, "", "", 0)
 	if err != nil {
 		return err
@@ -117,6 +124,15 @@ func (jwt JWT) Run(c setup.Context) error {
 }
 
 func (jwt JWT) Validate(c setup.Context) error {
-
+	if _, err := os.Stat(constants.TokenSignKeyFile); err != nil {
+		if os.IsNotExist(err) {
+			return err
+		}
+	}
+	if _, err := os.Stat(constants.TokenSignCertFile); err != nil {
+		if os.IsNotExist(err) {
+			return err
+		}
+	}
 	return nil
 }
