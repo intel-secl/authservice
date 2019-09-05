@@ -27,7 +27,8 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 echo "Setting up Auth Service Linux User..."
-id -u $SERVICE_USERNAME 2> /dev/null || useradd $SERVICE_USERNAME
+# useradd -M -> this user has no home directory
+id -u $SERVICE_USERNAME 2> /dev/null || useradd -M --system --shell /sbin/nologin $SERVICE_USERNAME
 
 echo "Installing Auth Service..."
 
