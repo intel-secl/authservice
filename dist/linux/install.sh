@@ -10,13 +10,13 @@ elif [ -f ../authservice.env ]; then
     env_file=../authservice.env
 fi
 
-if [ -n $env_file ]; then
+if [ -z $env_file ]; then
+    echo "No .env file found"
+    AAS_NOSETUP="true"
+else
     source $env_file
     env_file_exports=$(cat $env_file | grep -E '^[A-Z0-9_]+\s*=' | cut -d = -f 1)
     if [ -n "$env_file_exports" ]; then eval export $env_file_exports; fi
-else
-    echo No .env file found
-    AAS_NOSETUP="true"
 fi
 
 SERVICE_USERNAME=aas
