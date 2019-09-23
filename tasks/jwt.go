@@ -69,6 +69,10 @@ func (jwt JWT) Run(c setup.Context) error {
 		return errors.New("JWT Certificate setup: need CMS url to obtain certificate")
 	}
 
+	if jwt.Config.Token.TokenDurationMins <= 0 {
+		jwt.Config.Token.TokenDurationMins = constants.DefaultAasJwtDurationMins
+	}
+
 	if envBearerToken == "" {
 		return errors.New("JWT Certificate setup: BEARER_TOKEN needed for downloading certificates from CMS")
 	}

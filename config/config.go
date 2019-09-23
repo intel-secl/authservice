@@ -75,49 +75,56 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	if err == nil && cmsBaseUrl != "" {
 		conf.CMSBaseUrl = cmsBaseUrl
 	} else if conf.CMSBaseUrl == "" {
-		    log.Error("CMS_BASE_URL is not defined in environment")
+		log.Error("CMS_BASE_URL is not defined in environment")
 	}
 
 	jwtCertCN, err := c.GetenvString("AAS_JWT_CERT_CN", "AAS JWT Certificate Common Name")
 	if err == nil && jwtCertCN != "" {
 		conf.Subject.JWTCertCommonName = jwtCertCN
 	} else if conf.Subject.JWTCertCommonName == "" {
-			conf.Subject.JWTCertCommonName = constants.DefaultAasJwtCn
+		conf.Subject.JWTCertCommonName = constants.DefaultAasJwtCn
 	}
 
 	tlsCertCN, err := c.GetenvString("AAS_TLS_CERT_CN", "AAS TLS Certificate Common Name")
 	if err == nil && tlsCertCN != "" {
 		conf.Subject.TLSCertCommonName = tlsCertCN
 	} else if conf.Subject.TLSCertCommonName == "" {
-			conf.Subject.TLSCertCommonName = constants.DefaultAasTlsCn
+		conf.Subject.TLSCertCommonName = constants.DefaultAasTlsCn
 	}
 
 	certOrg, err := c.GetenvString("AAS_CERT_ORG", "AAS Certificate Organization")
 	if err == nil && certOrg != "" {
 		conf.Subject.Organization = certOrg
 	} else if conf.Subject.Organization == "" {
-			conf.Subject.Organization = constants.DefaultAasCertOrganization
+		conf.Subject.Organization = constants.DefaultAasCertOrganization
 	}
 
 	certCountry, err := c.GetenvString("AAS_CERT_COUNTRY", "AAS Certificate Country")
-	if err == nil &&  certCountry != "" {
+	if err == nil && certCountry != "" {
 		conf.Subject.Country = certCountry
 	} else if conf.Subject.Country == "" {
-			conf.Subject.Country = constants.DefaultAasCertCountry
+		conf.Subject.Country = constants.DefaultAasCertCountry
 	}
 
 	certProvince, err := c.GetenvString("AAS_CERT_PROVINCE", "AAS Certificate Province")
 	if err == nil && certProvince != "" {
 		conf.Subject.Province = certProvince
 	} else if err != nil || conf.Subject.Province == "" {
-			conf.Subject.Province = constants.DefaultAasCertProvince
+		conf.Subject.Province = constants.DefaultAasCertProvince
 	}
 
 	certLocality, err := c.GetenvString("AAS_CERT_LOCALITY", "AAS Certificate Locality")
 	if err == nil && certLocality != "" {
 		conf.Subject.Locality = certLocality
 	} else if conf.Subject.Locality == "" {
-			conf.Subject.Locality = constants.DefaultAasCertLocality
+		conf.Subject.Locality = constants.DefaultAasCertLocality
+	}
+
+	jwtTokenDuration, err := c.GetenvInt("AAS_JWT_TOKEN_DURATION_MINS", "AAS JWT token life span")
+	if err == nil {
+		conf.Token.TokenDurationMins = jwtTokenDuration
+	} else {
+		conf.Token.TokenDurationMins = constants.DefaultAasJwtDurationMins
 	}
 
 	return conf.Save()
