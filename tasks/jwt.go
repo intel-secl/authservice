@@ -92,7 +92,6 @@ func (jwt JWT) Run(c setup.Context) error {
 			Locality:     []string{jwt.Config.Subject.Province},
 		},
 		"", constants.TrustedCAsStoreDir, envBearerToken)
-	//cert, privKeyDer, err := crypt.CreateKeyPairAndCertificate(envJwtCertSub, "", "", 0)
 	if err != nil {
 		return err
 	}

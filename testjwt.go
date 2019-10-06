@@ -15,6 +15,7 @@ import (
 	ct "intel/isecl/lib/common/types/aas"
 
 	"os"
+	"time"
 )
 
 func (a* App) GenerateCertRequest() error {
@@ -109,7 +110,7 @@ func (a *App) TestTokenAuth() error {
 
 
 func (a *App) ValidateToken(certPem []byte, jwtString string) error {
-	v, err := jwtauth.NewVerifier(certPem, [][]byte{})
+	v, err := jwtauth.NewVerifier(certPem, [][]byte{}, time.Minute * 5)
 	if err != nil {
 		return err
 	}

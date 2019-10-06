@@ -409,6 +409,7 @@ func (a *App) Run(args []string) error {
 
 func (a *App) retrieveJWTSigningCerts() error {
 	//No implementation is required as AAS will already have the jwt certificate created as part of setup task
+	log.Debug("Callback function to get JWT certs called")
 	return nil
 }
 
@@ -445,7 +446,9 @@ func (a *App) startServer() error {
 	}(resource.SetJwtToken)
 
 	sr = r.PathPrefix("/aas/test/").Subrouter()
-	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts))
+	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
+		constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts,
+		time.Minute*constants.DefaultJwtValidateCacheKeyMins))
 	func(setters ...func(*mux.Router)) {
 		for _, setter := range setters {
 			setter(sr)
@@ -453,7 +456,9 @@ func (a *App) startServer() error {
 	}(resource.SetTestJwt)
 
 	sr = r.PathPrefix("/aas/").Subrouter()
-	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts))
+	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
+		constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts,
+		time.Minute*constants.DefaultJwtValidateCacheKeyMins))
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
 		for _, setter := range setters {
 			setter(sr, aasDB)
