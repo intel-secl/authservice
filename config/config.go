@@ -161,7 +161,7 @@ func Load(path string) *Configuration {
 		yaml.NewDecoder(file).Decode(&c)
 	} else {
 		// file doesnt exist, create a new blank one
-		c.LogLevel = log.ErrorLevel
+		c.LogLevel = log.InfoLevel
 	}
 
 	c.configFile = path
