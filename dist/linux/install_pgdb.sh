@@ -34,7 +34,7 @@ ISECL_PGDB_CERTSUBJECT="${ISECL_PGDB_CERTSUBJECT:-$DEFAULT_CERTSUBJECT}"
 ISECL_PGDB_CIPHERSUITES="${ISECL_PGDB_CIPHERSUITES:-$DEFAULT_CIPHERSUITES}"
 
 
-echo "Installing postgres database version 11 and its rpm repo for RHEL 7 x86_64 ..."
+echo "Installing postgres database version 11"
 
 cd /tmp
 log_file=/dev/null
@@ -43,7 +43,6 @@ if [ -z $SAVE_DB_INSTALL_LOG ] ; then
 fi
 
 # download postgres repo
-yum install https://download.postgresql.org/pub/repos/yum/11/redhat/rhel-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm -y &>> $log_file
 yum install postgresql11 postgresql11-server postgresql11-contrib postgresql11-libs -y &>> $log_file
 
 if [ $? -ne 0 ] ; then
