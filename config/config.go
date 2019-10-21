@@ -7,6 +7,7 @@ package config
 import (
 	"errors"
 	"intel/isecl/authservice/constants"
+	commLog "intel/isecl/lib/common/log"
 	"intel/isecl/lib/common/setup"
 	"os"
 	"path"
@@ -75,7 +76,7 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	if err == nil && cmsBaseUrl != "" {
 		conf.CMSBaseUrl = cmsBaseUrl
 	} else if conf.CMSBaseUrl == "" {
-		log.Error("CMS_BASE_URL is not defined in environment")
+		commLog.GetDefaultLogger().Error("CMS_BASE_URL is not defined in environment")
 	}
 
 	jwtCertCN, err := c.GetenvString("AAS_JWT_CERT_CN", "AAS JWT Certificate Common Name")

@@ -8,7 +8,6 @@ package tasks
 import (
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"errors"
 	"flag"
 	"fmt"
 	"intel/isecl/authservice/config"
@@ -19,6 +18,8 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type JWT struct {
@@ -62,7 +63,8 @@ func (jwt JWT) Run(c setup.Context) error {
 	fs.BoolVar(&force, "force", force, "Force redo setup")
 	err := fs.Parse(jwt.Flags)
 	if err != nil {
-		return err
+		// return err
+		return errors.Wrap(err, "setup jwt: failed to parse cmd flags")
 	}
 
 	if jwt.Config.CMSBaseUrl == "" {
@@ -93,25 +95,29 @@ func (jwt JWT) Run(c setup.Context) error {
 		},
 		"", constants.TrustedCAsStoreDir, envBearerToken)
 	if err != nil {
-		return err
+		// return err
+		return errors.Wrap(err, "setup jwt: failed to get certificate from cms")
 	}
 
 	// write out the private key
 	keyOut, err := os.OpenFile(constants.TokenSignKeyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0)
 	if err != nil {
-		return fmt.Errorf("could not open private key file for writing: %v", err)
+		// return fmt.Errorf("could not open private key file for writing: %v", err)
+		return errors.Wrap(err, "setup jwt: could not open private key file for writing")
 	}
 	os.Chmod(constants.TokenSignKeyFile, 0640)
 	defer keyOut.Close()
 	if err := pem.Encode(keyOut, &pem.Block{Type: "PKCS8 PRIVATE KEY", Bytes: privKeyDer}); err != nil {
-		return fmt.Errorf("could not pem encode the private key: %v", err)
+		// return fmt.Errorf("could not pem encode the private key: %v", err)
+		return errors.Wrap(err, "setup jwt: ould not pem encode the private key")
 	}
 
 	// write the token signing certificate to the specified location
 	err = ioutil.WriteFile(constants.TokenSignCertFile, cert, 0640)
 	if err != nil {
 		fmt.Println("Could not store Certificate")
-		return fmt.Errorf("Certificate setup: %v", err)
+		// return fmt.Errorf("Certificate setup: %v", err)
+		return errors.Wrap(err, "setup jwt: Could not store Certificate")
 	}
 	os.Chmod(constants.TokenSignCertFile, 0640)
 
@@ -120,10 +126,15 @@ func (jwt JWT) Run(c setup.Context) error {
 	err = crypt.SavePemCertWithShortSha1FileName(cert, constants.TrustedJWTSigningCertsDir)
 	if err != nil {
 		fmt.Println("Could not store Certificate")
-		return fmt.Errorf("Certificate setup: %v", err)
+		// return fmt.Errorf("Certificate setup: %v", err)
+		return errors.Wrap(err, "setup jwt: Could not store Certificate")
 	}
-
-	return jwt.Config.Save()
+	// return jwt.Config.Save()
+	err = jwt.Config.Save()
+	if err != nil {
+		return errors.Wrap(err, "setup jwt: failed to save config")
+	}
+	return nil
 }
 
 func (jwt JWT) Validate(c setup.Context) error {

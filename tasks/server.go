@@ -5,13 +5,14 @@
 package tasks
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"intel/isecl/authservice/config"
 	"intel/isecl/authservice/constants"
 	"intel/isecl/lib/common/setup"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 type Server struct {
@@ -32,7 +33,8 @@ func (s Server) Run(c setup.Context) error {
 	fs.IntVar(&s.Config.Port, "port", defaultPort, "auth service http port")
 	err = fs.Parse(s.Flags)
 	if err != nil {
-		return err
+		// return err
+		return errors.Wrap(err, "setup server: failed to parse cmd flags")
 	}
 	if s.Config.Port > 65535 || s.Config.Port <= 1024 {
 		return errors.New("Invalid or reserved port")
@@ -43,7 +45,12 @@ func (s Server) Run(c setup.Context) error {
 	s.Config.AuthDefender.IntervalMins = constants.DefaultAuthDefendIntervalMins
 	s.Config.AuthDefender.LockoutDurationMins = constants.DefaultAuthDefendLockoutMins
 
-	return s.Config.Save()
+	// return s.Config.Save()
+	err = s.Config.Save()
+	if err != nil {
+		return errors.Wrap(err, "setup jwt: failed to save config")
+	}
+	return nil
 }
 
 func (s Server) Validate(c setup.Context) error {

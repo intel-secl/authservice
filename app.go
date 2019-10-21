@@ -20,10 +20,13 @@ import (
 	"intel/isecl/authservice/version"
 	"intel/isecl/lib/common/crypt"
 	e "intel/isecl/lib/common/exec"
+	commLog "intel/isecl/lib/common/log"
+	commLogInt "intel/isecl/lib/common/log/setup"
 	cmw "intel/isecl/lib/common/middleware"
 	"intel/isecl/lib/common/setup"
 	"intel/isecl/lib/common/validation"
 	"io"
+	stdlog "log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -32,10 +35,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	stdlog "log"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -213,21 +212,42 @@ func (a *App) runDirPath() string {
 	return constants.RunDirPath
 }
 
-func (a *App) configureLogs() {
-	log.SetOutput(io.MultiWriter(os.Stderr, a.logWriter()))
-	log.SetLevel(a.configuration().LogLevel)
+var defaultLog = commLog.GetDefaultLogger()
+var secLog = commLog.GetSecurityLogger()
 
-	// override golang logger
-	w := log.StandardLogger().WriterLevel(a.configuration().LogLevel)
-	stdlog.SetOutput(w)
+var secLogFile *os.File
+var defaultLogFile *os.File
+
+func (a *App) configureLogs(stdOut, logFile bool) {
+
+	var ioWriterDefault io.Writer
+	ioWriterDefault = defaultLogFile
+	if stdOut && logFile {
+		ioWriterDefault = io.MultiWriter(os.Stdout, defaultLogFile)
+	}
+	if stdOut {
+		ioWriterDefault = os.Stdout
+	}
+	ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
+
+	commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, nil, ioWriterDefault, false)
+	commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, nil, ioWriterSecurity, false)
+
+	secLog.Trace("sec log initiated")
+	defaultLog.Trace("loggers setup finished")
 }
 
 func (a *App) Run(args []string) error {
-	a.configureLogs()
 	if len(args) < 2 {
 		a.printUsage()
 		os.Exit(1)
 	}
+
+	secLogFile, _ := os.OpenFile(constants.SecurityLogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+	defaultLogFile, _ := os.OpenFile(constants.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+
+	defer secLogFile.Close()
+	defer defaultLogFile.Close()
 
 	//bin := args[0]
 	cmd := args[1]
@@ -243,12 +263,14 @@ func (a *App) Run(args []string) error {
 		}
 		return a.PrintDirFileContents(args[2])
 	case "token":
+		a.configureLogs(true, false)
 		if err := a.TestTokenAuth(); err != nil {
 			fmt.Printf("jwt token test create and validate test error: %v ", err)
 			return err
 		}
 		return nil
 	case "certreq":
+		a.configureLogs(true, false)
 		if err := a.GenerateCertRequest(); err != nil {
 			fmt.Printf("certificat request error: %v ", err)
 			return err
@@ -256,8 +278,10 @@ func (a *App) Run(args []string) error {
 		return nil
 	//TODO : Remove added for debug - used to debug db queries
 	case "testdb":
+		a.configureLogs(true, false)
 		a.TestNewDBFunctions()
 	case "tlscertsha384":
+		a.configureLogs(true, false)
 		hash, err := crypt.GetCertHexSha384(path.Join(a.configDir(), constants.TLSCertFile))
 		if err != nil {
 			fmt.Println(err.Error())
@@ -266,6 +290,7 @@ func (a *App) Run(args []string) error {
 		fmt.Println(hash)
 		return nil
 	case "run":
+		a.configureLogs(true, true)
 		if err := a.startServer(); err != nil {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
@@ -283,8 +308,10 @@ func (a *App) Run(args []string) error {
 	case "start":
 		return a.start()
 	case "stop":
+		a.configureLogs(true, false)
 		return a.stop()
 	case "status":
+		a.configureLogs(true, false)
 		return a.status()
 	case "uninstall":
 		var purge bool
@@ -295,6 +322,7 @@ func (a *App) Run(args []string) error {
 	case "version":
 		fmt.Fprintf(a.consoleWriter(), "Auth Service %s-%s\n", version.Version, version.GitHash)
 	case "setup":
+		a.configureLogs(false, true)
 		var context setup.Context
 		if len(args) <= 2 {
 			a.printUsage()
@@ -372,7 +400,7 @@ func (a *App) Run(args []string) error {
 						pg := &a.configuration().Postgres
 						p, err := postgres.Open(pg.Hostname, pg.Port, pg.DBName, pg.Username, pg.Password, pg.SSLMode, pg.SSLCert)
 						if err != nil {
-							log.WithError(err).Error("failed to open postgres connection for setup task")
+							defaultLog.WithError(err).Error("failed to open postgres connection for setup task")
 							return nil, err
 						}
 						p.Migrate()
@@ -393,14 +421,15 @@ func (a *App) Run(args []string) error {
 			},
 			AskInput: false,
 		}
+		a.configureLogs(true, true)
 		if task == "all" {
 			err = setupRunner.RunTasks()
 		} else {
 			err = setupRunner.RunTasks(task)
 		}
 		if err != nil {
-			log.WithError(err).Error("Error running setup")
-			fmt.Println("Error running setup: ", err)
+			defaultLog.WithError(err).Error("Error running setup")
+			fmt.Printf("Error running setup: %+v", err) // -> fmt.Printf("...: %s", err.Error())
 			return err
 		}
 	}
@@ -409,7 +438,7 @@ func (a *App) Run(args []string) error {
 
 func (a *App) retrieveJWTSigningCerts() error {
 	//No implementation is required as AAS will already have the jwt certificate created as part of setup task
-	log.Debug("Callback function to get JWT certs called")
+	defaultLog.Debug("Callback function to get JWT certs called")
 	return nil
 }
 
@@ -420,11 +449,11 @@ func (a *App) startServer() error {
 	aasDB, err := postgres.Open(c.Postgres.Hostname, c.Postgres.Port, c.Postgres.DBName,
 		c.Postgres.Username, c.Postgres.Password, c.Postgres.SSLMode, c.Postgres.SSLCert)
 	if err != nil {
-		log.WithError(err).Error("failed to open Postgres database")
+		defaultLog.WithError(err).Error("failed to open Postgres database")
 		return err
 	}
 	defer aasDB.Close()
-	log.Trace("Migrating Database")
+	defaultLog.Trace("Migrating Database")
 	aasDB.Migrate()
 
 	// Create public routes that does not need any authentication
@@ -488,7 +517,7 @@ func (a *App) startServer() error {
 		tlsCert := path.Join(a.configDir(), constants.TLSCertFile)
 		tlsKey := path.Join(a.configDir(), constants.TLSKeyFile)
 		if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
-			log.WithError(err).Info("Failed to start HTTPS server")
+			defaultLog.WithError(err).Info("Failed to start HTTPS server")
 			stop <- syscall.SIGTERM
 		}
 	}()
@@ -499,7 +528,7 @@ func (a *App) startServer() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := h.Shutdown(ctx); err != nil {
-		log.WithError(err).Info("Failed to gracefully shutdown webserver")
+		defaultLog.WithError(err).Info("Failed to gracefully shutdown webserver")
 		return err
 	}
 	return nil
@@ -539,36 +568,36 @@ func (a *App) uninstall(purge bool) {
 	fmt.Println("removing : ", a.executablePath())
 	err := os.Remove(a.executablePath())
 	if err != nil {
-		log.WithError(err).Error("error removing executable")
+		defaultLog.WithError(err).Error("error removing executable")
 	}
 
 	fmt.Println("removing : ", a.runDirPath())
 	err = os.Remove(a.runDirPath())
 	if err != nil {
-		log.WithError(err).Error("error removing ", a.runDirPath())
+		defaultLog.WithError(err).Error("error removing ", a.runDirPath())
 	}
 	fmt.Println("removing : ", a.execLinkPath())
 	err = os.Remove(a.execLinkPath())
 	if err != nil {
-		log.WithError(err).Error("error removing ", a.execLinkPath())
+		defaultLog.WithError(err).Error("error removing ", a.execLinkPath())
 	}
 
 	if purge {
 		fmt.Println("removing : ", a.configDir())
 		err = os.RemoveAll(a.configDir())
 		if err != nil {
-			log.WithError(err).Error("error removing config dir")
+			defaultLog.WithError(err).Error("error removing config dir")
 		}
 	}
 	fmt.Println("removing : ", a.logDir())
 	err = os.RemoveAll(a.logDir())
 	if err != nil {
-		log.WithError(err).Error("error removing log dir")
+		defaultLog.WithError(err).Error("error removing log dir")
 	}
 	fmt.Println("removing : ", a.homeDir())
 	err = os.RemoveAll(a.homeDir())
 	if err != nil {
-		log.WithError(err).Error("error removing home dir")
+		defaultLog.WithError(err).Error("error removing home dir")
 	}
 	fmt.Fprintln(a.consoleWriter(), "Auth Service uninstalled")
 	a.stop()
@@ -712,7 +741,7 @@ func (a *App) TestNewDBFunctions() error {
 	fmt.Println("Test New DB functions")
 	db, err := a.DatabaseFactory()
 	if err != nil {
-		log.WithError(err).Error("failed to open database")
+		defaultLog.WithError(err).Error("failed to open database")
 		return err
 	}
 	users, err := db.UserRepository().GetRoles(types.User{Name: "admin"}, nil, true)

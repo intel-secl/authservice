@@ -5,48 +5,62 @@
 package postgres
 
 import (
-	"fmt"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 
 	"github.com/jinzhu/gorm"
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 type PostgresRoleRepository struct {
 	db *gorm.DB
 }
 
+// declared in pg_database.go
+// var defaultLog = commLog.GetDefaultLogger()
+
 func (r *PostgresRoleRepository) Create(role types.Role) (*types.Role, error) {
+
+	defaultLog.Trace("role Create")
+	defer defaultLog.Trace("role Create done")
 
 	uuid, err := repository.UUID()
 	if err == nil {
 		role.ID = uuid
 	} else {
-		return &role, err
+		// return &role, err
+		return &role, errors.Wrap(err, "role create: failed to get UUID")
 	}
-	err = r.db.Create(&role).Error
-	return &role, err
+	if err := r.db.Create(&role).Error; err != nil {
+		return &role, errors.Wrap(err, "role create: failed")
+	}
+	return &role, nil
 }
 
 func (r *PostgresRoleRepository) Retrieve(rs *types.RoleSearch) (*types.Role, error) {
 
+	defaultLog.Trace("role Retrieve")
+	defer defaultLog.Trace("role Retrieve done")
+
 	tx := buildRoleSearchQuery(r.db, rs)
 	// this will always return a valid tx object. So the below check is not really needed.
 	if tx == nil {
-		return nil, fmt.Errorf("Unexpected Error. Could not build a gorm query object in Roles RetrieveAll function. ")
+		return nil, errors.New("Unexpected Error. Could not build a gorm query object in Roles RetrieveAll function.")
 	}
 
 	role := &types.Role{}
-	err := tx.First(role).Error
-	if err != nil {
-		return nil, err
+	if err := tx.First(role).Error; err != nil {
+		// return nil, err
+		return nil, errors.Wrap(err, "role retrieve: failed")
 	}
 	return role, nil
 }
 
 // helper function to build the query object for a role search.
 func buildRoleSearchQuery(tx *gorm.DB, rs *types.RoleSearch) *gorm.DB {
+
+	defaultLog.Trace("role buildRoleSearchQuery")
+	defer defaultLog.Trace("role buildRoleSearchQuery done")
 
 	if tx == nil {
 		return nil
@@ -86,23 +100,36 @@ func buildRoleSearchQuery(tx *gorm.DB, rs *types.RoleSearch) *gorm.DB {
 }
 
 func (r *PostgresRoleRepository) RetrieveAll(rs *types.RoleSearch) (types.Roles, error) {
+
+	defaultLog.Trace("role RetrieveAll")
+	defer defaultLog.Trace("role RetrieveAll done")
+
 	var roles types.Roles
 
 	tx := buildRoleSearchQuery(r.db, rs)
 	// this will always return a valid tx object. So no need to check if it
 	if tx == nil {
-		return roles, fmt.Errorf("Unexpected Error. Could not build a gorm query object in Roles RetrieveAll function. ")
+		return roles, errors.New("Unexpected Error. Could not build a gorm query object in Roles RetrieveAll function.")
 	}
-	err := tx.Find(&roles).Error
 
-	log.WithField("db hosts", roles).Trace("RetrieveAll")
-	return roles, err
+	// defaultLog.WithField("db hosts", roles).Trace("RetrieveAll")
+	if err := tx.Find(&roles).Error; err != nil {
+		return roles, errors.Wrap(err, "role retrieve all: failed")
+	}
+	return roles, nil
 }
 
 func (r *PostgresRoleRepository) Update(role types.Role) error {
-	return r.db.Save(&role).Error
+	if err := r.db.Save(&role).Error; err != nil {
+		return errors.Wrap(err, "role update: failed")
+	}
+	return nil
 }
 
 func (r *PostgresRoleRepository) Delete(role types.Role) error {
-	return r.db.Delete(&role).Error
+	// return r.db.Delete(&role).Error
+	if err := r.db.Save(&role).Error; err != nil {
+		return errors.Wrap(err, "role delete: failed")
+	}
+	return nil
 }

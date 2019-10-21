@@ -6,6 +6,7 @@ package resource
 
 import (
 	"encoding/json"
+	"fmt"
 	consts "intel/isecl/authservice/constants"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
@@ -15,10 +16,13 @@ import (
 	"strconv"
 
 	"github.com/gorilla/handlers"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
 )
+
+//  declared in resource.go
+//  var defaultLog = log.GetDefaultLogger()
+//  var secLog = log.GetSecurityLogger()
 
 func SetRoles(r *mux.Router, db repository.AASDatabase) {
 	r.Handle("/roles", handlers.ContentTypeHandler(createRole(db), "application/json")).Methods("POST")
@@ -30,6 +34,9 @@ func SetRoles(r *mux.Router, db repository.AASDatabase) {
 
 func createRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to createRole")
+		defer defaultLog.Trace("createRole return")
 
 		// authorize rest api endpoint based on token
 		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
@@ -43,6 +50,7 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 		rl := types.Role{}
 		err = dec.Decode(&rl.RoleInfo)
 		if err != nil {
+			secLog.Warning("Unauthorized create role attempt from:", r.RemoteAddr)
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
@@ -50,8 +58,9 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 		// available to create a role with the requested service
 		if ctxMap != nil {
 			if _, ok := (*ctxMap)[rl.Service]; !ok {
-				log.Errorf("restricted role - not allowed to create role is service : %s", rl.Service)
-				return &privilegeError{Message: "", StatusCode: http.StatusForbidden}
+				errMsg := fmt.Sprintf("restricted role - not allowed to create role as service: %s", rl.Service)
+				secLog.Error(errMsg)
+				return &privilegeError{Message: errMsg, StatusCode: http.StatusForbidden}
 			}
 		}
 
@@ -84,6 +93,7 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 		})
 
 		if existingRole != nil {
+			secLog.WithField("role", rl).Warning("Trying to create duplicated role from addr:", r.RemoteAddr)
 			return &resourceError{Message: "same role exists", StatusCode: http.StatusBadRequest}
 		}
 
@@ -91,6 +101,7 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 		if err != nil {
 			return err
 		}
+		secLog.WithField("role", rl).Info("Role created by:", r.RemoteAddr)
 
 		w.WriteHeader(http.StatusCreated) // HTTP 201
 		w.Header().Set("Content-Type", "application/json")
@@ -105,9 +116,13 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 func getRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		defaultLog.Trace("call to getRole")
+		defer defaultLog.Trace("getRole return")
+
 		// authorize rest api endpoint based on token
 		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
 		if err != nil {
+			secLog.Warning("Unauthorized get role attempt from:", r.RemoteAddr)
 			return err
 		}
 
@@ -124,7 +139,7 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 		rl, err := db.RoleRepository().Retrieve(&types.RoleSearch{AllContexts: true, IDFilter: []string{id}})
 
 		if err != nil {
-			log.WithError(err).WithField("id", id).Info("failed to retrieve role")
+			defaultLog.WithError(err).WithField("id", id).Info("failed to retrieve role")
 			w.WriteHeader(http.StatusNoContent)
 			return nil
 		}
@@ -133,17 +148,19 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 		// a role in the token that can read this role
 		if ctxMap != nil {
 			if _, ok := (*ctxMap)[rl.Service]; !ok {
-				log.Errorf("restricted role - cannot allow role read roles in service : %s", rl.Service)
-				return &privilegeError{Message: "", StatusCode: http.StatusForbidden}
+				errMsg := fmt.Sprintf("restricted role - cannot allow role read roles in service: %s", rl.Service)
+				secLog.Error(errMsg)
+				return &privilegeError{Message: errMsg, StatusCode: http.StatusForbidden}
 			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(rl)
 		if err != nil {
-			log.WithError(err).Error("failed to encode json response")
+			// log.WithError(err).Error("failed to encode json response")
 			return err
 		}
+		secLog.WithField("role", rl).Info("Return get role request to:", r.RemoteAddr)
 		return nil
 	}
 }
@@ -151,9 +168,13 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		defaultLog.Trace("call to deleteRole")
+		defer defaultLog.Trace("deleteRole return")
+
 		// authorize rest api endpoint based on token
 		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
 		if err != nil {
+			secLog.Warning("Unauthorized delete role attempt from:", r.RemoteAddr)
 			return err
 		}
 
@@ -166,7 +187,7 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 
 		del_rl, err := db.RoleRepository().Retrieve(&types.RoleSearch{AllContexts: true, IDFilter: []string{id}})
 		if del_rl == nil || err != nil {
-			log.WithError(err).WithField("id", id).Info("attempt to delete invalid role")
+			defaultLog.WithError(err).WithField("id", id).Info("attempt to delete invalid role")
 			w.WriteHeader(http.StatusNoContent)
 			return nil
 		}
@@ -175,15 +196,17 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 		// a role in the token that can read this role
 		if ctxMap != nil {
 			if _, ok := (*ctxMap)[del_rl.Service]; !ok {
-				log.Errorf("restricted role - cannot allow deleting roles in service : %s", del_rl.Service)
-				return &privilegeError{Message: "", StatusCode: http.StatusForbidden}
+				errMsg := fmt.Sprintf("restricted role - cannot allow deleting roles in service: %s", del_rl.Service)
+				secLog.Warning(errMsg)
+				return &privilegeError{Message: errMsg, StatusCode: http.StatusForbidden}
 			}
 		}
 
 		if err := db.RoleRepository().Delete(*del_rl); err != nil {
-			log.WithError(err).WithField("id", id).Info("failed to delete role")
+			// log.WithError(err).WithField("id", id).Info("failed to delete role")
 			return err
 		}
+		secLog.WithField("role", del_rl).Info("Role deleted by:", r.RemoteAddr)
 
 		w.WriteHeader(http.StatusNoContent)
 		return nil
@@ -192,16 +215,21 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 
 func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to queryRoles")
+		defer defaultLog.Trace("queryRoles return")
+
 		var validation_err error
 
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
+			secLog.Warning("Unauthorized query role attempt from:", r.RemoteAddr)
 			return err
 		}
 
 		// check for query parameters
-		log.WithField("query", r.URL.Query()).Trace("query roles")
+		defaultLog.WithField("query", r.URL.Query()).Trace("query roles")
 		service := r.URL.Query().Get("service")
 		roleName := r.URL.Query().Get("name")
 		context := r.URL.Query().Get("context")
@@ -251,12 +279,13 @@ func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 
 		roles, err := db.RoleRepository().RetrieveAll(&filter)
 		if err != nil {
-			log.WithError(err).WithField("filter", filter).Info("failed to retrieve roles")
+			// log.WithError(err).WithField("filter", filter).Info("failed to retrieve roles")
 			return err
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(roles)
+		secLog.Info("Return role query to:", r.RemoteAddr)
 		return nil
 	}
 }

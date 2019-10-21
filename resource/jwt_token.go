@@ -7,37 +7,42 @@ package resource
 import (
 	"encoding/json"
 	"fmt"
+	"intel/isecl/lib/common/crypt"
+	jwtauth "intel/isecl/lib/common/jwt"
+	ct "intel/isecl/lib/common/types/aas"
+	"intel/isecl/lib/common/validation"
 	"io/ioutil"
 	"time"
-	ct "intel/isecl/lib/common/types/aas"
-	"intel/isecl/lib/common/crypt"
-	"intel/isecl/lib/common/jwt"
-	"intel/isecl/lib/common/validation"
 
-	"intel/isecl/authservice/repository"
 	authcommon "intel/isecl/authservice/common"
-	"intel/isecl/authservice/constants"
 	"intel/isecl/authservice/config"
+	"intel/isecl/authservice/constants"
+	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 )
 
-var tokFactory *jwtauth.JwtFactory 
+var tokFactory *jwtauth.JwtFactory
 
 type roleClaims struct {
 	Roles types.Roles `json:"roles"`
 }
 
+//  declared in resource.go
+//  var defaultLog = log.GetDefaultLogger()
+//  var secLog = log.GetSecurityLogger()
+
 func SetJwtToken(r *mux.Router, db repository.AASDatabase) {
 	r.Handle("/token", createJwtToken(db)).Methods("POST")
 }
 
+func initJwtTokenFactory() error {
 
-func initJwtTokenFactory() error{
-	
+	defaultLog.Trace("call to initJwtTokenFactory")
+	defer defaultLog.Trace("initJwtTokenFactory return")
+
 	// retrieve the private key from file
 	privKeyDer, err := crypt.GetPKCS8PrivKeyDerFromFile(constants.TokenSignKeyFile)
 	if err != nil {
@@ -54,27 +59,30 @@ func initJwtTokenFactory() error{
 		}
 	}
 
-	tokFactory, err =  jwtauth.NewTokenFactory(privKeyDer, 
-									cfg.Token.IncludeKid, certPemBytes,
-									"AAS JWT Issuer",
-									time.Duration(cfg.Token.TokenDurationMins) * time.Minute)
-	return err;
+	tokFactory, err = jwtauth.NewTokenFactory(privKeyDer,
+		cfg.Token.IncludeKid, certPemBytes,
+		"AAS JWT Issuer",
+		time.Duration(cfg.Token.TokenDurationMins)*time.Minute)
+	return err
 }
 
 func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to createJwtToken")
+		defer defaultLog.Trace("createJwtToken return")
 
 		//check if the token factory is already initialized. If not, initialize the token factory
 		if tokFactory == nil {
 			err := initJwtTokenFactory()
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				log.WithError(err).Errorf("could not initialize the token factory. error - %v", err)
+				defaultLog.WithError(err).Errorf("could not initialize the token factory. error - %v", err)
 				return nil
 			}
 		}
 
-		if (r.ContentLength == 0) {
+		if r.ContentLength == 0 {
 			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
 		}
 
@@ -96,30 +104,29 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
 		}
 
-		u :=  db.UserRepository()
+		u := db.UserRepository()
 
 		if httpStatus, err := authcommon.HttpHandleUserAuth(u, uc.UserName, uc.Password); err != nil {
+			secLog.Warningf("User [%s] auth failed, requested from %s: ", uc.UserName, r.RemoteAddr)
 			return &resourceError{Message: "", StatusCode: httpStatus}
 		}
 
 		roles, err := u.GetRoles(types.User{Name: uc.UserName}, nil, false)
 		if err != nil {
-			log.WithError(err).Error("Database error: unable to retrive roles")
-			return &resourceError{Message: "", StatusCode: http.StatusInternalServerError}
-			
+			return &resourceError{Message: "Database error: unable to retrive roles", StatusCode: http.StatusInternalServerError}
 		}
-		
+
 		//ur := []ct.RoleInfo {ct.RoleInfo{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, ct.RoleInfo{"TDS","HostUpdater","HostA"}, ct.RoleInfo{"WLS","Administrator",""}}
 		//claims := roleClaims{Roles: roles.Role}
 
 		jwt, err := tokFactory.Create(&roleClaims{roles}, uc.UserName, 0)
 		if err != nil {
-			log.WithError(err).Errorf("could not generate token")
-			return &resourceError{Message: "", StatusCode: http.StatusInternalServerError}
+			return &resourceError{Message: "could not generate token", StatusCode: http.StatusInternalServerError}
 		}
 
 		w.Header().Set("Content-Type", "application/jwt")
 		w.Write([]byte(jwt))
+		secLog.Infof("Return JWT token of user [%s] to: %s", uc.UserName, r.RemoteAddr)
 		return nil
 	}
 

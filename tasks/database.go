@@ -5,7 +5,6 @@
 package tasks
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"intel/isecl/authservice/config"
@@ -17,6 +16,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type Database struct {
@@ -48,35 +49,39 @@ func (db Database) Run(c setup.Context) error {
 	fs.StringVar(&envDBSSLCertSrc, "db-sslcertsrc", envDBSSLCertSrc, "DB SSL certificate to be copied from")
 	err := fs.Parse(db.Flags)
 	if err != nil {
-		return err
+		// return err
+		return errors.Wrap(err, "setup database: failed to parse cmd flags")
 	}
 
 	var valid_err error
 
 	valid_err = validation.ValidateHostname(db.Config.Postgres.Hostname)
 	if valid_err != nil {
-		return fmt.Errorf("Validation fail: %s", valid_err.Error())
+		// return fmt.Errorf("Validation fail: %s", valid_err.Error())
+		return errors.Wrap(valid_err, "setup database: Validation fail")
 	}
 	valid_err = validation.ValidateAccount(db.Config.Postgres.Username, db.Config.Postgres.Password)
 	if valid_err != nil {
-		return fmt.Errorf("Validation fail: %s", valid_err.Error())
+		return errors.Wrap(valid_err, "setup database: Validation fail")
 	}
 	valid_err = validation.ValidateIdentifier(db.Config.Postgres.DBName)
 	if valid_err != nil {
-		return fmt.Errorf("Validation fail: %s", valid_err.Error())
+		return errors.Wrap(valid_err, "setup database: Validation fail")
 	}
 
 	db.Config.Postgres.SSLMode, db.Config.Postgres.SSLCert, valid_err = configureDBSSLParams(
 		db.Config.Postgres.SSLMode, envDBSSLCertSrc,
 		db.Config.Postgres.SSLCert)
 	if valid_err != nil {
-		return fmt.Errorf("Database SSL setting config error: %s", valid_err.Error())
+		// return fmt.Errorf("Database SSL setting config error: %s", valid_err.Error())
+		return errors.Wrap(valid_err, "setup database: Validation fail")
 	}
 
 	pg := db.Config.Postgres
 	p, err := postgres.Open(pg.Hostname, pg.Port, pg.DBName, pg.Username, pg.Password, pg.SSLMode, pg.SSLCert)
 	if err != nil {
-		return err
+		// return err
+		return errors.Wrap(err, "setup database: failed to open database")
 	}
 	p.Migrate()
 	/*
@@ -92,7 +97,12 @@ func (db Database) Run(c setup.Context) error {
 			return err
 		}
 	*/
-	return db.Config.Save()
+	// return db.Config.Save()
+	err = db.Config.Save()
+	if err != nil {
+		return errors.Wrap(err, "setup database: failed to save config")
+	}
+	return nil
 }
 
 func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (string, string, error) {
@@ -108,15 +118,17 @@ func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (string, string, 
 		// cover different scenarios
 		if sslCertSrc == "" && sslCert != "" {
 			if _, err := os.Stat(sslCert); os.IsNotExist(err) {
-				return "", "", fmt.Errorf("certificate source file not specified and sslcert %s does not exist", sslCert)
+				// return "", "", fmt.Errorf("certificate source file not specified and sslcert %s does not exist", sslCert)
+				return "", "", errors.Wrapf(err, "certificate source file not specified and sslcert %s does not exist", sslCert)
 			}
 			return sslMode, sslCert, nil
 		}
 		if sslCertSrc == "" {
-			return "", "", fmt.Errorf("verify-ca or verify-full needs a source cert file to copy from unless db-sslcert exists")
+			return "", "", errors.New("verify-ca or verify-full needs a source cert file to copy from unless db-sslcert exists")
 		} else {
 			if _, err := os.Stat(sslCertSrc); os.IsNotExist(err) {
-				return "", "", fmt.Errorf("certificate source file %s does not exist", sslCertSrc)
+				// return "", "", fmt.Errorf("certificate source file %s does not exist", sslCertSrc)
+				return "", "", errors.Wrapf(err, "certificate source file not specified and sslcert %s does not exist", sslCertSrc)
 			}
 		}
 		// at this point if sslCert destination is not passed it, lets set to default
@@ -125,11 +137,13 @@ func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (string, string, 
 		}
 		// lets try to copy the file now. If copy does not succeed return the file copy error
 		if err := cos.Copy(sslCertSrc, sslCert); err != nil {
-			return "", "", err
+			// return "", "", err
+			return "", "", errors.Wrap(err, "failed to copy file")
 		}
 		// set permissions so that non root users can read the copied file
 		if err := os.Chmod(sslCert, 0644); err != nil {
-			return "", "", fmt.Errorf("could not apply permissions to %s, error: %s", sslCert, err.Error())
+			// return "", "", fmt.Errorf("could not apply permissions to %s, error: %s", sslCert, err.Error())
+			return "", "", errors.Wrapf(err, "could not apply permissions to %s", sslCert)
 		}
 	}
 	return sslMode, sslCert, nil
@@ -137,19 +151,19 @@ func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (string, string, 
 
 func (db Database) Validate(c setup.Context) error {
 	if db.Config.Postgres.Hostname == "" {
-		return errors.New("database setup: Hostname is not set")
+		return errors.New("Hostname is not set")
 	}
 	if db.Config.Postgres.Port == 0 {
-		return errors.New("database setup: Port is not set")
+		return errors.New("Port is not set")
 	}
 	if db.Config.Postgres.Username == "" {
-		return errors.New("database setup: Username is not set")
+		return errors.New("Username is not set")
 	}
 	if db.Config.Postgres.Password == "" {
-		return errors.New("database setup: Password is not set")
+		return errors.New("Password is not set")
 	}
 	if db.Config.Postgres.DBName == "" {
-		return errors.New("database: Schema is not set")
+		return errors.New("Schema is not set")
 	}
 	return nil
 }

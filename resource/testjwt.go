@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 )
 
 func SetTestJwt(r *mux.Router) {
@@ -19,10 +18,13 @@ func SetTestJwt(r *mux.Router) {
 
 func getJwtFromToken() errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to getJwtFromToken")
+		defer defaultLog.Trace("getJwtFromToken return")
+
 		roles, err := context.GetUserRoles(r)
 		if err != nil {
-			log.WithError(err).Error("could not get user roles from http context")
-			return &resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
+			return &resourceError{Message: "not able to get roles from http context", StatusCode: http.StatusInternalServerError}
 		}
 
 		w.Header().Set("Content-Type", "application/json")

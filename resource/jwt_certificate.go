@@ -6,12 +6,12 @@ package resource
 
 import (
 	consts "intel/isecl/authservice/constants"
+	"intel/isecl/lib/common/validation"
 	"io/ioutil"
 	"net/http"
-	"intel/isecl/lib/common/validation"
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 	"regexp"
+
+	"github.com/gorilla/mux"
 )
 
 func SetJwtCertificate(r *mux.Router) {
@@ -20,6 +20,10 @@ func SetJwtCertificate(r *mux.Router) {
 
 func getJwtCertificate() errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to getJwtCertificate")
+		defer defaultLog.Trace("getJwtCertificate return")
+
 		token_certificate, err := ioutil.ReadFile(consts.TokenSignCertFile)
 		if err != nil {
 			return err
@@ -28,14 +32,15 @@ func getJwtCertificate() errorHandlerFunc {
 		re := regexp.MustCompile(`\r?\n`)
 		err = validation.ValidatePemEncodedKey(re.ReplaceAllString(string(token_certificate), ""))
 
-		if err != nil{
-			log.Errorf("Invalid jwt certificate in file: %v", err)
+		if err != nil {
+			secLog.Errorf("Invalid jwt certificate in file: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("Invalid jwt certificate"))
 			return err
 		}
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Write(token_certificate)
+		secLog.Info("Return JWT certificate to: " + r.RemoteAddr)
 		return nil
 
 	}

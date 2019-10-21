@@ -10,10 +10,11 @@ import (
 	consts "intel/isecl/authservice/constants"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
+	commLog "intel/isecl/lib/common/log"
 	"intel/isecl/lib/common/setup"
 	"io"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 type Admin struct {
@@ -21,6 +22,9 @@ type Admin struct {
 	DatabaseFactory func() (repository.AASDatabase, error)
 	ConsoleWriter   io.Writer
 }
+
+var defaultLog = commLog.GetDefaultLogger()
+var secLog = commLog.GetSecurityLogger()
 
 func (a Admin) Run(c setup.Context) error {
 	fmt.Fprintln(a.ConsoleWriter, "Running admin setup...")
@@ -31,12 +35,13 @@ func (a Admin) Run(c setup.Context) error {
 	password := fs.String("pass", envPass, "Password for admin authentication")
 	err := fs.Parse(a.Flags)
 	if err != nil {
-		return err
+		// return err
+		return errors.Wrap(err, "setup admin: failed to parse cmd flags")
 	}
 	db, err := a.DatabaseFactory()
 	if err != nil {
-		log.WithError(err).Error("failed to open database")
-		return err
+		defaultLog.WithError(err).Error("failed to open database")
+		return errors.Wrap(err, "setup admin: failed to open database")
 	}
 	defer db.Close()
 
@@ -45,15 +50,18 @@ func (a Admin) Run(c setup.Context) error {
 	for _, roleName := range consts.GetDefaultAdministratorRoles() {
 		role, err := createRole(db, consts.ServiceName, roleName, "")
 		if err != nil {
-			return fmt.Errorf("could not create role in database - error %v", err)
+			// return fmt.Errorf("setup admin: could not create role in database - error %v", err)
+			return errors.Wrapf(err, "setup admin: could not create role in database - error %v", err)
 		}
 		adminRoles = append(adminRoles, *role)
 	}
 
 	err = addDBUser(db, *username, *password, adminRoles)
 	if err != nil {
-		return err
+		// return err
+		return errors.Wrap(err, "setup admin: failed to open add db user")
 	}
+	secLog.Info("Finished setup for admin:", username)
 	return nil
 }
 

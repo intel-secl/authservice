@@ -13,11 +13,15 @@ import (
 	"intel/isecl/lib/common/validation"
 
 	"golang.org/x/crypto/bcrypt"
-
-	log "github.com/sirupsen/logrus"
 )
 
+// declared in pg_database.go
+// var defaultLog = commLog.GetDefaultLogger()
+
 func createRole(db repository.AASDatabase, service, name, context string) (*types.Role, error) {
+
+	defaultLog.Trace("entering tasks/createRole")
+	defer defaultLog.Trace("leaving tasks/createRole")
 
 	role, err := db.RoleRepository().Retrieve(&types.RoleSearch{
 		RoleInfo:    ct.RoleInfo{Name: name, Service: service, Context: context},
@@ -31,6 +35,9 @@ func createRole(db repository.AASDatabase, service, name, context string) (*type
 }
 
 func addDBUser(db repository.AASDatabase, username string, password string, roles []types.Role) error {
+
+	defaultLog.Trace("entering tasks/addDBUser")
+	defer defaultLog.Trace("leaving tasks/addDBUser")
 
 	if username == "" {
 		return errors.New("db user setup: Username cannot be empty")
@@ -59,7 +66,7 @@ func addDBUser(db repository.AASDatabase, username string, password string, role
 	}
 	err = db.UserRepository().Update(types.User{ID: uuid, Name: username, PasswordHash: hash, PasswordCost: bcrypt.DefaultCost, Roles: roles})
 	if err != nil {
-		log.WithError(err).Error("failed to create or update register host user in db")
+		defaultLog.WithError(err).Error("failed to create or update register host user in db")
 		return err
 	}
 	return nil

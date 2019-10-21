@@ -6,6 +6,7 @@ package resource
 
 import (
 	"encoding/json"
+	"fmt"
 	consts "intel/isecl/authservice/constants"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
@@ -15,7 +16,6 @@ import (
 	"strconv"
 
 	"github.com/gorilla/handlers"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/gorilla/mux"
@@ -32,18 +32,26 @@ func SetUsers(r *mux.Router, db repository.AASDatabase) {
 	r.Handle("/users/{id}/roles/{role_id}", handlers.ContentTypeHandler(deleteUserRole(db), "application/json")).Methods("DELETE")
 }
 
+//  declared in resource.go
+//  var defaultLog = log.GetDefaultLogger()
+//  var secLog = log.GetSecurityLogger()
+
 func createUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to createUser")
+		defer defaultLog.Trace("createUser return")
 
 		var uc ct.UserCreate
 
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
-			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
+			secLog.Warning("Unauthorized create role attempt from:", r.RemoteAddr)
+			return err
 		}
-		
-		if (r.ContentLength == 0) {
+
+		if r.ContentLength == 0 {
 			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
 		}
 
@@ -79,6 +87,7 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 		if err != nil {
 			return err
 		}
+		secLog.WithField("user", created).Info("User created by:", r.RemoteAddr)
 
 		w.WriteHeader(http.StatusCreated) // HTTP 201
 		w.Header().Set("Content-Type", "application/json")
@@ -92,9 +101,14 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 
 func getUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to getUser")
+		defer defaultLog.Trace("getUser return")
+
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
+			secLog.Warning("Unauthorized get user attempt from:", r.RemoteAddr)
 			return err
 		}
 
@@ -107,7 +121,7 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 
 		u, err := db.UserRepository().Retrieve(types.User{ID: id})
 		if err != nil {
-			log.WithError(err).WithField("id", id).Info("failed to retrieve user")
+			defaultLog.WithError(err).WithField("id", id).Info("failed to retrieve user")
 			w.WriteHeader(http.StatusNoContent)
 			return nil
 		}
@@ -115,18 +129,24 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(u)
 		if err != nil {
-			log.WithError(err).Error("failed to encode json response")
+			// log.WithError(err).Error("failed to encode json response")
 			return err
 		}
+		secLog.WithField("user", u).Info("Return get user request to:", r.RemoteAddr)
 		return nil
 	}
 }
 
 func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to deleteUser")
+		defer defaultLog.Trace("deleteUser return")
+
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
+			secLog.Warning("Unauthorized delete user attempt from:", r.RemoteAddr)
 			return err
 		}
 
@@ -139,15 +159,16 @@ func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 
 		del_usr, err := db.UserRepository().Retrieve(types.User{ID: id})
 		if del_usr == nil || err != nil {
-			log.WithError(err).WithField("id", id).Info("attempt to delete invalid user")
+			defaultLog.WithError(err).WithField("id", id).Info("attempt to delete invalid user")
 			w.WriteHeader(http.StatusNoContent)
 			return nil
 		}
 
 		if err := db.UserRepository().Delete(*del_usr); err != nil {
-			log.WithError(err).WithField("id", id).Info("failed to delete user")
+			// log.WithError(err).WithField("id", id).Info("failed to delete user")
 			return err
 		}
+		secLog.WithField("user", del_usr).Info("User deleted by:", r.RemoteAddr)
 
 		w.WriteHeader(http.StatusNoContent)
 		return nil
@@ -157,14 +178,17 @@ func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		defaultLog.Trace("call to queryUsers")
+		defer defaultLog.Trace("queryUsers return")
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
+			secLog.Warning("Unauthorized query user attempt from:", r.RemoteAddr)
 			return err
 		}
 
 		// check for query parameters
-		log.WithField("query", r.URL.Query()).Trace("query users")
+		defaultLog.WithField("query", r.URL.Query()).Trace("query users")
 		userName := r.URL.Query().Get("name")
 
 		if len(userName) != 0 {
@@ -179,12 +203,13 @@ func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 
 		users, err := db.UserRepository().RetrieveAll(filter)
 		if err != nil {
-			log.WithError(err).WithField("filter", filter).Info("failed to retrieve users")
+			// log.WithError(err).WithField("filter", filter).Info("failed to retrieve users")
 			return err
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(users)
+		secLog.Info("Return user query to:", r.RemoteAddr)
 		return nil
 	}
 }
@@ -198,12 +223,15 @@ func updateUser(db repository.AASDatabase) errorHandlerFunc {
 func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		defaultLog.Trace("call to addUserRoles")
+		defer defaultLog.Trace("addUserRoles return")
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
+			secLog.Warning("Unauthorized add user role attempt from:", r.RemoteAddr)
 			return err
 		}
-		
+
 		id := mux.Vars(r)["id"]
 
 		validation_err := validation.ValidateUUIDv4(id)
@@ -243,27 +271,30 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		})
 
 		if err != nil {
-			log.WithError(err).Info("failed to retrieve roles")
-			return &resourceError{Message: "One or more role ids does not exist", StatusCode: http.StatusBadRequest}
+			// log.WithError(err).Info("failed to retrieve roles")
+			return &resourceError{Message: "failed to retrieve roles", StatusCode: http.StatusBadRequest}
 		}
 
 		// if the number of roles returned from the db does not match the number
 		// provided in json, then abort the association(s)
 		if len(roles) != len(rids.RoleUUIDs) {
-			log.Errorf("could not find matching role or user does not have authorization - requested roles - %s", rids.RoleUUIDs)
-			return &resourceError{Message: "One or more role ids does not exist", StatusCode: http.StatusBadRequest}
+			// log.Errorf("could not find matching role or user does not have authorization - requested roles - %s", rids.RoleUUIDs)
+			errMsg := fmt.Sprintf("could not find matching role or user does not have authorization - requested roles - %s", rids.RoleUUIDs)
+			return &resourceError{Message: errMsg, StatusCode: http.StatusBadRequest}
 		}
 
 		u, err := db.UserRepository().Retrieve(types.User{ID: id})
 		if err != nil {
-			log.WithError(err).WithField("id", id).Info("failed to retrieve user")
-			return &resourceError{Message: "The user id does not exist", StatusCode: http.StatusBadRequest}
+			// log.WithError(err).WithField("id", id).Info("failed to retrieve user")
+			errMsg := fmt.Sprintf("failed to retrieve user: %s", id)
+			return &resourceError{Message: errMsg, StatusCode: http.StatusBadRequest}
 		}
 
 		err = db.UserRepository().AddRoles(*u, roles, true)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
+		secLog.WithField("user", u).Info("Roles added by:", r.RemoteAddr)
 
 		w.WriteHeader(http.StatusCreated) // HTTP 201
 		return nil
@@ -272,9 +303,13 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 
 func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to queryUserRoles")
+		defer defaultLog.Trace("queryUserRoles return")
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
+			secLog.Warning("Unauthorized query user role attempt from:", r.RemoteAddr)
 			return err
 		}
 
@@ -286,7 +321,7 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		}
 
 		// check for query parameters
-		log.WithField("query", r.URL.Query()).Trace("query users")
+		defaultLog.WithField("query", r.URL.Query()).Trace("query users")
 		roleName := r.URL.Query().Get("name")
 		service := r.URL.Query().Get("service")
 		context := r.URL.Query().Get("context")
@@ -312,10 +347,10 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		}
 
 		if len(contextContains) > 0 {
-                        if validation_err = ValidateContextString(contextContains); validation_err != nil {
-                                return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
-                        }
-                }
+			if validation_err = ValidateContextString(contextContains); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}
+		}
 
 		// set allContexts to true - override if we get a valid entry from query parameter
 		allContexts := true
@@ -332,12 +367,13 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 
 		userRoles, err := db.UserRepository().GetRoles(types.User{ID: id}, roleSearchFilter, true)
 		if err != nil {
-			log.WithError(err).Error("failed to retrieve user roles")
+			// log.WithError(err).Error("failed to retrieve user roles")
 			return err
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(userRoles)
+		secLog.Info("Return user role query request to:", r.RemoteAddr)
 		return nil
 	}
 }
@@ -345,9 +381,12 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		defaultLog.Trace("call to deleteUserRole")
+		defer defaultLog.Trace("deleteUserRole return")
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
+			secLog.Warning("Unauthorized delete user role attempt from:", r.RemoteAddr)
 			return err
 		}
 
@@ -366,17 +405,18 @@ func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 
 		u, err := db.UserRepository().Retrieve(types.User{ID: id})
 		if err != nil {
-			log.WithError(err).WithField("id", id).Info("failed to retrieve user")
+			defaultLog.WithError(err).WithField("id", id).Info("failed to retrieve user")
 			w.WriteHeader(http.StatusNoContent)
 			return nil
 		}
 
 		err = db.UserRepository().DeleteRole(*u, rid, svcFltr)
 		if err != nil {
-			log.WithError(err).WithField("id", id).WithField("rid", rid).Info("failed to delete role from user")
+			defaultLog.WithError(err).WithField("id", id).WithField("rid", rid).Info("failed to delete role from user")
 			w.WriteHeader(http.StatusNoContent)
 			return nil
 		}
+		secLog.WithField("user", *u).Info("User roles deleted by:", r.RemoteAddr)
 
 		w.WriteHeader(http.StatusNoContent) // HTTP 204
 		return nil

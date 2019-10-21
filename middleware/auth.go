@@ -14,33 +14,41 @@ import (
 	_ "time"
 
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+
+	commLog "intel/isecl/lib/common/log"
 )
+
+var defaultLogger = commLog.GetDefaultLogger()
+var secLogger = commLog.GetSecurityLogger()
 
 func NewBasicAuth(u repository.UserRepository) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			defaultLogger.Trace("entering NewBasicAuth")
+			defer defaultLogger.Trace("leaving NewBasicAuth")
+
 			// TODO : switch to username only
 			username, password, ok := r.BasicAuth()
 
 			if !ok {
-				log.Info("No Basic Auth provided")
+				defaultLogger.Info("No Basic Auth provided")
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			//todo:remove this entry that is used for debug
-			log.Trace("Attempting to authenticate user: ", username)
+			secLogger.Info("Attempting to authenticate user: ", username)
 
 			if httpStatus, err := authcommon.HttpHandleUserAuth(u, username, password); err != nil {
-				log.Error(err)
+				secLogger.Warning(err)
 				w.WriteHeader(httpStatus)
 				return
 			}
 
 			roles, err := u.GetRoles(types.User{Name: username}, nil, false)
 			if err != nil {
-				log.WithError(err).Error("Database error: unable to retrive roles")
+				defaultLogger.WithError(err).Error("Database error: unable to retrive roles")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

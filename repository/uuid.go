@@ -6,6 +6,7 @@ package repository
 
 import (
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 // UUID returns a random uuid string and error if there is any
@@ -15,6 +16,6 @@ func UUID() (string, error) {
 	if err == nil {
 		return uuid.String(), nil
 	} else {
-		return "", err
+		return "", errors.Wrap(err, "failed to generate UUID")
 	}
 }

@@ -5,8 +5,8 @@
 package tasks
 
 import (
-	"intel/isecl/lib/common/setup"
 	"intel/isecl/authservice/config"
+	"intel/isecl/lib/common/setup"
 	"os"
 
 	"testing"
@@ -23,7 +23,7 @@ func TestServerSetup(t *testing.T) {
 	}
 	ctx := setup.Context{}
 	err := s.Run(ctx)
-	assert.Equal(t, config.ErrNoConfigFile, err)
+	assert.NotEqual(t, nil, err)
 	assert.Equal(t, 1337, c.Port)
 }
 
@@ -37,6 +37,6 @@ func TestServerSetupEnv(t *testing.T) {
 	}
 	ctx := setup.Context{}
 	err := s.Run(ctx)
-	assert.Equal(t, config.ErrNoConfigFile, err)
+	assert.NotEqual(t, nil, err)
 	assert.Equal(t, 1337, c.Port)
 }

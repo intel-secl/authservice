@@ -8,34 +8,44 @@ import (
 	"fmt"
 	consts "intel/isecl/authservice/constants"
 	comctx "intel/isecl/lib/common/context"
+	"intel/isecl/lib/common/log"
 
 	"intel/isecl/lib/common/auth"
 	ct "intel/isecl/lib/common/types/aas"
 	"net/http"
 
 	"github.com/jinzhu/gorm"
-	log "github.com/sirupsen/logrus"
 )
+
+var defaultLog = log.GetDefaultLogger()
+var secLog = log.GetSecurityLogger()
 
 type errorHandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
 func (ehf errorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	defaultLog.Trace("call to query handler")
+	defer defaultLog.Trace("query handler return")
+
 	if err := ehf(w, r); err != nil {
-		log.WithError(err).Error("HTTP Error")
+		secLog.WithError(err).Warning("HTTP Error")
 		if gorm.IsRecordNotFoundError(err) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 		switch t := err.(type) {
 		case *resourceError:
+			defaultLog.WithError(err).Warningf("resource error")
 			http.Error(w, t.Message, t.StatusCode)
 		case resourceError:
+			defaultLog.WithError(err).Warningf("resource error")
 			http.Error(w, t.Message, t.StatusCode)
 		case *privilegeError:
 			http.Error(w, t.Message, t.StatusCode)
 		case privilegeError:
 			http.Error(w, t.Message, t.StatusCode)
 		default:
+			defaultLog.WithError(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
@@ -63,7 +73,7 @@ func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, re
 	// Check query authority
 	privileges, err := comctx.GetUserRoles(r)
 	if err != nil {
-		log.WithError(err).Error("could not get user roles from http context")
+		secLog.WithError(err).Error("could not get user roles from http context")
 		return nil,
 			&resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
 	}
@@ -76,6 +86,7 @@ func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, re
 
 	ctxMap, foundRole := auth.ValidatePermissionAndGetRoleContext(privileges, reqRoles, retNilCtxForEmptyCtx)
 	if !foundRole {
+		secLog.Infof("endpoint access unauthorized, request roles: %v", roleNames)
 		return nil, &privilegeError{Message: "", StatusCode: http.StatusForbidden}
 	}
 
