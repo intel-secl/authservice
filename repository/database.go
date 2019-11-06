@@ -8,5 +8,6 @@ type AASDatabase interface {
 	Migrate() error
 	UserRepository() UserRepository
 	RoleRepository() RoleRepository
+	PermissionRepository() PermissionRepository
 	Close()
 }

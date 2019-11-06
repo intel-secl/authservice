@@ -111,7 +111,7 @@ func (r *PostgresRoleRepository) RetrieveAll(rs *types.RoleSearch) (types.Roles,
 	if tx == nil {
 		return roles, errors.New("Unexpected Error. Could not build a gorm query object in Roles RetrieveAll function.")
 	}
-
+	tx = tx.Preload("Permissions")
 	// defaultLog.WithField("db hosts", roles).Trace("RetrieveAll")
 	if err := tx.Find(&roles).Error; err != nil {
 		return roles, errors.Wrap(err, "role retrieve all: failed")
@@ -127,9 +127,39 @@ func (r *PostgresRoleRepository) Update(role types.Role) error {
 }
 
 func (r *PostgresRoleRepository) Delete(role types.Role) error {
-	// return r.db.Delete(&role).Error
-	if err := r.db.Save(&role).Error; err != nil {
+	if err := r.db.Delete(&role).Error; err != nil {
 		return errors.Wrap(err, "role delete: failed")
+	}
+	return nil
+}
+
+func (r *PostgresPermissionRepository) AddPermissions(role types.Role, permissions types.Permissions, mustAddAllPermissions bool) error {
+
+	defaultLog.Trace("role AddPermisisons")
+	defer defaultLog.Trace("role AddPermissions done")
+
+	if err := r.db.Model(&role).Association("Permissions").Append(permissions).Error; err != nil {
+		return errors.Wrap(err, "role add permissions: failed")
+	}
+	return nil
+}
+
+func (r *PostgresPermissionRepository) DeletePermission(role types.Role, permissionID string) error {
+
+	defaultLog.Trace("user DeletePermission")
+	defer defaultLog.Trace("user DeletePermission done")
+
+	var permission types.Permission
+	tx := r.db.Where("id IN (?) ", permissionID)
+
+	// lets sanitize the list with roles that already exists in the database.
+	err := tx.Find(&permission).Error
+	if err != nil {
+		// return fmt.Errorf("could not find permission id:%s in database", permissionID)
+		return errors.Wrapf(err, "role delete permissions: could not find permission id %s in database", permissionID)
+	}
+	if err = r.db.Model(&role).Association("Permissions").Delete(permission).Error; err != nil {
+		return errors.Wrap(err, "role delete permission: failed")
 	}
 	return nil
 }

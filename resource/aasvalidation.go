@@ -65,3 +65,9 @@ func ValidatePermissions(permissions []string) error {
 
 	return nil
 }
+
+// ValidatePermissionsString is used to check if the string is a valid AAS context string
+func ValidatePermissions(premissions []string) error {
+	// TODO : need to implement the right rule checking
+	return nil
+}

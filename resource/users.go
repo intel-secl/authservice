@@ -29,6 +29,7 @@ func SetUsers(r *mux.Router, db repository.AASDatabase) {
 	r.Handle("/users/{id}", handlers.ContentTypeHandler(updateUser(db), "application/json")).Methods("PATCH")
 	r.Handle("/users/{id}/roles", handlers.ContentTypeHandler(addUserRoles(db), "application/json")).Methods("POST")
 	r.Handle("/users/{id}/roles", queryUserRoles(db)).Methods("GET")
+	r.Handle("/users/{id}/permissions", queryUserPermissions(db)).Methods("GET")
 	r.Handle("/users/{id}/roles/{role_id}", handlers.ContentTypeHandler(deleteUserRole(db), "application/json")).Methods("DELETE")
 }
 
@@ -373,6 +374,84 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(userRoles)
+		secLog.Info("Return user permission query request to:", r.RemoteAddr)
+		return nil
+	}
+}
+
+func queryUserPermissions(db repository.AASDatabase) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to queryUserRoles")
+		defer defaultLog.Trace("queryUserRoles return")
+		// authorize rest api endpoint based on token
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		if err != nil {
+			secLog.Warning("Unauthorized query user role attempt from:", r.RemoteAddr)
+			return err
+		}
+
+		id := mux.Vars(r)["id"]
+
+		validation_err := validation.ValidateUUIDv4(id)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+		}
+
+		// check for query parameters
+		defaultLog.WithField("query", r.URL.Query()).Trace("query users")
+		roleName := r.URL.Query().Get("name")
+		service := r.URL.Query().Get("service")
+		context := r.URL.Query().Get("context")
+		contextContains := r.URL.Query().Get("contextContains")
+		queryAllContexts := r.URL.Query().Get("allContexts")
+
+		if len(roleName) != 0 {
+			if validation_err := ValidateRoleString(roleName); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}
+		}
+
+		if len(service) > 0 {
+			if validation_err = ValidateServiceString(service); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}
+		}
+
+		if len(context) > 0 {
+			if validation_err = ValidateContextString(context); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}
+		}
+
+		if len(contextContains) > 0 {
+			if validation_err = ValidateContextString(contextContains); validation_err != nil {
+				return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+			}
+		}
+
+		// set allContexts to true - override if we get a valid entry from query parameter
+		allContexts := true
+		if getAllContexts, err := strconv.ParseBool(queryAllContexts); err == nil {
+			allContexts = getAllContexts
+		}
+
+		roleSearchFilter := &types.RoleSearch{
+			RoleInfo:        ct.RoleInfo{Service: service, Name: roleName, Context: context},
+			ContextContains: contextContains,
+			AllContexts:     allContexts,
+			ServiceFilter:   svcFltr,
+		}
+
+		userPermissions, err := db.UserRepository().GetPermissions(types.User{ID: id}, roleSearchFilter)
+		if err != nil {
+			// log.WithError(err).Error("failed to retrieve user roles")
+			defaultLog.WithError(err).WithField("id", id).Error("error while obtaining permissions for user")
+			return &resourceError{Message: "Database error : querying user permissions", StatusCode: http.StatusInternalServerError}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(userPermissions)
 		secLog.Info("Return user role query request to:", r.RemoteAddr)
 		return nil
 	}

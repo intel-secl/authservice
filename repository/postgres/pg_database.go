@@ -59,7 +59,7 @@ func (pd *PostgresDatabase) Migrate() error {
 	defaultLog.Trace("Migrate")
 	defer defaultLog.Trace("Migrate done")
 
-	pd.DB.AutoMigrate(types.User{}, types.Role{})
+	pd.DB.AutoMigrate(types.User{}, types.Role{}, types.Permission{})
 	return nil
 }
 
@@ -69,6 +69,10 @@ func (pd *PostgresDatabase) UserRepository() repository.UserRepository {
 
 func (pd *PostgresDatabase) RoleRepository() repository.RoleRepository {
 	return &PostgresRoleRepository{db: pd.DB}
+}
+
+func (pd *PostgresDatabase) PermissionRepository() repository.PermissionRepository {
+	return &PostgresPermissionRepository{db: pd.DB}
 }
 
 func (pd *PostgresDatabase) Close() {

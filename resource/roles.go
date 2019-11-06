@@ -47,8 +47,11 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
 
-		rl := types.Role{}
-		err = dec.Decode(&rl.RoleInfo)
+		var rc ct.RoleCreate
+		err = dec.Decode(&rc)
+
+		rl := types.Role{RoleInfo: rc.RoleInfo}
+
 		if err != nil {
 			secLog.Warning("Unauthorized create role attempt from:", r.RemoteAddr)
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
@@ -85,6 +88,11 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
+		validation_err = ValidatePermissions(rc.Permissions)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+		}
+
 		// at this point, we should have privilege to create the requested role. So, lets proceed
 
 		existingRole, err := db.RoleRepository().Retrieve(&types.RoleSearch{
@@ -95,6 +103,28 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 		if existingRole != nil {
 			secLog.WithField("role", rl).Warning("Trying to create duplicated role from addr:", r.RemoteAddr)
 			return &resourceError{Message: "same role exists", StatusCode: http.StatusBadRequest}
+		}
+
+		// Create the role
+
+		// first check if we have permissions. If there are permissions, we need to to add this to the Permissions
+		// table. Given a list of permissions, lets get the ids of the ones that exist in the database, for the
+		// ones that does not exist, create them in the database.
+
+		// lets get ID of each permission from the database. if it does not exist create them and add it
+		for _, rule := range rc.Permissions {
+			newPermRule := &types.PermissionSearch{Rule: rule}
+			if existPerm, err := db.PermissionRepository().Retrieve(newPermRule); err == nil {
+				rl.Permissions = append(rl.Permissions, *existPerm)
+				continue
+			} else {
+				if newPerm, err := db.PermissionRepository().Create(types.Permission{Rule: rule}); err == nil {
+					rl.Permissions = append(rl.Permissions, *newPerm)
+				} else {
+					return &resourceError{Message: "same role exists", StatusCode: http.StatusInternalServerError}
+				}
+			}
+
 		}
 
 		created, err := db.RoleRepository().Create(rl)

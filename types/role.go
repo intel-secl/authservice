@@ -10,12 +10,14 @@ import (
 )
 
 type Role struct {
-	ID        string    `json:"role_id,omitempty" gorm:"primary_key;type:uuid"`
-	CreatedAt time.Time `json:"-"`
-	UpdatedAt time.Time `json:"-"`
+	ID        string     `json:"role_id,omitempty" gorm:"primary_key;type:uuid"`
+	CreatedAt time.Time  `json:"-"`
+	UpdatedAt time.Time  `json:"-"`
+	DeletedAt *time.Time `json:"-"`
 
 	//embed
 	RoleInfo
+	Permissions Permissions `json:"permissions,omitempty"gorm:"many2many:role_permissions"`
 }
 
 type RoleSearch struct {
@@ -25,6 +27,7 @@ type RoleSearch struct {
 	AllContexts     bool
 	ServiceFilter   []string
 	IDFilter        []string
+	Permissions     bool
 }
 
 type Roles []Role

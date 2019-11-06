@@ -6,6 +6,7 @@ package mock
 
 import (
 	"intel/isecl/authservice/types"
+	ct "intel/isecl/lib/common/types/aas"
 )
 
 type MockUserRepository struct {
@@ -52,6 +53,10 @@ func (m *MockUserRepository) Delete(user types.User) error {
 }
 
 func (m *MockUserRepository) GetRoles(user types.User, rs *types.RoleSearch, includeID bool) ([]types.Role, error) {
+	return nil, nil
+}
+
+func (m *MockUserRepository) GetPermissions(user types.User, rs *types.RoleSearch) ([]ct.PermissionInfo, error) {
 	return nil, nil
 }
 

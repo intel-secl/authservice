@@ -27,7 +27,8 @@ import (
 var tokFactory *jwtauth.JwtFactory
 
 type roleClaims struct {
-	Roles types.Roles `json:"roles"`
+	Roles        types.Roles         `json:"roles"`
+	Permisssions []ct.PermissionInfo `json:"permissions,omitempty",`
 }
 
 //  declared in resource.go
@@ -115,11 +116,15 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 		if err != nil {
 			return &resourceError{Message: "Database error: unable to retrive roles", StatusCode: http.StatusInternalServerError}
 		}
+		perms, err := u.GetPermissions(types.User{Name: uc.UserName}, nil)
+		if err != nil {
+			return &resourceError{Message: "Database error:", StatusCode: http.StatusInternalServerError}
+		}
 
 		//ur := []ct.RoleInfo {ct.RoleInfo{"CMS","CertificateRequester","CN:aas.isecl.intel.com"}, ct.RoleInfo{"TDS","HostUpdater","HostA"}, ct.RoleInfo{"WLS","Administrator",""}}
 		//claims := roleClaims{Roles: roles.Role}
 
-		jwt, err := tokFactory.Create(&roleClaims{roles}, uc.UserName, 0)
+		jwt, err := tokFactory.Create(&roleClaims{Roles: roles, Permisssions: perms}, uc.UserName, 0)
 		if err != nil {
 			return &resourceError{Message: "could not generate token", StatusCode: http.StatusInternalServerError}
 		}
