@@ -55,6 +55,7 @@ type App struct {
 	Config         *config.Configuration
 	ConsoleWriter  io.Writer
 	LogWriter      io.Writer
+	SecLogWriter   io.Writer
 	HTTPLogWriter  io.Writer
 }
 
@@ -215,20 +216,18 @@ func (a *App) runDirPath() string {
 var defaultLog = commLog.GetDefaultLogger()
 var secLog = commLog.GetSecurityLogger()
 
-var secLogFile *os.File
-var defaultLogFile *os.File
-
 func (a *App) configureLogs(stdOut, logFile bool) {
 
 	var ioWriterDefault io.Writer
-	ioWriterDefault = defaultLogFile
-	if stdOut && logFile {
-		ioWriterDefault = io.MultiWriter(os.Stdout, defaultLogFile)
-	}
+	ioWriterDefault = a.LogWriter
 	if stdOut {
-		ioWriterDefault = os.Stdout
+		if logFile {
+			ioWriterDefault = io.MultiWriter(os.Stdout, a.LogWriter)
+		} else {
+			ioWriterDefault = os.Stdout
+		}
 	}
-	ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
+	ioWriterSecurity := io.MultiWriter(ioWriterDefault, a.SecLogWriter)
 
 	commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, nil, ioWriterDefault, false)
 	commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, nil, ioWriterSecurity, false)
@@ -242,12 +241,6 @@ func (a *App) Run(args []string) error {
 		a.printUsage()
 		os.Exit(1)
 	}
-
-	secLogFile, _ := os.OpenFile(constants.SecurityLogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
-	defaultLogFile, _ := os.OpenFile(constants.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
-
-	defer secLogFile.Close()
-	defer defaultLogFile.Close()
 
 	//bin := args[0]
 	cmd := args[1]

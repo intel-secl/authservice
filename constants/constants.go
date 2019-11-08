@@ -15,7 +15,7 @@ const (
 	LogDir                         = "/var/log/authservice/"
 	LogFile                        = LogDir + "authservice.log"
 	SecurityLogFile                = LogDir + "authservice-security.log"
-	HTTPLogFile                    = "http.log"
+	HTTPLogFile                    = LogDir + "http.log"
 	ConfigFile                     = "config.yml"
 	TLSCertFile                    = "tls-cert.pem"
 	TLSKeyFile                     = "tls.key"

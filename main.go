@@ -7,26 +7,30 @@ package main
 import (
 	"intel/isecl/authservice/constants"
 	"os"
-	"path"
 )
 
-func openLogFiles() (logFile *os.File, httpLogFile *os.File) {
-	logFilePath := path.Join(constants.LogDir, constants.LogFile)
-	logFile, _ = os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
-	os.Chmod(logFilePath, 0664)
-	httpLogFilePath := path.Join(constants.LogDir, constants.HTTPLogFile)
-	httpLogFile, _ = os.OpenFile(httpLogFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
-	os.Chmod(httpLogFilePath, 0664)
+func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File) {
+
+	logFile, _ = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
+	os.Chmod(constants.LogFile, 0664)
+
+	httpLogFile, _ = os.OpenFile(constants.HTTPLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
+	os.Chmod(constants.HTTPLogFile, 0664)
+
+	secLogFile, _ = os.OpenFile(constants.SecurityLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
+	os.Chmod(constants.SecurityLogFile, 0664)
 	return
 }
 
 func main() {
-	l, h := openLogFiles()
+	l, h, s := openLogFiles()
 	defer l.Close()
 	defer h.Close()
+	defer s.Close()
 	app := &App{
 		LogWriter:     l,
 		HTTPLogWriter: h,
+		SecLogWriter:  s,
 	}
 
 	err := app.Run(os.Args)
