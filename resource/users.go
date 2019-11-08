@@ -48,7 +48,7 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
-			secLog.Warning("Unauthorized create role attempt from:", r.RemoteAddr)
+			secLog.Warning("Unauthorized create user attempt from:", r.RemoteAddr)
 			return err
 		}
 
@@ -138,6 +138,96 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 	}
 }
 
+func updateUser(db repository.AASDatabase) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to updateUser")
+		defer defaultLog.Trace("updateUser return")
+
+		var uc ct.UserCreate
+
+		// authorize rest api endpoint based on token
+		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		if err != nil {
+			secLog.Warning("Unauthorized update user attempt from:", r.RemoteAddr)
+			return err
+		}
+
+		id := mux.Vars(r)["id"]
+
+		validationErr := validation.ValidateUUIDv4(id)
+		if validationErr != nil {
+			return &resourceError{Message: validationErr.Error(), StatusCode: http.StatusBadRequest}
+		}
+
+		u, err := db.UserRepository().Retrieve(types.User{ID: id})
+		if err != nil {
+			defaultLog.WithError(err).WithField("id", id).Info("failed to retrieve user")
+			w.WriteHeader(http.StatusNoContent)
+			return nil
+		}
+
+		if r.ContentLength == 0 {
+			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
+		}
+
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+		err = dec.Decode(&uc)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
+		}
+		if uc.Name == "" && uc.Password == "" {
+			return &resourceError{Message: "no data to change", StatusCode: http.StatusBadRequest}
+		}
+
+		// create a structure for the updated user
+		updatedUser := types.User{ID: id}
+
+		// validate user fields and set the attributes for the user that we want to change
+		if uc.Name != "" {
+			validationErr := validation.ValidateUserNameString(uc.Name)
+			if validationErr != nil {
+				return &resourceError{Message: validationErr.Error(), StatusCode: http.StatusBadRequest}
+			}
+			tempUser, err := db.UserRepository().Retrieve(types.User{Name: uc.Name})
+			if err == nil && tempUser.ID != id {
+				defaultLog.Warningf("new username %s  for changeUser is used by user: %s", uc.Name, tempUser.ID)
+				return &resourceError{Message: "supplied username belongs to another user", StatusCode: http.StatusBadRequest}
+			}
+			updatedUser.Name = uc.Name
+		} else {
+			updatedUser.Name = u.Name
+		}
+
+		if uc.Password != "" {
+			validationErr = validation.ValidatePasswordString(uc.Password)
+			if validationErr != nil {
+				return &resourceError{Message: validationErr.Error(), StatusCode: http.StatusBadRequest}
+			}
+			updatedUser.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(uc.Password), bcrypt.DefaultCost)
+			if err != nil {
+				defaultLog.WithError(err).Error("could not generate password when attempting to update user : ", id)
+				return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
+			}
+			updatedUser.PasswordCost = bcrypt.DefaultCost
+		} else {
+			updatedUser.PasswordHash = u.PasswordHash
+			updatedUser.PasswordCost = u.PasswordCost
+		}
+
+		err = db.UserRepository().Update(updatedUser)
+		if err != nil {
+			defaultLog.WithError(err).Error("database error while attempting to change user:", id)
+			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
+		}
+		secLog.Infof("User %s changed by: %s", id, r.RemoteAddr)
+
+		return nil
+
+	}
+}
+
 func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
@@ -212,12 +302,6 @@ func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 		json.NewEncoder(w).Encode(users)
 		secLog.Info("Return user query to:", r.RemoteAddr)
 		return nil
-	}
-}
-
-func updateUser(db repository.AASDatabase) errorHandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		return &resourceError{Message: "", StatusCode: http.StatusNotImplemented}
 	}
 }
 

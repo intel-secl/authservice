@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var tokFactory *jwtauth.JwtFactory
@@ -37,6 +38,7 @@ type roleClaims struct {
 
 func SetJwtToken(r *mux.Router, db repository.AASDatabase) {
 	r.Handle("/token", createJwtToken(db)).Methods("POST")
+	r.Handle("/changepassword", changePassword(db)).Methods("PATCH")
 }
 
 func initJwtTokenFactory() error {
@@ -132,6 +134,75 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 		w.Header().Set("Content-Type", "application/jwt")
 		w.Write([]byte(jwt))
 		secLog.Infof("Return JWT token of user [%s] to: %s", uc.UserName, r.RemoteAddr)
+		return nil
+	}
+
+}
+
+func changePassword(db repository.AASDatabase) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to changePassword")
+		defer defaultLog.Trace("changePassword return")
+
+		if r.ContentLength == 0 {
+			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
+		}
+
+		var pc ct.PasswordChange
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+		err := dec.Decode(&pc)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
+		}
+
+		validation_err := validation.ValidateUserNameString(pc.UserName)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
+		}
+
+		validation_err = validation.ValidatePasswordString(pc.OldPassword)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
+		}
+
+		if pc.NewPassword != pc.PasswordConfirm {
+			return &resourceError{Message: "Confirmation password does not match", StatusCode: http.StatusBadRequest}
+		}
+
+		validation_err = validation.ValidatePasswordString(pc.NewPassword)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
+		}
+
+		u := db.UserRepository()
+
+		if httpStatus, err := authcommon.HttpHandleUserAuth(u, pc.UserName, pc.OldPassword); err != nil {
+			secLog.Warningf("User [%s] auth failed, requested from %s: ", pc.UserName, r.RemoteAddr)
+			return &resourceError{Message: "", StatusCode: httpStatus}
+		}
+
+		existingUser, err := db.UserRepository().Retrieve(types.User{Name: pc.UserName})
+		if err != nil {
+			defaultLog.WithError(err).Error("not able to retrieve existing user though he was just authenticated")
+			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
+		}
+
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(pc.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			defaultLog.WithError(err).Error("could not generate password when attempting to change password")
+			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
+		}
+		existingUser.PasswordHash = passwordHash
+		existingUser.PasswordCost = bcrypt.DefaultCost
+		err = db.UserRepository().Update(*existingUser)
+		if err != nil {
+			defaultLog.WithError(err).Error("database error while attempting to change password")
+			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
+		}
+		secLog.WithField("user", existingUser.ID).Infof("User %s password changed by: %s", existingUser.ID, r.RemoteAddr)
+
 		return nil
 	}
 
