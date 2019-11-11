@@ -364,10 +364,11 @@ func (a *App) Run(args []string) error {
 		setupRunner := &setup.Runner{
 			Tasks: []setup.Task{
 				setup.Download_Ca_Cert{
-					Flags:         flags,
-					CmsBaseURL:    a.Config.CMSBaseUrl,
-					CaCertDirPath: constants.TrustedCAsStoreDir,
-					ConsoleWriter: os.Stdout,
+					Flags:                flags,
+					CmsBaseURL:           a.Config.CMSBaseUrl,
+					CaCertDirPath:        constants.TrustedCAsStoreDir,
+					TrustedTlsCertDigest: a.Config.CmsTlsCertDigest,
+					ConsoleWriter:        os.Stdout,
 				},
 				setup.Download_Cert{
 					Flags:              flags,

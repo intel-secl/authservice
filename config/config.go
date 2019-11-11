@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	errorLog "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -24,6 +25,7 @@ import (
 type Configuration struct {
 	configFile string
 	Port       int
+	CmsTlsCertDigest string
 	Postgres   struct {
 		DBName   string
 		Username string
@@ -72,11 +74,20 @@ var ErrNoConfigFile = errors.New("no config file")
 func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	var err error = nil
 
+	tlsCertDigest, err := c.GetenvString(constants.CmsTlsCertDigestEnv, "TLS certificate digest")
+	if err == nil &&  tlsCertDigest != "" {
+		conf.CmsTlsCertDigest = tlsCertDigest
+	} else if conf.CmsTlsCertDigest == "" {
+		commLog.GetDefaultLogger().Error("CMS_TLS_CERT_SHA384 is not defined in environment")
+		return errorLog.Wrap(errors.New("CMS_TLS_CERT_SHA384 is not defined in environment"), "config/config:SaveConfiguration() ENV variable not found")
+	}
+
 	cmsBaseUrl, err := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
 	if err == nil && cmsBaseUrl != "" {
 		conf.CMSBaseUrl = cmsBaseUrl
 	} else if conf.CMSBaseUrl == "" {
 		commLog.GetDefaultLogger().Error("CMS_BASE_URL is not defined in environment")
+		return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"), "config/config:SaveConfiguration() ENV variable not found")
 	}
 
 	jwtCertCN, err := c.GetenvString("AAS_JWT_CERT_CN", "AAS JWT Certificate Common Name")
