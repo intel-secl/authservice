@@ -63,7 +63,10 @@ Delete User
 
 1. Need above mentioned roles in order to delete users from the database
 
-*Update will not be part of Phase 1*
+Update User/Reset User password
+
+1. Need above mentioned roles in order to update the users or reset his password
+2. Able to change the username or reset the password. Reset password is to temporarily block user or change forgotter password
 
 ### Assign, Read, Update and Remove user roles
 
@@ -150,7 +153,7 @@ AAS uses CMS as the Central Authority of trust. Below is a list of items that th
 ### POST `/aas/token`
 Retrieve a token with supplied user credentials. Return a map of roles assiociated with the user as well optional scope that contains contextual information pertaining to the user-role mapping.
 
-- Authorization: `HTTP Basic Authentication`
+- Authorization: NONE (username and password in POST body)
 - Content-Type: `application/json`
 - Accept: `application/jwt`
 
@@ -281,7 +284,7 @@ Example Response:
 ```json
 {
     "user_id": "223e4567-e89b-12d3-a456-426655440000",
-    "username": "admin",
+    "username": "admin"
 },
 ```
 
@@ -296,33 +299,46 @@ Response: success/failure
 deletes user from database with specific user id. Deleting a record using this method is a 2-step process as we need to first obtain the user uuid using the `GET` method.
 
 
-### DELETE `/aas/users?username=myname@intel.com` - Not implemented
+### DELETE `/aas/users?username=myname@intel.com`
 
 - Authorization: `Bearer Token`
 
 Response: success/failure
 
-Not sure if we should have this interface ??
-*Will not be part of Phase 1*
-### POST `/aas/users/{userid}/change_password` - Not implemented
-(not available in intial version)
+### PATCH `/aas/users/{userid}` 
 
-used to change password for the user if they know the existing password.
-Can this be used for an admin to change password for someone else?
-Here the authorization should probably be basic authentication. We should not be using a
-token to change the password since some service that has obtained the token should not
-be able to change the password
-
-- Authorization: `HTTP Basic Authentication`
+used to update a user (change username) or reset password
+- Authorization: `Bearer Token`
 - Content-Type: `application/json`
 
 ```json
 {
-    "password" : "new_password"
+    "username": "new_user_name",
+    "password": "reset_or_new_password"
 }
 ```
+Response: success/failure
 
-Response : success/ failure
+Out of these, either of these fields are optional. Record associated with the `{user_id}` will be updated. New supplied username shall not conflict with an existing user.
+
+`password` if provided will be the new password for the user. There is no state such as reset. It is upto the user to change the password using `changepassword` api
+
+### PATCH `/aas/changepassword`
+
+Used by user to change the password using current password.
+
+- Authorization: NONE (username and current password is in PATCH body)
+- Content-Type: `application/json`
+
+```json
+{
+    "username": "username",
+    "old_password": "old_password",
+    "new_password": "new_password",
+    "password_confirm": "new_password"
+}
+```
+`username` and `old_password` is used to authenticate the user. `new_password` and `password_confirm` represents the new passwords and they should match
 
 ## Role Management
 ### POST `/aas/roles`
