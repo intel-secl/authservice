@@ -1,23 +1,21 @@
-image: golang:1.11
+image: golang:1.12
 
 before_script:
-  - echo "Acquire::http::Proxy \"http://proxy-us.intel.com:911\";" > /etc/apt/apt.conf
-  - echo "Acquire::https::Proxy \"http://proxy-us.intel.com:911\";" >> /etc/apt/apt.conf
-
-  - git config --global http.proxy "http://proxy-us.intel.com:911"
   - git config --global http."https://gitlab.devtools.intel.com".proxy ""
   - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.devtools.intel.com".insteadOf "https://gitlab.devtools.intel.com"
-  # - eval $(ssh-agent -s)
-  # - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
-  - mkdir -p ~/.ssh
-  - chmod 700 ~/.ssh
+
+  - echo "[http \"https://gitlab.devtools.intel.com\"]" >> ~/.gitconfig
+  - echo "        proxy = \"\"" >> ~/.gitconfig
   - cd $CI_PROJECT_DIR
+  - apt update -yq && apt install -yq makeself
 
 variables:
-  HTTP_PROXY: http://proxy-us.intel.com:911
-  HTTPS_PROXY: http://proxy-us.intel.com:911
-  no_proxy: ".intel.com"
+  http_proxy: http://proxy-us.intel.com:911
+  https_proxy: http://proxy-us.intel.com:911
+  no_proxy: "gitlab.devtools.intel.com,localhost,127.0.0.1,0.0.0.0"
+  NO_PROXY: "gitlab.devtools.intel.com,localhost,127.0.0.1,0.0.0.0"
 
+  
 stages:
  - build
  - test

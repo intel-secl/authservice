@@ -20,12 +20,14 @@ import (
 	"intel/isecl/authservice/version"
 	"intel/isecl/lib/common/crypt"
 	e "intel/isecl/lib/common/exec"
+	jwtauth "intel/isecl/lib/common/jwt"
 	commLog "intel/isecl/lib/common/log"
 	commLogInt "intel/isecl/lib/common/log/setup"
 	cmw "intel/isecl/lib/common/middleware"
 	"intel/isecl/lib/common/setup"
 	"intel/isecl/lib/common/validation"
 	"io"
+	"io/ioutil"
 	stdlog "log"
 	"net/http"
 	"os"
@@ -436,6 +438,33 @@ func (a *App) retrieveJWTSigningCerts() error {
 	return nil
 }
 
+func (a *App) initJwtTokenFactory() (*jwtauth.JwtFactory, error) {
+
+	defaultLog.Trace("call to initJwtTokenFactory")
+	defer defaultLog.Trace("initJwtTokenFactory return")
+
+	// retrieve the private key from file
+	privKeyDer, err := crypt.GetPKCS8PrivKeyDerFromFile(constants.TokenSignKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get private key - error : %v", err)
+	}
+
+	// retrieve the signing key certificate used to create the file
+	cfg := a.configuration()
+	var certPemBytes []byte
+	if cfg.Token.IncludeKid {
+		certPemBytes, err = ioutil.ReadFile(constants.TokenSignCertFile)
+		if err != nil {
+			return nil, fmt.Errorf("could not read JWT signing certificate file - error : %v", err)
+		}
+	}
+
+	return jwtauth.NewTokenFactory(privKeyDer,
+		cfg.Token.IncludeKid, certPemBytes,
+		"AAS JWT Issuer",
+		time.Duration(cfg.Token.TokenDurationMins)*time.Minute)
+}
+
 func (a *App) startServer() error {
 	c := a.configuration()
 
@@ -450,6 +479,11 @@ func (a *App) startServer() error {
 	defaultLog.Trace("Migrating Database")
 	aasDB.Migrate()
 
+	jwtFactory, err := a.initJwtTokenFactory()
+	if err != nil {
+		defaultLog.WithError(err).Error("failed to initialize JWT Token factory")
+		return err
+	}
 	// Create public routes that does not need any authentication
 	r := mux.NewRouter()
 
@@ -462,11 +496,19 @@ func (a *App) startServer() error {
 	}(resource.SetVersion, resource.SetJwtCertificate)
 
 	sr = r.PathPrefix("/aas").Subrouter()
+	func(setters ...func(*mux.Router, repository.AASDatabase, *jwtauth.JwtFactory)) {
+		for _, setter := range setters {
+			setter(sr, aasDB, jwtFactory)
+		}
+	}(resource.SetJwtToken)
+
+	// Handlers that does not have any http authentication headers
+	sr = r.PathPrefix("/aas").Subrouter()
 	func(setters ...func(*mux.Router, repository.AASDatabase)) {
 		for _, setter := range setters {
 			setter(sr, aasDB)
 		}
-	}(resource.SetJwtToken)
+	}(resource.SetUsersNoAuth)
 
 	sr = r.PathPrefix("/aas/test/").Subrouter()
 	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir,

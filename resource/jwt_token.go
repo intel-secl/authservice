@@ -6,26 +6,17 @@ package resource
 
 import (
 	"encoding/json"
-	"fmt"
-	"intel/isecl/lib/common/crypt"
 	jwtauth "intel/isecl/lib/common/jwt"
 	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/lib/common/validation"
-	"io/ioutil"
-	"time"
 
 	authcommon "intel/isecl/authservice/common"
-	"intel/isecl/authservice/config"
-	"intel/isecl/authservice/constants"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
 )
-
-var tokFactory *jwtauth.JwtFactory
 
 type roleClaims struct {
 	Roles        types.Roles         `json:"roles"`
@@ -36,54 +27,15 @@ type roleClaims struct {
 //  var defaultLog = log.GetDefaultLogger()
 //  var secLog = log.GetSecurityLogger()
 
-func SetJwtToken(r *mux.Router, db repository.AASDatabase) {
-	r.Handle("/token", createJwtToken(db)).Methods("POST")
-	r.Handle("/changepassword", changePassword(db)).Methods("PATCH")
+func SetJwtToken(r *mux.Router, db repository.AASDatabase, tokFactory *jwtauth.JwtFactory) {
+	r.Handle("/token", createJwtToken(db, tokFactory)).Methods("POST")
 }
 
-func initJwtTokenFactory() error {
-
-	defaultLog.Trace("call to initJwtTokenFactory")
-	defer defaultLog.Trace("initJwtTokenFactory return")
-
-	// retrieve the private key from file
-	privKeyDer, err := crypt.GetPKCS8PrivKeyDerFromFile(constants.TokenSignKeyFile)
-	if err != nil {
-		return fmt.Errorf("Could not get private key - error : %v", err)
-	}
-
-	// retrieve the signing key certificate used to create the file
-	cfg := config.Global()
-	var certPemBytes []byte
-	if cfg.Token.IncludeKid {
-		certPemBytes, err = ioutil.ReadFile(constants.TokenSignCertFile)
-		if err != nil {
-			return fmt.Errorf("could not read JWT signing certificate file - error : %v", err)
-		}
-	}
-
-	tokFactory, err = jwtauth.NewTokenFactory(privKeyDer,
-		cfg.Token.IncludeKid, certPemBytes,
-		"AAS JWT Issuer",
-		time.Duration(cfg.Token.TokenDurationMins)*time.Minute)
-	return err
-}
-
-func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
+func createJwtToken(db repository.AASDatabase, tokFactory *jwtauth.JwtFactory) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		defaultLog.Trace("call to createJwtToken")
 		defer defaultLog.Trace("createJwtToken return")
-
-		//check if the token factory is already initialized. If not, initialize the token factory
-		if tokFactory == nil {
-			err := initJwtTokenFactory()
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				defaultLog.WithError(err).Errorf("could not initialize the token factory. error - %v", err)
-				return nil
-			}
-		}
 
 		if r.ContentLength == 0 {
 			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
@@ -134,75 +86,6 @@ func createJwtToken(db repository.AASDatabase) errorHandlerFunc {
 		w.Header().Set("Content-Type", "application/jwt")
 		w.Write([]byte(jwt))
 		secLog.Infof("Return JWT token of user [%s] to: %s", uc.UserName, r.RemoteAddr)
-		return nil
-	}
-
-}
-
-func changePassword(db repository.AASDatabase) errorHandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) error {
-
-		defaultLog.Trace("call to changePassword")
-		defer defaultLog.Trace("changePassword return")
-
-		if r.ContentLength == 0 {
-			return &resourceError{Message: "The request body was not provided", StatusCode: http.StatusBadRequest}
-		}
-
-		var pc ct.PasswordChange
-		dec := json.NewDecoder(r.Body)
-		dec.DisallowUnknownFields()
-		err := dec.Decode(&pc)
-		if err != nil {
-			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
-		}
-
-		validation_err := validation.ValidateUserNameString(pc.UserName)
-		if validation_err != nil {
-			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
-		}
-
-		validation_err = validation.ValidatePasswordString(pc.OldPassword)
-		if validation_err != nil {
-			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
-		}
-
-		if pc.NewPassword != pc.PasswordConfirm {
-			return &resourceError{Message: "Confirmation password does not match", StatusCode: http.StatusBadRequest}
-		}
-
-		validation_err = validation.ValidatePasswordString(pc.NewPassword)
-		if validation_err != nil {
-			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusUnauthorized}
-		}
-
-		u := db.UserRepository()
-
-		if httpStatus, err := authcommon.HttpHandleUserAuth(u, pc.UserName, pc.OldPassword); err != nil {
-			secLog.Warningf("User [%s] auth failed, requested from %s: ", pc.UserName, r.RemoteAddr)
-			return &resourceError{Message: "", StatusCode: httpStatus}
-		}
-
-		existingUser, err := db.UserRepository().Retrieve(types.User{Name: pc.UserName})
-		if err != nil {
-			defaultLog.WithError(err).Error("not able to retrieve existing user though he was just authenticated")
-			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
-		}
-
-		passwordHash, err := bcrypt.GenerateFromPassword([]byte(pc.NewPassword), bcrypt.DefaultCost)
-		if err != nil {
-			defaultLog.WithError(err).Error("could not generate password when attempting to change password")
-			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
-		}
-		existingUser.PasswordHash = passwordHash
-		existingUser.PasswordCost = bcrypt.DefaultCost
-		err = db.UserRepository().Update(*existingUser)
-		if err != nil {
-			defaultLog.WithError(err).Error("database error while attempting to change password")
-			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
-		}
-		secLog.WithField("user", existingUser.ID).Infof("User %s password changed by: %s", existingUser.ID, r.RemoteAddr)
-
 		return nil
 	}
 
