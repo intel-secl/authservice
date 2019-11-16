@@ -323,7 +323,7 @@ Out of these, either of these fields are optional. Record associated with the `{
 
 `password` if provided will be the new password for the user. There is no state such as reset. It is upto the user to change the password using `changepassword` api
 
-### PATCH `/aas/changepassword`
+### PATCH `/aas/users/changepassword`
 
 Used by user to change the password using current password.
 

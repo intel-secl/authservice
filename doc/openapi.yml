@@ -140,6 +140,24 @@ paths:
                 $ref: '#/components/schemas/Role'
         '401':
           description: Credentials supplied not authorized to create specified user
+
+  /users/changepassword:
+    patch:
+      summary: change password using current password
+      description: used to change the password - need to supply current password, new password and password confirmation
+      tags:
+        - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+      responses:
+        '200':
+          description: Successfully updated user
+        '401':
+          description: Not authorized based on supplied credentials
+
   /users/{user_id}:
     get:
       security:
@@ -167,7 +185,7 @@ paths:
         - bearerAuth: []
       summary: Delete User
       description: Delete a single user by ID
-      parameters: 
+      parameters:
        - $ref: '#/components/parameters/UserID'
       tags:
         - Users
@@ -176,6 +194,27 @@ paths:
           description: Successfully deleted user
         '404':
           description: User with id not found
+
+    patch:
+      security:
+        - bearerAuth: []
+      summary: Update user
+      description: Can be used to update the username or reset password
+      tags:
+        - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: Successfully updated user
+        '404':
+          description: User with id not found
+        '401':
+          description: Not authorized
+
   /users/{user_id}/roles:
     get:
       security:
@@ -380,4 +419,19 @@ components:
           type: string
         password:
           type: string
+    ChangePassword:
+      type: object
+      properties:
+        required:
+          - username
+          - old_password
+          - new_password
+          - password_confirm
+        username:
+          type: string
+        old_password:
+          type: string
+        new_password:
+          type: string
+        password_confirm: string
     
