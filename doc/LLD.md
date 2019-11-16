@@ -14,9 +14,25 @@ The `Auth Service` is a web service whose purpose is to authenticate a user and 
 
 The `Auth Service` has following core functionalities:
 
+## Requirements
+### UserName and Password requirements
+
+Passwords has the following constraints
+ - cannot be empty - ie must at least have one character
+ - maximum length of 255 characters
+
+UserName has the following requirements
+ - Format: username[@host_name[domain]]
+ - [@host_name[domain]] is optional
+ - username shall be minimum of 2 and maximum of 255 characters
+ - username allowed characters are alphanumeric, `.`, `-`, `_` - but cannot start with `-`.
+ - Domain name must meet requirements of a `host name` or `fully qualified internet host name`
+ - Examples
+   -  admin, admin_wls, admin@wls, admin@wls.intel.com, wls-admin@intel.com
+
 ## User Stories
 ### Create, Read, Update, Delete Roles
-As an role administratrator, I want to be able to manage roles so that I can create, query and delete roles.
+As a role administratrator, I want to be able to manage roles so that I can create, query and delete roles.
 
 ####Acceptance Criteria
 Roles Required for Operation
@@ -305,7 +321,7 @@ deletes user from database with specific user id. Deleting a record using this m
 
 Response: success/failure
 
-### PATCH `/aas/users/{userid}` 
+### PATCH `/aas/users/{userid}`
 
 used to update a user (change username) or reset password
 - Authorization: `Bearer Token`
@@ -602,7 +618,11 @@ All necessary setup options should be readable from environment variables, so th
 
 Currently, there are no requirements for  `AAS` for clients to present certificates. Authentication to clients uses basic authentication.
 
-`AAS` server certificate shall be stored in a the following location `/etc/authservice/cert.pem`. During AAS installation time, the AAS has to request a certificate from the CMS. In order to do this, the installation needs a token that is signed by CMS that has privileges to request an AAS TLS certificate.
+`AAS` server certificate shall be stored in a the following location `/etc/authservice/tls-cert.pem`. During AAS installation time, the AAS has to request a certificate from the CMS. In order to do this, the installation needs a token that is signed by CMS that has privileges to request an AAS TLS certificate.
+
+## Root Certificates -
+
+The root certificates that are used by `AAS` are stored in `/etc/authservice/certs/trustedca`. During setup, `root CA` is downloaded from `CMS` and stored in this directory. If using certificates from a 3rd party CA, root certificates can be stored in this directory.
 
 # AAS Features
 ## Authentication and Authorization
@@ -610,6 +630,82 @@ Currently, there are no requirements for  `AAS` for clients to present certifica
 ### Authentication Defender
 
 The authenticaiton defender is a designed to thwart disctionary based attacks by locking the account for a specified time. If there are x number of attempts in y time, the account would be locked out for a period of z time. The current default is 5 attempts in 5 minutes and you are locked out for 15 minutes. These may be configured in the config file and is loaded when the daemon restarts.
+
+## Setup and Runtime Configuration
+
+Setup relies on environment variables to configure the Authentication Service. The installer looks for a file called `authservice.env` in the home directory of the user running the installation. This file can list the needed environment variables that will be exported during installation. You may alternatively export these environment variables using `export` in the shell environment.
+
+Some of configuration variable are only needed during setup. Others are used during runtime. All the configuration entries needed during runtime are stored in configuration file `/etc/authservice/config.yml`
+
+### Environment Variables
+```shell
+# database connection related
+AAS_DB_HOSTNAME=<database_hostname_or_ip> # mandatory
+AAS_DB_PORT=<database_port> # mandatory
+AAS_DB_USERNAME=<db_user> # mandatory
+AAS_DB_PASSWORD=<db_user_password> # mandatory
+AAS_DB_NAME=<name_of_db_in_db_server> #mandatory
+
+# database TLS connection related. Please see details in the SSL/TLS connection to database section
+AAS_DB_SSLMODE=verify_ca|require #optional - if not specified, no certificate verification will be performed
+AAS_DB_SSLCERTSRC=<path_to_cert_file_to_be_copied> #optional
+AAS_DB_SSLCERT=<path_to_cert_file_on_system> #optional
+
+# Root CA, TLS Certificate and JWT Certificate related
+CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/ # mandatory - URL of CMS server
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... # mandatory - this is used to verify the CMS before the root-CA is downloaded.
+COMMON_NAME="AAS TLS Certificate" # optional - TLS Certificate Subject name (default will be used)
+SAN_LIST=comma_seperated_list_of_ip_addresses_and_host_names # mandatory - otherwise, it will be only localhost and 127.0.0.1
+AAS_JWT_CERT_SUBJECT="AAS JWT certificate" #optional -  Subject/ Common Name for JWT signing certificate obtained from CMS
+BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....  #mandatatory bearer token in JWT form obtained from CMS for retrieving TLS and JWT signing cert
+
+# Options for AAS issues JWT token
+AAS_JWT_TOKEN_DURATION_MINS=120 # option duration in minutes how long the JWT token is valid - default is 120 (2 hours)
+
+
+# Administrator related
+AAS_ADMIN_USERNAME=<admin_user_name> # mandatory - name of administrator user
+AAS_ADMIN_PASSWORD=<password> # mandatory - password of administrator user
+
+# Miscellaneous
+LOG_LEVEL=critical|error|warning|info|debug|trace # optional - if not supplied, it will be set to 'warning'
+```
+
+### Configuraiton variables
+The configuration variables used during runtime is stored in `/etc/authservice/config.yml`. Most of these are self explanatory - rest of them are documented. Changing any of these would require a restart of the service/daemon
+
+```yaml
+# port number of authentication http server
+port: 8444
+cmstlscertdigest: 3c95457d5adcb19c223d538d01c39b99df2eb0e07a2a52466531368e96473ab3497dcc02c378a21db0de37da128584d1
+postgres:
+  dbname: pgdb
+  username: dbuser
+  password: test
+  hostname: localhost
+  port: 5432
+  sslmode: verify-ca
+  sslcert: /etc/authservice/aasdbcert.pem
+loglevel: info
+
+# configuration of authentication defender. A user is locked our for 'lockdurationmins' if 'maxattempts' of unsuccessful login is attempted within a span of 'intervalmins'
+authdefender:
+  maxattempts: 5
+  intervalmins: 5
+  lockoutdurationmins: 15
+# JWT token related options. The 'includekid' is no longer optional. tokendurationmins controls validity of token in minutes
+token:
+  includekid: true
+  tokendurationmins: 2880
+cmsbaseurl: https://10.105.168.108:8445/cms/v1/
+subject:
+  tlscertcommonname: AAS TLS Certificate
+  jwtcertcommonname: AAS JWT Signing Certificate
+  organization: INTEL
+  country: US
+  province: SF
+  locality: SC
+```
 
 # Command Line Operations
 
@@ -764,8 +860,6 @@ BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....  #bearer token in JWT form obtained from C
 # optional - alternatively use --valid-mins argument (if not supplied default will be used)
 AAS_JWT_TOKEN_DURATION_MINS=2880 # duration in minutes how long the JWT token is valid for (2880=48 hours)
 
-# optional - alternatively use --keyid argument (if not supplied default will be used)
-AAS_JWT_INCLUDE_KEYID=true|false #set to false in env variable to not include key id. Any other value will be treated as true
 
 ```
 

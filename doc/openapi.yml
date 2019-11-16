@@ -49,7 +49,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RoleInfo'
+              $ref: '#/components/schemas/RoleCreate'
       responses:
         '201':
           description: Successfully created a role
@@ -200,6 +200,11 @@ paths:
         - bearerAuth: []
       summary: Update user
       description: Can be used to update the username or reset password
+<<<<<<< HEAD
+=======
+      parameters:
+       - $ref: '#/components/parameters/UserID'
+>>>>>>> fa70f24... update LLD and api doc
       tags:
         - Users
       requestBody:
@@ -350,6 +355,24 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    Permissions:
+      type: array
+      items:
+        type: string
+    RoleCreate:
+      type: object
+      required:
+        - service
+        - name
+      properties:
+        service: 
+          type: string
+        name:
+          type: string
+        context: 
+          type: string
+        permissions:
+          $ref: '#/components/schemas/Permissions'
     RoleInfo:
       type: object
       required:
@@ -379,6 +402,8 @@ components:
           type: string
         context: 
           type: string
+        permissions:
+          $ref: '#/components/schemas/Permissions'
     RoleIDs:
       type: object
       required:
@@ -421,17 +446,31 @@ components:
           type: string
     ChangePassword:
       type: object
+<<<<<<< HEAD
       properties:
         required:
           - username
           - old_password
           - new_password
           - password_confirm
+=======
+      required:
+        - username
+        - old_password
+        - new_password
+        - password_confirm
+      properties:
+>>>>>>> fa70f24... update LLD and api doc
         username:
           type: string
         old_password:
           type: string
         new_password:
           type: string
+<<<<<<< HEAD
         password_confirm: string
+=======
+        password_confirm:
+          type: string
+>>>>>>> fa70f24... update LLD and api doc
     
