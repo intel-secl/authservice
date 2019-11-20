@@ -315,7 +315,7 @@ func (a *App) Run(args []string) error {
 		a.uninstall(purge)
 		os.Exit(0)
 	case "version":
-		fmt.Fprintf(a.consoleWriter(), "Auth Service %s-%s\n", version.Version, version.GitHash)
+		fmt.Fprintf(a.consoleWriter(), "Auth Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
 	case "setup":
 		a.configureLogs(false, true)
 		var context setup.Context
