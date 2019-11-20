@@ -127,6 +127,13 @@ func (r *PostgresRoleRepository) Update(role types.Role) error {
 }
 
 func (r *PostgresRoleRepository) Delete(role types.Role) error {
+	defaultLog.Trace("Repository role Delete")
+	defer defaultLog.Trace("Repository role Delete done")
+
+	if err := r.db.Model(&role).Association("Users").Clear().Error; err != nil {
+		return errors.Wrap(err, "Repository role delete: failed to clear user-role mapping")
+	}
+
 	if err := r.db.Delete(&role).Error; err != nil {
 		return errors.Wrap(err, "role delete: failed")
 	}
