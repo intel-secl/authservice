@@ -4,7 +4,10 @@
  */
 package constants
 
-import "crypto"
+import (
+	"crypto"
+	"time"
+)
 
 const (
 	HomeDir                        = "/opt/authservice/"
@@ -48,6 +51,11 @@ const (
 	DefaultAasCertProvince         = "SF"
 	DefaultAasCertLocality         = "SC"
 	CmsTlsCertDigestEnv            = "CMS_TLS_CERT_SHA384"
+	DefaultReadTimeout             = 30 * time.Second
+	DefaultReadHeaderTimeout       = 10 * time.Second
+	DefaultWriteTimeout            = 10 * time.Second
+	DefaultIdleTimeout             = 10 * time.Second
+	DefaultMaxHeaderBytes          = 1 << 20
 )
 
 const (

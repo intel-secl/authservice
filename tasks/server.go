@@ -11,6 +11,7 @@ import (
 	"intel/isecl/authservice/constants"
 	"intel/isecl/lib/common/setup"
 	"io"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -45,7 +46,41 @@ func (s Server) Run(c setup.Context) error {
 	s.Config.AuthDefender.IntervalMins = constants.DefaultAuthDefendIntervalMins
 	s.Config.AuthDefender.LockoutDurationMins = constants.DefaultAuthDefendLockoutMins
 
-	// return s.Config.Save()
+	readTimeout, err := c.GetenvInt("AAS_SERVER_READ_TIMEOUT", "Auth Service Read Timeout")
+	if err != nil {
+		s.Config.ReadTimeout = constants.DefaultReadTimeout
+	} else {
+		s.Config.ReadTimeout = time.Duration(readTimeout) * time.Second
+	}
+
+	readHeaderTimeout, err := c.GetenvInt("AAS_SERVER_READ_HEADER_TIMEOUT", "Auth Service Read Header Timeout")
+	if err != nil {
+		s.Config.ReadHeaderTimeout = constants.DefaultReadHeaderTimeout
+	} else {
+		s.Config.ReadHeaderTimeout = time.Duration(readHeaderTimeout) * time.Second
+	}
+
+	writeTimeout, err := c.GetenvInt("AAS_SERVER_WRITE_TIMEOUT", "Auth Service Write Timeout")
+	if err != nil {
+		s.Config.WriteTimeout = constants.DefaultWriteTimeout
+	} else {
+		s.Config.WriteTimeout = time.Duration(writeTimeout) * time.Second
+	}
+
+	idleTimeout, err := c.GetenvInt("AAS_SERVER_IDLE_TIMEOUT", "Auth Service Idle Timeout")
+	if err != nil {
+		s.Config.IdleTimeout = constants.DefaultIdleTimeout
+	} else {
+		s.Config.IdleTimeout = time.Duration(idleTimeout) * time.Second
+	}
+
+	maxHeaderBytes, err := c.GetenvInt("AAS_SERVER_MAX_HEADER_BYTES", "Auth Service Max Header Bytes Timeout")
+	if err != nil {
+		s.Config.MaxHeaderBytes = constants.DefaultMaxHeaderBytes
+	} else {
+		s.Config.MaxHeaderBytes = maxHeaderBytes
+	}
+
 	err = s.Config.Save()
 	if err != nil {
 		return errors.Wrap(err, "setup jwt: failed to save config")

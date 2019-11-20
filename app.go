@@ -546,6 +546,11 @@ func (a *App) startServer() error {
 		Handler:   handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), r)),
 		ErrorLog:  httpLog,
 		TLSConfig: tlsconfig,
+		ReadTimeout:       c.ReadTimeout,
+		ReadHeaderTimeout: c.ReadHeaderTimeout,
+		WriteTimeout:      c.WriteTimeout,
+		IdleTimeout:       c.IdleTimeout,
+		MaxHeaderBytes:    c.MaxHeaderBytes,
 	}
 
 	// dispatch web server go routine

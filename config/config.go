@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	errorLog "github.com/pkg/errors"
@@ -56,6 +57,12 @@ type Configuration struct {
 		Province          string
 		Locality          string
 	}
+
+	ReadTimeout            time.Duration
+	ReadHeaderTimeout      time.Duration
+	WriteTimeout           time.Duration
+	IdleTimeout            time.Duration
+	MaxHeaderBytes         int
 }
 
 var mu sync.Mutex
