@@ -200,11 +200,8 @@ paths:
         - bearerAuth: []
       summary: Update user
       description: Can be used to update the username or reset password
-<<<<<<< HEAD
-=======
       parameters:
        - $ref: '#/components/parameters/UserID'
->>>>>>> fa70f24... update LLD and api doc
       tags:
         - Users
       requestBody:
@@ -446,31 +443,18 @@ components:
           type: string
     ChangePassword:
       type: object
-<<<<<<< HEAD
-      properties:
-        required:
-          - username
-          - old_password
-          - new_password
-          - password_confirm
-=======
       required:
         - username
         - old_password
         - new_password
         - password_confirm
       properties:
->>>>>>> fa70f24... update LLD and api doc
         username:
           type: string
         old_password:
           type: string
         new_password:
           type: string
-<<<<<<< HEAD
-        password_confirm: string
-=======
         password_confirm:
           type: string
->>>>>>> fa70f24... update LLD and api doc
     
