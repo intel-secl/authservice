@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/mux"
 
 	commLog "intel/isecl/lib/common/log"
+	commLogMsg "intel/isecl/lib/common/log/message"
 )
 
 var defaultLogger = commLog.GetDefaultLogger()
@@ -36,15 +37,12 @@ func NewBasicAuth(u repository.UserRepository) mux.MiddlewareFunc {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-
-			//todo:remove this entry that is used for debug
-			secLogger.Info("Attempting to authenticate user: ", username)
-
 			if httpStatus, err := authcommon.HttpHandleUserAuth(u, username, password); err != nil {
-				secLogger.Warning(err)
+				secLogger.Warning(commLogMsg.UnauthorizedAccess, err.Error())
 				w.WriteHeader(httpStatus)
 				return
 			}
+			secLogger.Info(commLogMsg.AuthorizedAccess, username)
 
 			roles, err := u.GetRoles(types.User{Name: username}, nil, false)
 			if err != nil {

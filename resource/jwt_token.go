@@ -16,6 +16,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+
+	commLogMsg "intel/isecl/lib/common/log/message"
 )
 
 type roleClaims struct {
@@ -62,7 +64,7 @@ func createJwtToken(db repository.AASDatabase, tokFactory *jwtauth.JwtFactory) e
 		u := db.UserRepository()
 
 		if httpStatus, err := authcommon.HttpHandleUserAuth(u, uc.UserName, uc.Password); err != nil {
-			secLog.Warningf("User [%s] auth failed, requested from %s: ", uc.UserName, r.RemoteAddr)
+			secLog.Warningf("%s: User [%s] auth failed, requested from %s: ", commLogMsg.AuthenticationFailed, uc.UserName, r.RemoteAddr)
 			return &resourceError{Message: "", StatusCode: httpStatus}
 		}
 
@@ -85,7 +87,7 @@ func createJwtToken(db repository.AASDatabase, tokFactory *jwtauth.JwtFactory) e
 
 		w.Header().Set("Content-Type", "application/jwt")
 		w.Write([]byte(jwt))
-		secLog.Infof("Return JWT token of user [%s] to: %s", uc.UserName, r.RemoteAddr)
+		secLog.Infof("%s: Return JWT token of user [%s] to: %s", commLogMsg.TokenIssued, uc.UserName, r.RemoteAddr)
 		return nil
 	}
 

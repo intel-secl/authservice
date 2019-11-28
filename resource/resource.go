@@ -15,6 +15,8 @@ import (
 	"net/http"
 
 	"github.com/jinzhu/gorm"
+
+	commLogMsg "intel/isecl/lib/common/log/message"
 )
 
 var defaultLog = log.GetDefaultLogger()
@@ -28,7 +30,7 @@ func (ehf errorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer defaultLog.Trace("query handler return")
 
 	if err := ehf(w, r); err != nil {
-		secLog.WithError(err).Warning("HTTP Error")
+		secLog.WithError(err).Warning(commLogMsg.InvalidInputProtocolViolation)
 		if gorm.IsRecordNotFoundError(err) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -73,7 +75,7 @@ func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, re
 	// Check query authority
 	privileges, err := comctx.GetUserRoles(r)
 	if err != nil {
-		secLog.WithError(err).Error("could not get user roles from http context")
+		secLog.WithError(err).Error(commLogMsg.InvalidInputBadParam)
 		return nil,
 			&resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
 	}
@@ -86,7 +88,7 @@ func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, re
 
 	ctxMap, foundRole := auth.ValidatePermissionAndGetRoleContext(privileges, reqRoles, retNilCtxForEmptyCtx)
 	if !foundRole {
-		secLog.Infof("endpoint access unauthorized, request roles: %v", roleNames)
+		secLog.Infof("%s: endpoint access unauthorized, request roles: %v", commLogMsg.UnauthorizedAccess, roleNames)
 		return nil, &privilegeError{Message: "", StatusCode: http.StatusForbidden}
 	}
 

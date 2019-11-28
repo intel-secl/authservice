@@ -20,6 +20,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/gorilla/mux"
+
+	commLogMsg "intel/isecl/lib/common/log/message"
 )
 
 func SetUsers(r *mux.Router, db repository.AASDatabase) {
@@ -53,7 +55,7 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
-			secLog.Warning("Unauthorized create user attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized create user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -93,7 +95,7 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 		if err != nil {
 			return err
 		}
-		secLog.WithField("user", created).Info("User created by:", r.RemoteAddr)
+		secLog.WithField("user", created).Infof("%s: User created by: %s", commLogMsg.UserAdded, r.RemoteAddr)
 
 		w.WriteHeader(http.StatusCreated) // HTTP 201
 		w.Header().Set("Content-Type", "application/json")
@@ -114,7 +116,7 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
-			secLog.Warning("Unauthorized get user attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized get user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -138,7 +140,7 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 			// log.WithError(err).Error("failed to encode json response")
 			return err
 		}
-		secLog.WithField("user", u).Info("Return get user request to:", r.RemoteAddr)
+		secLog.WithField("user", u).Infof("%s: Return get user request to: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -154,7 +156,7 @@ func updateUser(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
-			secLog.Warning("Unauthorized update user attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized update user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -226,7 +228,7 @@ func updateUser(db repository.AASDatabase) errorHandlerFunc {
 			defaultLog.WithError(err).Error("database error while attempting to change user:", id)
 			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
 		}
-		secLog.Infof("User %s changed by: %s", id, r.RemoteAddr)
+		secLog.Infof("%s: User %s changed by: %s", commLogMsg.PrivilegeModified, id, r.RemoteAddr)
 
 		return nil
 
@@ -242,7 +244,7 @@ func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
-			secLog.Warning("Unauthorized delete user attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized delete user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -264,7 +266,7 @@ func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 			// log.WithError(err).WithField("id", id).Info("failed to delete user")
 			return err
 		}
-		secLog.WithField("user", del_usr).Info("User deleted by:", r.RemoteAddr)
+		secLog.WithField("user", del_usr).Infof("%s: User deleted by: %s", commLogMsg.UserDeleted, r.RemoteAddr)
 
 		w.WriteHeader(http.StatusNoContent)
 		return nil
@@ -279,7 +281,7 @@ func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
 		if err != nil {
-			secLog.Warning("Unauthorized query user attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized query user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -305,7 +307,7 @@ func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(users)
-		secLog.Info("Return user query to:", r.RemoteAddr)
+		secLog.Infof("%s: Return user query to: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -318,7 +320,7 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
-			secLog.Warning("Unauthorized add user role attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized add user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -384,7 +386,7 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
-		secLog.WithField("user", u).Info("Roles added by:", r.RemoteAddr)
+		secLog.WithField("user", u).Infof("%s: Roles added by: %s", commLogMsg.PrivilegeModified, r.RemoteAddr)
 
 		w.WriteHeader(http.StatusCreated) // HTTP 201
 		return nil
@@ -399,7 +401,7 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
-			secLog.Warning("Unauthorized query user role attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized query user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -463,7 +465,7 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(userRoles)
-		secLog.Info("Return user permission query request to:", r.RemoteAddr)
+		secLog.Infof("%s: Return user permission query request to: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -476,7 +478,7 @@ func queryUserPermissions(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
-			secLog.Warning("Unauthorized query user role attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized query user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -541,7 +543,7 @@ func queryUserPermissions(db repository.AASDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(userPermissions)
-		secLog.Info("Return user role query request to:", r.RemoteAddr)
+		secLog.Infof("%s: Return user role query request to: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -554,7 +556,7 @@ func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
 		if err != nil {
-			secLog.Warning("Unauthorized delete user role attempt from:", r.RemoteAddr)
+			secLog.Warningf("%s: Unauthorized delete user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
 		}
 
@@ -584,7 +586,7 @@ func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 			w.WriteHeader(http.StatusNoContent)
 			return nil
 		}
-		secLog.WithField("user", *u).Info("User roles deleted by:", r.RemoteAddr)
+		secLog.WithField("user", *u).Infof("%s: User roles deleted by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 
 		w.WriteHeader(http.StatusNoContent) // HTTP 204
 		return nil
@@ -631,7 +633,7 @@ func changePassword(db repository.AASDatabase) errorHandlerFunc {
 		u := db.UserRepository()
 
 		if httpStatus, err := authcommon.HttpHandleUserAuth(u, pc.UserName, pc.OldPassword); err != nil {
-			secLog.Warningf("User [%s] auth failed, requested from %s: ", pc.UserName, r.RemoteAddr)
+			secLog.Warningf("%s: User [%s] auth failed, requested from %s: ", commLogMsg.UnauthorizedAccess, pc.UserName, r.RemoteAddr)
 			return &resourceError{Message: "", StatusCode: httpStatus}
 		}
 
@@ -653,7 +655,7 @@ func changePassword(db repository.AASDatabase) errorHandlerFunc {
 			defaultLog.WithError(err).Error("database error while attempting to change password")
 			return &resourceError{Message: "cannot complete request", StatusCode: http.StatusInternalServerError}
 		}
-		secLog.WithField("user", existingUser.ID).Infof("User %s password changed by: %s", existingUser.ID, r.RemoteAddr)
+		secLog.WithField("user", existingUser.ID).Infof("%s: User %s password changed by: %s", commLogMsg.PrivilegeModified, existingUser.ID, r.RemoteAddr)
 
 		return nil
 	}

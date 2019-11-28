@@ -16,4 +16,3 @@ require (
 )
 
 replace intel/isecl/lib/common => gitlab.devtools.intel.com/sst/isecl/lib/common.git v1.0/develop
-

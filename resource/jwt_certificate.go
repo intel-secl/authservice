@@ -12,6 +12,8 @@ import (
 	"regexp"
 
 	"github.com/gorilla/mux"
+
+	commLogMsg "intel/isecl/lib/common/log/message"
 )
 
 func SetJwtCertificate(r *mux.Router) {
@@ -33,14 +35,14 @@ func getJwtCertificate() errorHandlerFunc {
 		err = validation.ValidatePemEncodedKey(re.ReplaceAllString(string(token_certificate), ""))
 
 		if err != nil {
-			secLog.Errorf("Invalid jwt certificate in file: %v", err)
+			secLog.Errorf(commLogMsg.UnauthorizedAccess, err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("Invalid jwt certificate"))
 			return err
 		}
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Write(token_certificate)
-		secLog.Info("Return JWT certificate to: " + r.RemoteAddr)
+		secLog.Info(commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 
 	}

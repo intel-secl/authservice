@@ -231,8 +231,8 @@ func (a *App) configureLogs(stdOut, logFile bool) {
 	}
 	ioWriterSecurity := io.MultiWriter(ioWriterDefault, a.SecLogWriter)
 
-	commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, nil, ioWriterDefault, false)
-	commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, nil, ioWriterSecurity, false)
+	commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, &commLog.LogFormatter{}, ioWriterDefault, false)
+	commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, &commLog.LogFormatter{}, ioWriterSecurity, false)
 
 	secLog.Trace("sec log initiated")
 	defaultLog.Trace("loggers setup finished")

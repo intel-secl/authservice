@@ -15,6 +15,8 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+
+	commLogMsg "intel/isecl/lib/common/log/message"
 )
 
 type Admin struct {
@@ -61,7 +63,8 @@ func (a Admin) Run(c setup.Context) error {
 		// return err
 		return errors.Wrap(err, "setup admin: failed to open add db user")
 	}
-	secLog.Info("Finished setup for admin:", username)
+	secLog.Infof("%s: Finished setup for admin %s:", commLogMsg.UserAdded, *username)
+	secLog.Infof("%s: Finished setup for admin %s:", commLogMsg.PrivilegeModified, *username)
 	return nil
 }
 
