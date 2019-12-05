@@ -26,7 +26,7 @@ installer: authservice
 
 docker: installer
 	cp dist/docker/entrypoint.sh out/entrypoint.sh && chmod +x out/entrypoint.sh
-	docker build -t isecl/authservice:latest -f ./dist/docker/Dockerfile ./out
+	docker build -t isecl/cms:latest --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} -f ./dist/docker/Dockerfile ./out
 	docker save isecl/authservice:latest > ./out/docker-authservice-$(VERSION)-$(GITCOMMIT).tar
 
 docker-zip: installer

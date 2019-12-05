@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhel7:7.5
+FROM registry.access.redhat.com/ubi7-init:7.6
 
 COPY authservice-*.bin /tmp/authservice.bin
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
