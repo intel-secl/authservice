@@ -64,9 +64,10 @@ func createJwtToken(db repository.AASDatabase, tokFactory *jwtauth.JwtFactory) e
 		u := db.UserRepository()
 
 		if httpStatus, err := authcommon.HttpHandleUserAuth(u, uc.UserName, uc.Password); err != nil {
-			secLog.Warningf("%s: User [%s] auth failed, requested from %s: ", commLogMsg.AuthenticationFailed, uc.UserName, r.RemoteAddr)
+			secLog.Warningf("%s: User [%s] authentication failed, requested from %s: ", commLogMsg.AuthenticationFailed, uc.UserName, r.RemoteAddr)
 			return &resourceError{Message: "", StatusCode: httpStatus}
 		}
+		secLog.Infof("%s: User [%s] authenticated, requested from %s: ", commLogMsg.AuthenticationSuccess, uc.UserName, r.RemoteAddr)
 
 		roles, err := u.GetRoles(types.User{Name: uc.UserName}, nil, false)
 		if err != nil {

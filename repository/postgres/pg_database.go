@@ -9,6 +9,7 @@ import (
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	commLog "intel/isecl/lib/common/log"
+	commLogMsg "intel/isecl/lib/common/log/message"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 )
 
 var defaultLog = commLog.GetDefaultLogger()
+var secLog = commLog.GetSecurityLogger()
 
 type PostgresDatabase struct {
 	DB *gorm.DB
@@ -113,6 +115,7 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 	if dbErr != nil {
 		defaultLog.WithError(dbErr).Infof("Failed to connect to db after %d attempts\n", numAttempts)
 		// return nil, dbErr
+		secLog.Warningf("%s: Failed to connect to db after %d attempts", commLogMsg.BadConnection, numAttempts)
 		return nil, errors.Wrapf(dbErr, "Failed to connect to db after %d attempts", numAttempts)
 	}
 	return &PostgresDatabase{DB: db}, nil

@@ -22,6 +22,7 @@ import (
 	e "intel/isecl/lib/common/exec"
 	jwtauth "intel/isecl/lib/common/jwt"
 	commLog "intel/isecl/lib/common/log"
+	commLogMsg "intel/isecl/lib/common/log/message"
 	commLogInt "intel/isecl/lib/common/log/setup"
 	cmw "intel/isecl/lib/common/middleware"
 	"intel/isecl/lib/common/setup"
@@ -237,8 +238,8 @@ func (a *App) configureLogs(stdOut, logFile bool) {
 	commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, &commLog.LogFormatter{}, ioWriterDefault, false)
 	commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, &commLog.LogFormatter{}, ioWriterSecurity, false)
 
-	secLog.Trace("sec log initiated")
-	defaultLog.Trace("loggers setup finished")
+	secLog.Info(commLogMsg.LogInit)
+	defaultLog.Info(commLogMsg.LogInit)
 }
 
 func (a *App) Run(args []string) error {
@@ -568,10 +569,10 @@ func (a *App) startServer() error {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	httpLog := stdlog.New(a.httpLogWriter(), "", 0)
 	h := &http.Server{
-		Addr:      fmt.Sprintf(":%d", c.Port),
-		Handler:   handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), r)),
-		ErrorLog:  httpLog,
-		TLSConfig: tlsconfig,
+		Addr:              fmt.Sprintf(":%d", c.Port),
+		Handler:           handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), r)),
+		ErrorLog:          httpLog,
+		TLSConfig:         tlsconfig,
 		ReadTimeout:       c.ReadTimeout,
 		ReadHeaderTimeout: c.ReadHeaderTimeout,
 		WriteTimeout:      c.WriteTimeout,
@@ -607,7 +608,12 @@ func (a *App) start() error {
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "start", "authservice"}, os.Environ())
+	err = syscall.Exec(systemctl, []string{"systemctl", "start", "authservice"}, os.Environ())
+	if err != nil {
+		return err
+	}
+	secLog.Info(commLogMsg.ServiceStart)
+	return nil
 }
 
 func (a *App) stop() error {
@@ -616,7 +622,12 @@ func (a *App) stop() error {
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "stop", "authservice"}, os.Environ())
+	err = syscall.Exec(systemctl, []string{"systemctl", "stop", "authservice"}, os.Environ())
+	if err != nil {
+		return err
+	}
+	secLog.Info(commLogMsg.ServiceStop)
+	return nil
 }
 
 func (a *App) status() error {
