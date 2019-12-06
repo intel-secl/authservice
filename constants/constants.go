@@ -38,6 +38,7 @@ const (
 	DefaultDBRotationMaxTableCnt   = 10
 	DefaultSSLCertFilePath         = ConfigDir + "aasdbcert.pem"
 	ServiceName                    = "AAS"
+	AASUserName                    = "aas"
 	DefaultHttpPort                = 8444
 	DefaultKeyAlgorithm            = "rsa"
 	DefaultKeyAlgorithmLength      = 3072

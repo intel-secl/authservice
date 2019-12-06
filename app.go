@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509/pkix"
-	"errors"
 	"flag"
 	"fmt"
 	"intel/isecl/authservice/config"
@@ -19,6 +18,7 @@ import (
 	"intel/isecl/authservice/tasks"
 	"intel/isecl/authservice/version"
 	"intel/isecl/lib/common/crypt"
+	cos "intel/isecl/lib/common/os"
 	e "intel/isecl/lib/common/exec"
 	jwtauth "intel/isecl/lib/common/jwt"
 	commLog "intel/isecl/lib/common/log"
@@ -33,13 +33,16 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"path"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 
 	// Import driver for GORM
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -428,6 +431,29 @@ func (a *App) Run(args []string) error {
 			fmt.Printf("Error running setup: %+v", err) // -> fmt.Printf("...: %s", err.Error())
 			return err
 		}
+
+		aasUser, err := user.Lookup(constants.AASUserName)
+		if err != nil {
+			return errors.Wrapf(err,"Could not find user '%s'", constants.AASUserName)
+		}
+
+		uid, err := strconv.Atoi(aasUser.Uid)
+		if err != nil {
+			return errors.Wrapf(err,"Could not parse aas user uid '%s'", aasUser.Uid)
+		}
+
+		gid, err := strconv.Atoi(aasUser.Gid)
+		if err != nil {
+			return errors.Wrapf(err,"Could not parse aas user gid '%s'", aasUser.Gid)
+		}
+
+		//Change the fileownership to aas user for all the files under config directory
+
+		err = cos.ChownR(constants.ConfigDir,uid,gid)
+		if err != nil {
+			return errors.Wrap(err, "Error while changing file ownership")
+		}
+
 	}
 	return nil
 }

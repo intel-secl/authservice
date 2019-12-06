@@ -7,6 +7,8 @@ package main
 import (
 	"intel/isecl/authservice/constants"
 	"os"
+	"os/user"
+	"strconv"
 )
 
 func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File) {
@@ -19,6 +21,35 @@ func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File
 
 	secLogFile, _ = os.OpenFile(constants.SecurityLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
 	os.Chmod(constants.SecurityLogFile, 0664)
+
+	aasUser, err := user.Lookup(constants.AASUserName)
+	if err != nil {
+		defaultLog.Errorf("Could not find user '%s'", constants.AASUserName)
+	}
+
+	uid, err := strconv.Atoi(aasUser.Uid)
+	if err != nil {
+		defaultLog.Errorf("Could not parse aas user uid '%s'", aasUser.Uid)
+	}
+
+	gid, err := strconv.Atoi(aasUser.Gid)
+	if err != nil {
+		defaultLog.Errorf("Could not parse aas user gid '%s'", aasUser.Gid)
+	}
+
+	err = os.Chown(constants.HTTPLogFile, uid, gid)
+	if err != nil {
+		defaultLog.Errorf("Could not change file ownership for file: '%s'", constants.HTTPLogFile)
+	}
+	err = os.Chown(constants.SecurityLogFile, uid, gid)
+	if err != nil {
+		defaultLog.Errorf("Could not change file ownership for file: '%s'", constants.SecurityLogFile)
+	}
+	err = os.Chown(constants.LogFile, uid, gid)
+	if err != nil {
+		defaultLog.Errorf("Could not change file ownership for file: '%s'", constants.LogFile)
+	}
+
 	return
 }
 
