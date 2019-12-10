@@ -123,7 +123,7 @@ export LOG_OLD=${LOG_OLD:-12}
 mkdir -p /etc/logrotate.d
 
 if [ ! -a /etc/logrotate.d/aas ]; then
- echo "/var/log/aas/* {
+ echo "/var/log/authservice/* {
     missingok
         notifempty
         rotate $LOG_OLD

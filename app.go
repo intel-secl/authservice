@@ -18,13 +18,13 @@ import (
 	"intel/isecl/authservice/tasks"
 	"intel/isecl/authservice/version"
 	"intel/isecl/lib/common/crypt"
-	cos "intel/isecl/lib/common/os"
 	e "intel/isecl/lib/common/exec"
 	jwtauth "intel/isecl/lib/common/jwt"
 	commLog "intel/isecl/lib/common/log"
 	commLogMsg "intel/isecl/lib/common/log/message"
 	commLogInt "intel/isecl/lib/common/log/setup"
 	cmw "intel/isecl/lib/common/middleware"
+	cos "intel/isecl/lib/common/os"
 	"intel/isecl/lib/common/setup"
 	"intel/isecl/lib/common/validation"
 	"io"
@@ -114,9 +114,6 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "    authservice setup admin [--user=<username>] [--pass=<password>]")
 	fmt.Fprintln(w, "        - Environment variable AAS_ADMIN_USERNAME=<username> can be set alternatively")
 	fmt.Fprintln(w, "        - Environment variable AAS_ADMIN_PASSWORD=<password> can be set alternatively")
-	fmt.Fprintln(w, "    authservice setup reghost [--user=<username>] [--pass=<password>]")
-	fmt.Fprintln(w, "        - Environment variable AAS_REG_HOST_USERNAME=<username> can be set alternatively")
-	fmt.Fprintln(w, "        - Environment variable AAS_REG_HOST_PASSWORD=<password> can be set alternatively")
 	fmt.Fprintln(w, "    authservice setup download_ca_cert [--force]")
 	fmt.Fprintln(w, "        - Download CMS root CA certificate")
 	fmt.Fprintln(w, "        - Option [--force] overwrites any existing files, and always downloads new root CA cert")
@@ -427,22 +424,22 @@ func (a *App) Run(args []string) error {
 
 		aasUser, err := user.Lookup(constants.AASUserName)
 		if err != nil {
-			return errors.Wrapf(err,"Could not find user '%s'", constants.AASUserName)
+			return errors.Wrapf(err, "Could not find user '%s'", constants.AASUserName)
 		}
 
 		uid, err := strconv.Atoi(aasUser.Uid)
 		if err != nil {
-			return errors.Wrapf(err,"Could not parse aas user uid '%s'", aasUser.Uid)
+			return errors.Wrapf(err, "Could not parse aas user uid '%s'", aasUser.Uid)
 		}
 
 		gid, err := strconv.Atoi(aasUser.Gid)
 		if err != nil {
-			return errors.Wrapf(err,"Could not parse aas user gid '%s'", aasUser.Gid)
+			return errors.Wrapf(err, "Could not parse aas user gid '%s'", aasUser.Gid)
 		}
 
 		//Change the fileownership to aas user for all the files under config directory
 
-		err = cos.ChownR(constants.ConfigDir,uid,gid)
+		err = cos.ChownR(constants.ConfigDir, uid, gid)
 		if err != nil {
 			return errors.Wrap(err, "Error while changing file ownership")
 		}
@@ -487,6 +484,7 @@ func (a *App) initJwtTokenFactory() (*jwtauth.JwtFactory, error) {
 func (a *App) startServer() error {
 	c := a.configuration()
 
+	defaultLog.Info("Starting server")
 	// Open database
 	aasDB, err := postgres.Open(c.Postgres.Hostname, c.Postgres.Port, c.Postgres.DBName,
 		c.Postgres.Username, c.Postgres.Password, c.Postgres.SSLMode, c.Postgres.SSLCert)
@@ -582,7 +580,8 @@ func (a *App) startServer() error {
 		}
 	}()
 
-	fmt.Fprintln(a.consoleWriter(), "Auth Service is running")
+	secLog.Info(commLogMsg.ServiceStart)
+	// fmt.Fprintln(a.consoleWriter(), "Auth Service is running")
 	// TODO dispatch Service status checker goroutine
 	<-stop
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -591,6 +590,7 @@ func (a *App) startServer() error {
 		defaultLog.WithError(err).Info("Failed to gracefully shutdown webserver")
 		return err
 	}
+	secLog.Info(commLogMsg.ServiceStop)
 	return nil
 }
 
@@ -600,12 +600,7 @@ func (a *App) start() error {
 	if err != nil {
 		return err
 	}
-	err = syscall.Exec(systemctl, []string{"systemctl", "start", "authservice"}, os.Environ())
-	if err != nil {
-		return err
-	}
-	secLog.Info(commLogMsg.ServiceStart)
-	return nil
+	return syscall.Exec(systemctl, []string{"systemctl", "start", "authservice"}, os.Environ())
 }
 
 func (a *App) stop() error {
@@ -614,12 +609,7 @@ func (a *App) stop() error {
 	if err != nil {
 		return err
 	}
-	err = syscall.Exec(systemctl, []string{"systemctl", "stop", "authservice"}, os.Environ())
-	if err != nil {
-		return err
-	}
-	secLog.Info(commLogMsg.ServiceStop)
-	return nil
+	return syscall.Exec(systemctl, []string{"systemctl", "stop", "authservice"}, os.Environ())
 }
 
 func (a *App) status() error {
