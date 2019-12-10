@@ -129,10 +129,6 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "        - Environment variable KEY_PATH=<key_path> to override default specified in config")
 	fmt.Fprintln(w, "        - Environment variable CERT_PATH=<cert_path> to override default specified in config")
 	fmt.Fprintln(w, "        - Environment variable AAS_TLS_CERT_CN=<TLS CERT COMMON NAME> to override default specified in config")
-	fmt.Fprintln(w, "        - Environment variable AAS_CERT_ORG=<CERTIFICATE ORGANIZATION> to override default specified in config")
-	fmt.Fprintln(w, "        - Environment variable AAS_CERT_COUNTRY=<CERTIFICATE COUNTRY> to override default specified in config")
-	fmt.Fprintln(w, "        - Environment variable AAS_CERT_LOCALITY=<CERTIFICATE LOCALITY> to override default specified in config")
-	fmt.Fprintln(w, "        - Environment variable AAS_CERT_PROVINCE=<CERTIFICATE PROVINCE> to override default specified in config")
 	fmt.Fprintln(w, "        - Environment variable SAN_LIST=<san> list of hosts which needs access to service")
 	fmt.Fprintln(w, "    authservice setup jwt")
 	fmt.Fprintln(w, "        - Create jwt signing key and jwt certificate signed by CMS")
@@ -377,13 +373,9 @@ func (a *App) Run(args []string) error {
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
 					CmsBaseURL:         a.Config.CMSBaseUrl,
 					Subject: pkix.Name{
-						Country:      []string{a.Config.Subject.Country},
-						Organization: []string{a.Config.Subject.Organization},
-						Locality:     []string{a.Config.Subject.Locality},
-						Province:     []string{a.Config.Subject.Province},
 						CommonName:   a.Config.Subject.TLSCertCommonName,
 					},
-					SanList:       constants.DefaultAasTlsSan,
+					SanList:       a.Config.CertSANList,
 					CertType:      "TLS",
 					CaCertsDir:    constants.TrustedCAsStoreDir,
 					BearerToken:   "",
@@ -429,7 +421,7 @@ func (a *App) Run(args []string) error {
 		}
 		if err != nil {
 			defaultLog.WithError(err).Error("Error running setup")
-			fmt.Printf("Error running setup: %+v", err) // -> fmt.Printf("...: %s", err.Error())
+			fmt.Fprintf(os.Stderr, "Error running setup: %s\n", err.Error())
 			return err
 		}
 

@@ -37,7 +37,6 @@ type Configuration struct {
 		SSLCert  string
 	}
 	LogLevel log.Level
-
 	AuthDefender struct {
 		MaxAttempts         int
 		IntervalMins        int
@@ -52,12 +51,8 @@ type Configuration struct {
 	Subject    struct {
 		TLSCertCommonName string
 		JWTCertCommonName string
-		Organization      string
-		Country           string
-		Province          string
-		Locality          string
 	}
-
+	CertSANList            string
 	ReadTimeout            time.Duration
 	ReadHeaderTimeout      time.Duration
 	WriteTimeout           time.Duration
@@ -111,32 +106,11 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		conf.Subject.TLSCertCommonName = constants.DefaultAasTlsCn
 	}
 
-	certOrg, err := c.GetenvString("AAS_CERT_ORG", "AAS Certificate Organization")
-	if err == nil && certOrg != "" {
-		conf.Subject.Organization = certOrg
-	} else if conf.Subject.Organization == "" {
-		conf.Subject.Organization = constants.DefaultAasCertOrganization
-	}
-
-	certCountry, err := c.GetenvString("AAS_CERT_COUNTRY", "AAS Certificate Country")
-	if err == nil && certCountry != "" {
-		conf.Subject.Country = certCountry
-	} else if conf.Subject.Country == "" {
-		conf.Subject.Country = constants.DefaultAasCertCountry
-	}
-
-	certProvince, err := c.GetenvString("AAS_CERT_PROVINCE", "AAS Certificate Province")
-	if err == nil && certProvince != "" {
-		conf.Subject.Province = certProvince
-	} else if err != nil || conf.Subject.Province == "" {
-		conf.Subject.Province = constants.DefaultAasCertProvince
-	}
-
-	certLocality, err := c.GetenvString("AAS_CERT_LOCALITY", "AAS Certificate Locality")
-	if err == nil && certLocality != "" {
-		conf.Subject.Locality = certLocality
-	} else if conf.Subject.Locality == "" {
-		conf.Subject.Locality = constants.DefaultAasCertLocality
+	sanList, err := c.GetenvString("SAN_LIST", "SAN list for TLS")
+	if err == nil && sanList != "" {
+		conf.CertSANList = sanList
+	} else if conf.CertSANList == "" {
+		conf.CertSANList = constants.DefaultAasTlsSan
 	}
 
 	jwtTokenDuration, err := c.GetenvInt("AAS_JWT_TOKEN_DURATION_MINS", "AAS JWT token life span")
@@ -149,6 +123,7 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	return conf.Save()
 
 }
+
 func (conf *Configuration) Save() error {
 	if conf.configFile == "" {
 		return ErrNoConfigFile

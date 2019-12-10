@@ -47,10 +47,6 @@ const (
 	DefaultAasJwtCn                = "AAS JWT Signing Certificate"
 	DefaultAasJwtDurationMins      = 120
 	DefaultJwtValidateCacheKeyMins = 60
-	DefaultAasCertOrganization     = "INTEL"
-	DefaultAasCertCountry          = "US"
-	DefaultAasCertProvince         = "SF"
-	DefaultAasCertLocality         = "SC"
 	CmsTlsCertDigestEnv            = "CMS_TLS_CERT_SHA384"
 	DefaultReadTimeout             = 30 * time.Second
 	DefaultReadHeaderTimeout       = 10 * time.Second

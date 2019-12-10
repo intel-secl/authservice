@@ -87,12 +87,7 @@ func (jwt JWT) Run(c setup.Context) error {
 	// let us call the method available in the common setup task to obtain certificate and
 	privKeyDer, cert, err := setup.GetCertificateFromCMS("JWT-Signing", constants.DefaultKeyAlgorithm,
 		constants.DefaultKeyAlgorithmLength, jwt.Config.CMSBaseUrl,
-		pkix.Name{CommonName: jwt.Config.Subject.JWTCertCommonName,
-			Organization: []string{jwt.Config.Subject.Organization},
-			Country:      []string{jwt.Config.Subject.Country},
-			Province:     []string{jwt.Config.Subject.Province},
-			Locality:     []string{jwt.Config.Subject.Province},
-		},
+		pkix.Name{CommonName: jwt.Config.Subject.JWTCertCommonName,},
 		"", constants.TrustedCAsStoreDir, envBearerToken)
 	if err != nil {
 		// return err
