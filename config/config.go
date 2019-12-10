@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	errorLog "github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -24,10 +24,10 @@ import (
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
 type Configuration struct {
-	configFile string
-	Port       int
+	configFile       string
+	Port             int
 	CmsTlsCertDigest string
-	Postgres   struct {
+	Postgres         struct {
 		DBName   string
 		Username string
 		Password string
@@ -36,7 +36,10 @@ type Configuration struct {
 		SSLMode  string
 		SSLCert  string
 	}
-	LogLevel log.Level
+	LogMaxLength    int
+	LogEnableStdout bool
+	LogLevel        log.Level
+
 	AuthDefender struct {
 		MaxAttempts         int
 		IntervalMins        int
@@ -52,12 +55,13 @@ type Configuration struct {
 		TLSCertCommonName string
 		JWTCertCommonName string
 	}
-	CertSANList            string
-	ReadTimeout            time.Duration
-	ReadHeaderTimeout      time.Duration
-	WriteTimeout           time.Duration
-	IdleTimeout            time.Duration
-	MaxHeaderBytes         int
+
+	CertSANList       string
+	ReadTimeout       time.Duration
+	ReadHeaderTimeout time.Duration
+	WriteTimeout      time.Duration
+	IdleTimeout       time.Duration
+	MaxHeaderBytes    int
 }
 
 var mu sync.Mutex
@@ -77,7 +81,7 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	var err error = nil
 
 	tlsCertDigest, err := c.GetenvString(constants.CmsTlsCertDigestEnv, "TLS certificate digest")
-	if err == nil &&  tlsCertDigest != "" {
+	if err == nil && tlsCertDigest != "" {
 		conf.CmsTlsCertDigest = tlsCertDigest
 	} else if conf.CmsTlsCertDigest == "" {
 		commLog.GetDefaultLogger().Error("CMS_TLS_CERT_SHA384 is not defined in environment")

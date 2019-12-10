@@ -81,6 +81,20 @@ func (s Server) Run(c setup.Context) error {
 		s.Config.MaxHeaderBytes = maxHeaderBytes
 	}
 
+	logMaxLen, err := c.GetenvInt("AAS_LOG_MAX_LENGTH", "Auth Service Log maximum length")
+	if err != nil || logMaxLen < constants.DefaultLogEntryMaxLength {
+		s.Config.LogMaxLength = constants.DefaultLogEntryMaxLength
+	} else {
+		s.Config.LogMaxLength = logMaxLen
+	}
+
+	logStdout, err := c.GetenvString("AAS_ENABLE_CONSOLE_LOG", "Auth Service Do not print to standard output")
+	if err != nil || len(logStdout) == 0 {
+		s.Config.LogEnableStdout = false
+	} else {
+		s.Config.LogEnableStdout = true
+	}
+
 	err = s.Config.Save()
 	if err != nil {
 		return errors.Wrap(err, "setup jwt: failed to save config")

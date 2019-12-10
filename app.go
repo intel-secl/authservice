@@ -228,8 +228,9 @@ func (a *App) configureLogs(stdOut, logFile bool) {
 	}
 	ioWriterSecurity := io.MultiWriter(ioWriterDefault, a.SecLogWriter)
 
-	commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, &commLog.LogFormatter{}, ioWriterDefault, false)
-	commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, &commLog.LogFormatter{}, ioWriterSecurity, false)
+	f := commLog.LogFormatter{MaxLength: a.configuration().LogMaxLength}
+	commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, &f, ioWriterDefault, false)
+	commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, &f, ioWriterSecurity, false)
 
 	secLog.Info(commLogMsg.LogInit)
 	defaultLog.Info(commLogMsg.LogInit)
@@ -282,7 +283,7 @@ func (a *App) Run(args []string) error {
 		fmt.Println(hash)
 		return nil
 	case "run":
-		a.configureLogs(true, true)
+		a.configureLogs(config.Global().LogEnableStdout, true)
 		if err := a.startServer(); err != nil {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
