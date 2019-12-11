@@ -38,7 +38,7 @@ docker-zip: installer
 	cp dist/docker/Dockerfile out/docker-authservice/Dockerfile
 	zip -r out/docker-authservice.zip out/docker-authservice	
 
-all: test docker
+all: clean installer test
 
 clean:
 	rm -f cover.*
