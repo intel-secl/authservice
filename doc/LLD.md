@@ -30,6 +30,14 @@ UserName has the following requirements
  - Examples
    -  admin, admin_wls, admin@wls, admin@wls.intel.com, wls-admin@intel.com
 
+Role - Service, Name and Context, Permissions has the following requirements
+ - `Service` field contains a minimum of 1 and maxumum of 20 charecters. Allowed charecters are alphanumeric plus the special charecters `-`, `_`, `@`, `.`, `,`
+ - `Name` field contains a mminimum of 1 and maxumum of 40 charecters. Allowed charecters are alphanumeric plus the special charecters `-`, `_`, `@`, `.`, `,`
+ - `Service` and `Name` fields are mandatory
+ - `Context` field is optional and can contain upto 512 characters. Allowed charecters are alphanumeric plus `-`, `_`, `@`, `.`, `,`,`=`,`;`,`:`,`*`
+ - `Permissions` field is optional and allow upto a maximum of 512 characters. 
+
+
 ## User Stories
 ### Create, Read, Update, Delete Roles
 As a role administratrator, I want to be able to manage roles so that I can create, query and delete roles.
