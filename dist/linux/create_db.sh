@@ -15,6 +15,8 @@ echo "Creating database '${ISECL_PGDB_DBNAME}' for user '${ISECL_PGDB_USERNAME}'
 
 log_file="create_db_${ISECL_PGDB_DBNAME}.log"
 
+cd /tmp
+
 sudo -u postgres psql postgres -c "CREATE USER ${ISECL_PGDB_USERNAME} WITH PASSWORD '${ISECL_PGDB_USERPASSWORD}';" &>> $log_file
 sudo -u postgres psql postgres -c "CREATE DATABASE ${ISECL_PGDB_DBNAME}" &>> $log_file
 sudo -u postgres psql postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${ISECL_PGDB_DBNAME} TO ${ISECL_PGDB_USERNAME};" &>> $log_file
