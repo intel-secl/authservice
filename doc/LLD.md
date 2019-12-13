@@ -667,6 +667,7 @@ SAN_LIST=comma_seperated_list_of_ip_addresses_and_host_names # mandatory - other
 AAS_JWT_CERT_SUBJECT="AAS JWT certificate" #optional -  Subject/ Common Name for JWT signing certificate obtained from CMS
 BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....  #mandatatory bearer token in JWT form obtained from CMS for retrieving TLS and JWT signing cert
 
+
 # Options for AAS issues JWT token
 AAS_JWT_TOKEN_DURATION_MINS=120 # option duration in minutes how long the JWT token is valid - default is 120 (2 hours)
 
@@ -677,6 +678,8 @@ AAS_ADMIN_PASSWORD=<password> # mandatory - password of administrator user
 
 # Miscellaneous
 LOG_LEVEL=critical|error|warning|info|debug|trace # optional - if not supplied, it will be set to 'warning'
+AAS_LOG_MAX_LENGTH=300 # optional - if not supplied, it will be set to 300
+AAS_ENABLE_CONSOLE_LOG=true # optional - if not supplied, it will be set to false
 ```
 
 ### Configuraiton variables
