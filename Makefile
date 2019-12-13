@@ -23,6 +23,7 @@ installer: authservice
 	cp out/authservice out/installer/authservice
 	makeself out/installer out/authservice-$(VERSION).bin "Auth Service $(VERSION)" ./install.sh
 	cp dist/linux/install_pgdb.sh out/install_pgdb.sh && chmod +x out/install_pgdb.sh
+	cp dist/linux/create_db.sh out/create_db.sh && chmod +x out/create_db.sh
 
 docker: installer
 	cp dist/docker/entrypoint.sh out/entrypoint.sh && chmod +x out/entrypoint.sh
