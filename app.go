@@ -123,6 +123,8 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "        - Option [--force] overwrites any existing files, and always downloads newly signed TLS cert")
 	fmt.Fprintln(w, "        - Environment variable CMS_BASE_URL=<url> for CMS API url")
 	fmt.Fprintln(w, "        - Environment variable BEARER_TOKEN=<token> for authenticating with CMS")
+	fmt.Fprintln(w, "        - Environment variable KEY_PATH=<key_path> Path of file where TLS key needs to be stored")
+	fmt.Fprintln(w, "        - Environment variable CERT_PATH=<cert_path> Path of file/directory where TLS certificate needs to be stored")
 	fmt.Fprintln(w, "        - Environment variable AAS_TLS_CERT_CN=<TLS CERT COMMON NAME> to override default specified in config")
 	fmt.Fprintln(w, "        - Environment variable SAN_LIST=<san> list of hosts which needs access to service")
 	fmt.Fprintln(w, "    authservice setup jwt")
