@@ -23,7 +23,7 @@ func setupRouter() *mux.Router {
 	mockRepo := &mock.MockUserRepository{
 		RetrieveFunc: func(u types.User) (*types.User, error) {
 			if u.Name == "username" {
-				u.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte("FOOBAR"), 10)
+				u.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte("FOOBAR"), 14)
 				return &u, nil
 			}
 			return nil, errors.New("no user")
@@ -33,6 +33,7 @@ func setupRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.Use(m)
 	r.HandleFunc("/foo", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		w.Write([]byte("bar!"))
 	})
 	return r
