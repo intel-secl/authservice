@@ -65,16 +65,3 @@ func ValidatePermissions(permissions []string) error {
 
 	return nil
 }
-
-// ValidatePermissionsString is used to check if the string is a valid AAS context string
-func ValidatePermissions(permissions []string) error {
-
-	for i, _ := range permissions {
-		if len(permissions[i]) > 512 {
-			secLog.Warning(commLogMsg.InvalidInputProtocolViolation)
-			return errors.New("Invalid Permissions string provided. Max 512 charecters allowed per permission")
-		}
-	}
-
-	return nil
-}
