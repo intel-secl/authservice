@@ -33,6 +33,7 @@ func SetUsers(r *mux.Router, db repository.AASDatabase) {
 	r.Handle("/users/{id}/roles", handlers.ContentTypeHandler(addUserRoles(db), "application/json")).Methods("POST")
 	r.Handle("/users/{id}/roles", queryUserRoles(db)).Methods("GET")
 	r.Handle("/users/{id}/permissions", queryUserPermissions(db)).Methods("GET")
+	r.Handle("/users/{id}/roles/{role_id}", handlers.ContentTypeHandler(getUserRoleById(db), "application/json")).Methods("GET")
 	r.Handle("/users/{id}/roles/{role_id}", handlers.ContentTypeHandler(deleteUserRole(db), "application/json")).Methods("DELETE")
 }
 
@@ -544,6 +545,48 @@ func queryUserPermissions(db repository.AASDatabase) errorHandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(userPermissions)
 		secLog.Infof("%s: Return user role query request to: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
+		return nil
+	}
+}
+
+func getUserRoleById(db repository.AASDatabase) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+
+		defaultLog.Trace("call to getUserRoleById")
+		defer defaultLog.Trace("getUserRoleById return")
+		// authorize rest api endpoint based on token
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		var role types.Role
+		if err != nil {
+			secLog.Warningf("%s: Unauthorized get user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
+			return err
+		}
+
+		id := mux.Vars(r)["id"]
+		rid := mux.Vars(r)["role_id"]
+
+		validation_err := validation.ValidateUUIDv4(id)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+		}
+		validation_err = validation.ValidateUUIDv4(rid)
+		if validation_err != nil {
+			return &resourceError{Message: validation_err.Error(), StatusCode: http.StatusBadRequest}
+		}
+		u, err := db.UserRepository().Retrieve(types.User{ID: id})
+		if err != nil {
+			defaultLog.WithError(err).WithField("id", id).Info("failed to retrieve user")
+			return &resourceError{Message: "User ID provided does not exist", StatusCode: http.StatusBadRequest}
+		}
+		role, err = db.UserRepository().GetRole(*u, rid, svcFltr)
+		if err != nil {
+			defaultLog.WithError(err).WithField("id", id).WithField("rid", rid).Info("failed to get role from user")
+			return &resourceError{Message: "Role ID provided is not associated to the User ID", StatusCode: http.StatusBadRequest}
+		}
+		secLog.WithField("user", *u).Infof("%s: User role found by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(role)
 		return nil
 	}
 }

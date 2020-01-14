@@ -182,6 +182,21 @@ func (r *PostgresUserRepository) AddRoles(u types.User, roles types.Roles, mustA
 	return nil
 }
 
+func (r *PostgresUserRepository) GetRole(u types.User, roleID string, svcFltr []string) (types.Role, error) {
+	defaultLog.Trace("user GetRole")
+	defer defaultLog.Trace("user GetRole done")
+	var role types.Role
+	tx := r.db.Where("id IN (?) ", roleID)
+	if len(svcFltr) > 0 {
+		tx = tx.Where("service in (?) ", svcFltr)
+	}
+	err := tx.Find(&role).Error
+	if err != nil {
+		return role, errors.Wrapf(err, "user get role: could not find role id %s in database", roleID)
+	}
+	return role, nil
+}
+
 func (r *PostgresUserRepository) DeleteRole(u types.User, roleID string, svcFltr []string) error {
 
 	defaultLog.Trace("user DeleteRole")
