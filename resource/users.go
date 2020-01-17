@@ -54,7 +54,7 @@ func createUser(db repository.AASDatabase) errorHandlerFunc {
 		var uc ct.UserCreate
 
 		// authorize rest api endpoint based on token
-		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		_, err := AuthorizeEndpoint(r, []string{consts.UserCreate}, true)
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized create user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -115,7 +115,7 @@ func getUser(db repository.AASDatabase) errorHandlerFunc {
 		defer defaultLog.Trace("getUser return")
 
 		// authorize rest api endpoint based on token
-		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		_, err := AuthorizeEndpoint(r, []string{consts.UserRetrieve}, true)
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized get user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -155,7 +155,7 @@ func updateUser(db repository.AASDatabase) errorHandlerFunc {
 		var uc ct.UserCreate
 
 		// authorize rest api endpoint based on token
-		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		_, err := AuthorizeEndpoint(r, []string{consts.UserStore}, true)
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized update user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -243,7 +243,7 @@ func deleteUser(db repository.AASDatabase) errorHandlerFunc {
 		defer defaultLog.Trace("deleteUser return")
 
 		// authorize rest api endpoint based on token
-		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		_, err := AuthorizeEndpoint(r, []string{consts.UserDelete}, true)
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized delete user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -280,7 +280,7 @@ func queryUsers(db repository.AASDatabase) errorHandlerFunc {
 		defaultLog.Trace("call to queryUsers")
 		defer defaultLog.Trace("queryUsers return")
 		// authorize rest api endpoint based on token
-		_, err := AuthorizeEndpoint(r, []string{consts.UserManagerGroupName, consts.RoleAndUserManagerGroupName}, false, true)
+		_, err := AuthorizeEndpoint(r, []string{consts.UserSearch}, true)
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized query user attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -319,7 +319,7 @@ func addUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		defaultLog.Trace("call to addUserRoles")
 		defer defaultLog.Trace("addUserRoles return")
 		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleCreate})
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized add user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -400,7 +400,7 @@ func queryUserRoles(db repository.AASDatabase) errorHandlerFunc {
 		defaultLog.Trace("call to queryUserRoles")
 		defer defaultLog.Trace("queryUserRoles return")
 		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleSearch})
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized query user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -477,7 +477,7 @@ func queryUserPermissions(db repository.AASDatabase) errorHandlerFunc {
 		defaultLog.Trace("call to queryUserRoles")
 		defer defaultLog.Trace("queryUserRoles return")
 		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleSearch})
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized query user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -555,7 +555,7 @@ func getUserRoleById(db repository.AASDatabase) errorHandlerFunc {
 		defaultLog.Trace("call to getUserRoleById")
 		defer defaultLog.Trace("getUserRoleById return")
 		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleRetrieve})
 		var role types.Role
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized get user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
@@ -597,7 +597,7 @@ func deleteUserRole(db repository.AASDatabase) errorHandlerFunc {
 		defaultLog.Trace("call to deleteUserRole")
 		defer defaultLog.Trace("deleteUserRole return")
 		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleDelete})
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized delete user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err

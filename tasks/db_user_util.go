@@ -7,30 +7,59 @@ package tasks
 
 import (
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"intel/isecl/authservice/repository"
 	"intel/isecl/authservice/types"
 	ct "intel/isecl/lib/common/types/aas"
 	"intel/isecl/lib/common/validation"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 // declared in pg_database.go
 // var defaultLog = commLog.GetDefaultLogger()
 
-func createRole(db repository.AASDatabase, service, name, context string) (*types.Role, error) {
+func createPermission(db repository.AASDatabase, rule string) (*types.Permission, error) {
+	defaultLog.Trace("entering tasks/createPermission")
+	defer defaultLog.Trace("leaving tasks/createPermission")
 
-	defaultLog.Trace("entering tasks/createRole")
-	defer defaultLog.Trace("leaving tasks/createRole")
-
-	role, err := db.RoleRepository().Retrieve(&types.RoleSearch{
-		RoleInfo:    ct.RoleInfo{Name: name, Service: service, Context: context},
-		AllContexts: false,
+	permission, err := db.PermissionRepository().Retrieve(&types.PermissionSearch{
+		Rule: rule,
 	})
 	if err != nil {
 		uuid, _ := repository.UUID()
-		role, err = db.RoleRepository().Create(types.Role{ID: uuid, RoleInfo: ct.RoleInfo{Name: name, Service: service, Context: context}})
+		permission, err = db.PermissionRepository().Create(types.Permission{ID: uuid, Rule: rule})
 	}
+	return permission, err
+}
+
+func createRole(db repository.AASDatabase, roleCreate ct.RoleCreate) (*types.Role, error) {
+	defaultLog.Trace("entering tasks/createRole")
+	defer defaultLog.Trace("leaving tasks/createRole")
+
+	var role *types.Role
+
+	newRole := types.Role{RoleInfo: roleCreate.RoleInfo}
+	role, err := db.RoleRepository().Retrieve(&types.RoleSearch{
+		RoleInfo: ct.RoleInfo{Name: newRole.Name, Service: newRole.Service, Context: newRole.Context},
+		AllContexts: false,
+	})
+
+	if err != nil {
+		for _, rule := range roleCreate.Permissions {
+			newPermRule := &types.PermissionSearch{Rule: rule}
+			if existPerm, err := db.PermissionRepository().Retrieve(newPermRule); err == nil {
+				newRole.Permissions = append(newRole.Permissions, *existPerm)
+				continue
+			} else {
+				if newPerm, err := db.PermissionRepository().Create(types.Permission{Rule: rule}); err == nil {
+					newRole.Permissions = append(newRole.Permissions, *newPerm)
+				}
+			}
+		}
+
+		newRole.ID, _ = repository.UUID()
+		role, err = db.RoleRepository().Create(newRole)
+	}
+
 	return role, err
 }
 

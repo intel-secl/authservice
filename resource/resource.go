@@ -71,32 +71,28 @@ func (e resourceError) Error() string {
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
 }
 
-func AuthorizeEndpoint(r *http.Request, roleNames []string, needContext bool, retNilCtxForEmptyCtx bool) (*map[string]ct.RoleInfo, error) {
+func AuthorizeEndpoint(r *http.Request, permissionNames []string, retNilCtxForEmptyCtx bool) (*map[string]ct.PermissionInfo, error) {
 	// Check query authority
-	privileges, err := comctx.GetUserRoles(r)
+	privileges, err := comctx.GetUserPermissions(r)
 	if err != nil {
 		secLog.WithError(err).Error(commLogMsg.InvalidInputBadParam)
 		return nil,
 			&resourceError{Message: "not able to get roles from context", StatusCode: http.StatusInternalServerError}
 	}
-
 	// this function check if the user requesting to perform operation has the right roles.
-	reqRoles := make([]ct.RoleInfo, len(roleNames))
-	for i, role := range roleNames {
-		reqRoles[i] = ct.RoleInfo{Service: consts.ServiceName, Name: role}
-	}
+	reqPermissions := ct.PermissionInfo{Service: consts.ServiceName, Rules: permissionNames}
 
-	ctxMap, foundRole := auth.ValidatePermissionAndGetRoleContext(privileges, reqRoles, retNilCtxForEmptyCtx)
-	if !foundRole {
-		secLog.Infof("%s: endpoint access unauthorized, request roles: %v", commLogMsg.UnauthorizedAccess, roleNames)
+	ctxMap, foundMatchingPermission := auth.ValidatePermissionAndGetRoleContext(privileges, reqPermissions, retNilCtxForEmptyCtx)
+	if !foundMatchingPermission {
+		secLog.Infof("%s: endpoint access unauthorized, request permissions: %v", commLogMsg.UnauthorizedAccess, permissionNames)
 		return nil, &privilegeError{Message: "", StatusCode: http.StatusForbidden}
 	}
 
 	return ctxMap, nil
 }
 
-func AuthorizeEndPointAndGetServiceFilter(r *http.Request, roleNames []string) ([]string, error) {
-	ctxMap, err := AuthorizeEndpoint(r, roleNames, true, true)
+func AuthorizeEndPointAndGetServiceFilter(r *http.Request, permissionNames []string) ([]string, error) {
+	ctxMap, err := AuthorizeEndpoint(r, permissionNames, true)
 	if err != nil {
 		return nil, err
 	}

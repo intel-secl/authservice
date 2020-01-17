@@ -49,10 +49,9 @@ func (a Admin) Run(c setup.Context) error {
 
 	var adminRoles types.Roles
 
-	for _, roleName := range consts.GetDefaultAdministratorRoles() {
-		role, err := createRole(db, consts.ServiceName, roleName, "")
+	for _, roleCreate := range consts.GetDefaultAdministratorRoles() {
+		role, err := createRole(db, roleCreate)
 		if err != nil {
-			// return fmt.Errorf("setup admin: could not create role in database - error %v", err)
 			return errors.Wrapf(err, "setup admin: could not create role in database - error %v", err)
 		}
 		adminRoles = append(adminRoles, *role)
