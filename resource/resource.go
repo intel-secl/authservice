@@ -82,7 +82,7 @@ func AuthorizeEndpoint(r *http.Request, permissionNames []string, retNilCtxForEm
 	// this function check if the user requesting to perform operation has the right roles.
 	reqPermissions := ct.PermissionInfo{Service: consts.ServiceName, Rules: permissionNames}
 
-	ctxMap, foundMatchingPermission := auth.ValidatePermissionAndGetRoleContext(privileges, reqPermissions, retNilCtxForEmptyCtx)
+	ctxMap, foundMatchingPermission := auth.ValidatePermissionAndGetPermissionsContext(privileges, reqPermissions, retNilCtxForEmptyCtx)
 	if !foundMatchingPermission {
 		secLog.Infof("%s: endpoint access unauthorized, request permissions: %v", commLogMsg.UnauthorizedAccess, permissionNames)
 		return nil, &privilegeError{Message: "", StatusCode: http.StatusForbidden}
