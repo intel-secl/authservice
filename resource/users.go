@@ -556,7 +556,6 @@ func getUserRoleById(db repository.AASDatabase) errorHandlerFunc {
 		defer defaultLog.Trace("getUserRoleById return")
 		// authorize rest api endpoint based on token
 		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.UserRoleRetrieve})
-		var role types.Role
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized get user role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -578,7 +577,7 @@ func getUserRoleById(db repository.AASDatabase) errorHandlerFunc {
 			defaultLog.WithError(err).WithField("id", id).Info("failed to retrieve user")
 			return &resourceError{Message: "User ID provided does not exist", StatusCode: http.StatusBadRequest}
 		}
-		role, err = db.UserRepository().GetRole(*u, rid, svcFltr)
+		role, err := db.UserRepository().GetUserRoleByID(*u, rid, svcFltr)
 		if err != nil {
 			defaultLog.WithError(err).WithField("id", id).WithField("rid", rid).Info("failed to get role from user")
 			return &resourceError{Message: "Role ID provided is not associated to the User ID", StatusCode: http.StatusBadRequest}
