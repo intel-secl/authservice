@@ -44,7 +44,7 @@ As a role administratrator, I want to be able to manage roles so that I can crea
 
 ####Acceptance Criteria
 Roles Required for Operation
-AAS:RoleManager or AAS:RoleAndUserManager
+AAS:RoleManager or AAS:Administrator
 
 Role Creation
 1. A role cannot be created unless user has the right privilege
@@ -69,7 +69,7 @@ As a user administrator, I want to be able to manage users - ie create/ query an
 
 ####Acceptance Criteria
 Roles Required for Operation
-AAS:UserManager or AAS:RoleAndUserManager
+AAS:UserManager or AAS:Administrator
 
 User Creation
 1. A user cannot be created unless user has the right privilege
@@ -98,7 +98,7 @@ As a user role administrator, I want to be able to add, remove and query roles t
 
 ####Acceptance Criteria
 Roles Required for Operation
-AAS:UserRoleManager or AAS:RoleAndUserManager
+AAS:UserRoleManager or AAS:Administrator
 
 Create Role Association
 1. Role association needs privileges
@@ -255,6 +255,7 @@ Create a user in AAS
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"users:create:*"`
 
 ```json
 {
@@ -275,7 +276,7 @@ Example Response:
 Query Users
 
 - Authorization: `Bearer Token`
-
+- Permissions: `"users:search:*"`
 
 Example Response:
 ```json
@@ -299,6 +300,7 @@ Available Query parameters:
 Get a single user by ID
 
 - Authorization: `Bearer Token`
+- Permissions: `"users:retrieve:*"`
 
 Retrieve information regarding a specific user
 - `GET /aas/users/123e4567-e89b-12d3-a456-426655440000`
@@ -317,6 +319,7 @@ Example Response:
 ### DELETE `/aas/users/{user_id}`
 
 - Authorization: `Bearer Token`
+- Permissions: `"users:delete:*"`
 
 Response: success/failure
 
@@ -334,6 +337,7 @@ Response: success/failure
 used to update a user (change username) or reset password
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"users:store:*"`
 
 ```json
 {
@@ -371,6 +375,7 @@ Create a role in AAS. In the below, the context is optional. Usage of context de
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"roles:create:*"`
 
 ```json
 {
@@ -393,7 +398,7 @@ Example Response:
 Query Users
 
 - Authorization: `Bearer Token`
-
+- Permissions: `"roles:search:*"`
 
 Example Response:
 ```json
@@ -429,6 +434,7 @@ Available Query parameters:
 Get a single role by ID
 
 - Authorization: `Bearer Token`
+- Permissions: `"roles:retrieve:*"`
 
 Retrieve information regarding a specific role
 - `GET /aas/roles/123e4567-e89b-12d3-a456-426655440000`
@@ -448,6 +454,7 @@ Example Response:
 DELETE a role in AAS
 
 - Authorization: `Bearer Token`
+- Permissions: `"roles:delete:*"`
 
 ## User Role Management
 ### POST /aas/users/{userid}/roles
@@ -456,6 +463,7 @@ Assign a role to the user. User roles association is only allowed using ids. You
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"user_roles:create:*"`
 
 ```json
     {
@@ -475,14 +483,31 @@ Delete a role association with the user. Right now, there are no bulk operation 
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"user_roles:delete:*"`
 
+### GET aas/users/{userid}/roles/{role_id}
 
+Get a particular role associated with the user.
+
+- Authorization: `Bearer Token`
+- Content-Type: `application/json`
+- Permissions: `"user_roles:retrieve:*"`
+
+Example Response:
+```json
+{
+    "role_id": "7faf7c0c-3701-4844-aeb2-df81449fab0a",
+    "service": "AAS",
+    "name": "Administrator"
+}
+```
 ### GET aas/users/{userid}/roles/
 
 Get all roles that are associated with the user.
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"user_roles:search:*"`
 
 Example Response:
 ```json
