@@ -224,6 +224,12 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 			return nil
 		}
 
+		if del_rl.Service == consts.ServiceName && contains(consts.DefaultRoles, del_rl.Name) {
+			defaultLog.WithError(err).WithField("id", id).Info("attempt to delete default role")
+			w.WriteHeader(http.StatusBadRequest)
+			return nil
+		}
+
 		// we have obtained the role from db now. If ctxMap is not nil, we need to make sure that user has access to
 		// a role in the token that can read this role
 		if ctxMap != nil {
@@ -326,4 +332,13 @@ func updateRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return &resourceError{Message: "", StatusCode: http.StatusNotImplemented}
 	}
+}
+
+func contains(strArr [4]string, str string) bool {
+	for _, s := range strArr {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }

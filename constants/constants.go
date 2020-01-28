@@ -85,13 +85,24 @@ const (
 	Running State = true
 )
 
+var DefaultRoles = [4]string{Administrator, RoleManager, UserManager, UserRoleManager}
+
+const (
+	Administrator   = "Administrator"
+	RoleManager     = "RoleManager"
+	UserManager     = "UserManager"
+	UserRoleManager = "UserRoleManager"
+)
+
 func GetDefaultAdministratorRoles() []ct.RoleCreate {
+
+
 	return []ct.RoleCreate {
 		{
 			RoleInfo:ct.RoleInfo{
-				Service:ServiceName,
-				Name:"Administrator",
-				Context:"",
+				Service: ServiceName,
+				Name   : Administrator,
+				Context: "",
 			},
 			Permissions:[]string {
 				"*:*:*",
@@ -99,9 +110,9 @@ func GetDefaultAdministratorRoles() []ct.RoleCreate {
 		},
 		{
 			RoleInfo:ct.RoleInfo{
-				Service:ServiceName,
-				Name:"RoleManager",
-				Context:"",
+				Service: ServiceName,
+				Name   : RoleManager,
+				Context: "",
 			},
 			Permissions:[]string {
 				RoleCreate + ":*", RoleRetrieve + ":*", RoleSearch + ":*", RoleDelete + ":*",
@@ -109,9 +120,9 @@ func GetDefaultAdministratorRoles() []ct.RoleCreate {
 		},
 		{
 			RoleInfo:ct.RoleInfo{
-				Service:ServiceName,
-				Name:"UserManager",
-				Context:"",
+				Service: ServiceName,
+				Name   : UserManager,
+				Context: "",
 			},
 			Permissions:[]string {
 				UserCreate + ":*", UserRetrieve + ":*", UserStore + ":*", UserSearch + ":*", UserDelete + ":*",
@@ -119,8 +130,8 @@ func GetDefaultAdministratorRoles() []ct.RoleCreate {
 		},
 		{
 			RoleInfo:ct.RoleInfo{
-				Service:ServiceName,
-				Name:"UserRoleManager",
+				Service: ServiceName,
+				Name   : UserRoleManager,
 				Context:"",
 			},
 			Permissions:[]string {
