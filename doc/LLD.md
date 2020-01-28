@@ -295,7 +295,7 @@ Available Query parameters:
 
 - name=(username)
 
-### GET `/aas/users/{id-uuidv4}`
+### GET `/aas/users/{id}`
 
 Get a single user by ID
 
@@ -324,13 +324,6 @@ Example Response:
 Response: success/failure
 
 deletes user from database with specific user id. Deleting a record using this method is a 2-step process as we need to first obtain the user uuid using the `GET` method.
-
-
-### DELETE `/aas/users?username=myname@intel.com`
-
-- Authorization: `Bearer Token`
-
-Response: success/failure
 
 ### PATCH `/aas/users/{userid}`
 
@@ -429,7 +422,7 @@ Available Query parameters:
 - contextContains=(substring to match context) - if both context and contextContains are present, context is used and cotextContains is ignored
 - allContexts=<true|false> - false means that record(s) returned would be the ones where the context field is empty
 
-### GET `/aas/roles/{id-uuidv4}`
+### GET `/aas/roles/{id}`
 
 Get a single role by ID
 
@@ -529,6 +522,22 @@ Example Response:
         "context": "CN=wls.isecl.intel.com"
     }
 ]
+```
+
+### GET aas/users/{userid}/permissions/
+
+Get all permissions that are associated with the user.
+
+- Authorization: `Bearer Token`
+- Content-Type: `application/json`
+- Permissions: `"user_roles:search:*"`
+
+Example Response:
+```json
+[{
+	"service": "AAS",
+	"rules": ["*:*:*", "roles:create:*", "roles:delete:*", "roles:retrieve:*", "roles:search:*"]
+}]
 ```
 Available Query parameters:
 
