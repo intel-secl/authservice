@@ -250,14 +250,14 @@ func (a *App) Run(args []string) error {
 		}
 		return a.PrintDirFileContents(args[2])
 	case "token":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		if err := a.TestTokenAuth(); err != nil {
 			fmt.Printf("jwt token test create and validate test error: %v ", err)
 			return err
 		}
 		return nil
 	case "certreq":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		if err := a.GenerateCertRequest(); err != nil {
 			fmt.Printf("certificat request error: %v ", err)
 			return err
@@ -265,10 +265,10 @@ func (a *App) Run(args []string) error {
 		return nil
 	//TODO : Remove added for debug - used to debug db queries
 	case "testdb":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		a.TestNewDBFunctions()
 	case "tlscertsha384":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		hash, err := crypt.GetCertHexSha384(path.Join(a.configDir(), constants.TLSCertFile))
 		if err != nil {
 			fmt.Println(err.Error())
@@ -293,12 +293,13 @@ func (a *App) Run(args []string) error {
 	case "help":
 		a.printUsage()
 	case "start":
+		a.configureLogs(false, true)
 		return a.start()
 	case "stop":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		return a.stop()
 	case "status":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		return a.status()
 	case "uninstall":
 		var purge bool
@@ -405,7 +406,6 @@ func (a *App) Run(args []string) error {
 			},
 			AskInput: false,
 		}
-		a.configureLogs(true, true)
 		if task == "all" {
 			err = setupRunner.RunTasks()
 		} else {
