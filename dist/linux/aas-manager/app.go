@@ -475,7 +475,7 @@ func (a *App) AddUsersAndRoles(asr *AasUsersAndRolesSetup) error {
 		}
 
 		forcePasswordUpdate := false
-		if asr.UsersAndRoles[idx].Password == "" && a.GenPassword || asr.UsersAndRoles[idx].PrintBearerToken {
+		if asr.UsersAndRoles[idx].Password == "" && (a.GenPassword || asr.UsersAndRoles[idx].PrintBearerToken) {
 			asr.UsersAndRoles[idx].Password = RandomString(PASSWORD_SIZE)
 			forcePasswordUpdate = true
 		}
