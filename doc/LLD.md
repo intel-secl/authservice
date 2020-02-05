@@ -681,39 +681,53 @@ Some of configuration variable are only needed during setup. Others are used dur
 
 ### Environment Variables
 ```shell
-# database connection related
-AAS_DB_HOSTNAME=<database_hostname_or_ip> # mandatory
-AAS_DB_PORT=<database_port> # mandatory
-AAS_DB_USERNAME=<db_user> # mandatory
-AAS_DB_PASSWORD=<db_user_password> # mandatory
-AAS_DB_NAME=<name_of_db_in_db_server> #mandatory
+# database connection related, all mandatory
+AAS_DB_HOSTNAME=<database_hostname_or_ip> 
+AAS_DB_PORT=<database_port>
+AAS_DB_USERNAME=<db_user>
+AAS_DB_PASSWORD=<db_user_password>
+AAS_DB_NAME=<name_of_db_in_db_server>
 
 # database TLS connection related. Please see details in the SSL/TLS connection to database section
-AAS_DB_SSLMODE=verify_ca|require #optional - if not specified, no certificate verification will be performed
-AAS_DB_SSLCERTSRC=<path_to_cert_file_to_be_copied> #optional
-AAS_DB_SSLCERT=<path_to_cert_file_on_system> #optional
+#optional - if not specified, no certificate verification will be performed
+AAS_DB_SSLMODE=verify_ca|require
+#optional
+AAS_DB_SSLCERTSRC=<path_to_cert_file_to_be_copied>
+#optional
+AAS_DB_SSLCERT=<path_to_cert_file_on_system>
 
 # Root CA, TLS Certificate and JWT Certificate related
-CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/ # mandatory - URL of CMS server
-CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... # mandatory - this is used to verify the CMS before the root-CA is downloaded.
-COMMON_NAME="AAS TLS Certificate" # optional - TLS Certificate Subject name (default will be used)
-SAN_LIST=comma_seperated_list_of_ip_addresses_and_host_names # mandatory - otherwise, it will be only localhost and 127.0.0.1
-AAS_JWT_CERT_SUBJECT="AAS JWT certificate" #optional -  Subject/ Common Name for JWT signing certificate obtained from CMS
-BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....  #mandatatory bearer token in JWT form obtained from CMS for retrieving TLS and JWT signing cert
-
+# mandatory - URL of CMS server
+CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39...
+# optional - TLS Certificate Subject name (default will be used)
+COMMON_NAME="AAS TLS Certificate"
+# mandatory - otherwise, it will be only localhost and 127.0.0.1
+SAN_LIST=comma_seperated_list_of_ip_addresses_and_host_names
+#optional -  Subject/ Common Name for JWT signing certificate obtained from CMS
+AAS_JWT_CERT_SUBJECT="AAS JWT certificate"
+#mandatatory bearer token in JWT form obtained from CMS for retrieving TLS and JWT signing cert
+BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....
 
 # Options for AAS issues JWT token
-AAS_JWT_TOKEN_DURATION_MINS=120 # option duration in minutes how long the JWT token is valid - default is 120 (2 hours)
+# option duration in minutes how long the JWT token is valid - default is 120 (2 hours
+AAS_JWT_TOKEN_DURATION_MINS=120 )
 
 
 # Administrator related
-AAS_ADMIN_USERNAME=<admin_user_name> # mandatory - name of administrator user
-AAS_ADMIN_PASSWORD=<password> # mandatory - password of administrator user
+# mandatory - name of administrator user
+AAS_ADMIN_USERNAME=<admin_user_name>
+# mandatory - password of administrator user
+AAS_ADMIN_PASSWORD=<password>
 
 # Miscellaneous
-LOG_LEVEL=critical|error|warning|info|debug|trace # optional - if not supplied, it will be set to 'warning'
-AAS_LOG_MAX_LENGTH=300 # optional - if not supplied, it will be set to 300
-AAS_ENABLE_CONSOLE_LOG=true # optional - if not supplied, it will be set to false
+# optional - if not supplied, it will be set to 'warning'
+LOG_LEVEL=critical|error|warning|info|debug|trace
+# optional - if not supplied, it will be set to 300
+AAS_LOG_MAX_LENGTH=300
+# optional - if not supplied, it will be set to false
+AAS_ENABLE_CONSOLE_LOG=true
 ```
 
 ### Configuraiton variables
@@ -853,6 +867,10 @@ Downloads the Root CA from CMS.
 ```shell
 # mandatory - no commmand line arguments currently available in lieu of this
 CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/ #URL of CMS server
+
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... 
+
 ```
 
 
@@ -870,6 +888,9 @@ Environment variables
 ```shell
 # mandatory - no commmand line arguments currently available in lieu of this
 CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/ #URL of CMS server
+
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... 
 
 # optional (default will be used)
 COMMON_NAME="AAS TLS Certificate" # Common name in the TLS certificate of AAS. Needs to match attribute in JWT token
@@ -899,6 +920,9 @@ AAS_JWT_CERT_SUBJECT="AAS JWT certificate" #optional argument if you want overri
 # mandatory - alternatively use --cms-url argument
 CMS_BASE_URL=https://x.x.x.x:8445/cms/v1/ # url of the Certificate Management Server
 
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... 
+
 # mandatory - alternatively use --token argument
 BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....  #bearer token in JWT form obtained from CMS
 
@@ -918,9 +942,17 @@ Set up an administrator user that has the predefined roles for AAS.
 Environment variables
 
 ```shell
-AAS_ADMIN_USERNAME=<admin_user_name> # mandatory - --user argument may be used instead
+# mandatory - alternatively use --cms-url argument
+CMS_BASE_URL=https://x.x.x.x:8445/cms/v1/ # url of the Certificate Management Server
 
-AAS_ADMIN_PASSWORD=<password> # mandatory --pass argument may be used instead
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... 
+
+# mandatory - --user argument may be used instead
+AAS_ADMIN_USERNAME=<admin_user_name>
+
+# mandatory --pass argument may be used instead
+AAS_ADMIN_PASSWORD=<password>
 ```
 
 This task can be used to create administrator user. The same may be used to create additional users or change the pass work of an existing administrative user
