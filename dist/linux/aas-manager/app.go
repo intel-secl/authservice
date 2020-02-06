@@ -283,8 +283,8 @@ func (a *App) LoadAllVariables(envFile string) error {
 
 		{&installComps, "ISECL_INSTALL_COMPONENTS", "", "ISecl Components to be installed", true, true},
 
-		{&a.InstallAdminUserName, "INSTALL_ADMIN_USERNAME", "installadmin", "AAS ADMIN USERNAME", false, false},
-		{&a.InstallAdminPassword, "INSTALL_ADMIN_PASSWORD", "", "AAS ADMIN PASSWORD", false, true},
+		{&a.InstallAdminUserName, "INSTALL_ADMIN_USERNAME", "installadmin", "Installation ADMIN USERNAME", false, false},
+		{&a.InstallAdminPassword, "INSTALL_ADMIN_PASSWORD", "", "Installation ADMIN PASSWORD", false, true},
 
 		{&a.VsCN, "VS_CERT_COMMON_NAME", "Mt Wilson TLS Certificate", "Verification Service TLS Certificate Common Name", false, false},
 		{&a.VsSanList, "VS_CERT_SAN_LIST", "", "Verification Service TLS Certificate SAN LIST", false, false},
