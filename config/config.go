@@ -55,7 +55,8 @@ type Configuration struct {
 		TLSCertCommonName string
 		JWTCertCommonName string
 	}
-
+	TLSKeyFile        string
+	TLSCertFile       string
 	CertSANList       string
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
@@ -108,6 +109,20 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		conf.Subject.TLSCertCommonName = tlsCertCN
 	} else if conf.Subject.TLSCertCommonName == "" {
 		conf.Subject.TLSCertCommonName = constants.DefaultAasTlsCn
+	}
+
+	tlsKeyPath, err := c.GetenvString("KEY_PATH", "Path of file where TLS key needs to be stored")
+	if err == nil && tlsKeyPath != "" {
+		conf.TLSKeyFile = tlsKeyPath
+	} else if conf.TLSKeyFile == "" {
+		conf.TLSKeyFile = constants.DefaultTLSKeyFile
+	}
+
+	tlsCertPath, err := c.GetenvString("CERT_PATH", "Path of file/directory where TLS certificate needs to be stored")
+	if err == nil && tlsCertPath != "" {
+		conf.TLSCertFile = tlsCertPath
+	} else if conf.TLSCertFile == "" {
+		conf.TLSCertFile = constants.DefaultTLSCertFile
 	}
 
 	sanList, err := c.GetenvString("SAN_LIST", "SAN list for TLS")

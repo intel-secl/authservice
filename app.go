@@ -35,7 +35,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"os/user"
-	"path"
 	"strconv"
 	"strings"
 	"syscall"
@@ -302,7 +301,7 @@ func (a *App) Run(args []string) error {
 		a.TestNewDBFunctions()
 	case "tlscertsha384":
 		a.configureLogs(false, true)
-		hash, err := crypt.GetCertHexSha384(path.Join(a.configDir(), constants.TLSCertFile))
+		hash, err := crypt.GetCertHexSha384(config.Global().TLSCertFile)
 		if err != nil {
 			fmt.Println(err.Error())
 			return err
@@ -387,8 +386,8 @@ func (a *App) Run(args []string) error {
 				},
 				setup.Download_Cert{
 					Flags:              flags,
-					KeyFile:            path.Join(a.configDir(), constants.TLSKeyFile),
-					CertFile:           path.Join(a.configDir(), constants.TLSCertFile),
+					KeyFile:            a.Config.TLSKeyFile,
+					CertFile:           a.Config.TLSCertFile,
 					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
 					CmsBaseURL:         a.Config.CMSBaseUrl,
@@ -463,7 +462,17 @@ func (a *App) Run(args []string) error {
 
 		err = cos.ChownR(constants.ConfigDir, uid, gid)
 		if err != nil {
-			return errors.Wrap(err, "Error while changing file ownership")
+			return errors.Wrap(err, "Error while changing ownership of files inside config directory")
+		}
+
+		err = os.Chown(a.Config.TLSKeyFile, uid, gid)
+		if err != nil {
+			return errors.Wrap(err, "Error while changing ownership of TLS Key file")
+		}
+
+		err = os.Chown(a.Config.TLSCertFile, uid, gid)
+		if err != nil {
+			return errors.Wrap(err, "Error while changing ownership of TLS Cert file")
 		}
 
 	}
@@ -594,8 +603,8 @@ func (a *App) startServer() error {
 
 	// dispatch web server go routine
 	go func() {
-		tlsCert := path.Join(a.configDir(), constants.TLSCertFile)
-		tlsKey := path.Join(a.configDir(), constants.TLSKeyFile)
+		tlsCert := config.Global().TLSCertFile
+		tlsKey := config.Global().TLSKeyFile
 		if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
 			defaultLog.WithError(err).Info("Failed to start HTTPS server")
 			stop <- syscall.SIGTERM
