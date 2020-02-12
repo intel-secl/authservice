@@ -852,7 +852,13 @@ Configuration parameters for http server
 Environment variables
 ```shell
 # optional (8444 will be default) - use this env variable or --port argument
- AAS_PORT=444 # port that the http server listens on
+AAS_PORT=444 # port that the http server listens on
+
+# mandatory - URL of CMS server
+CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/
+
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39...
 ```
 ### Setup - Download Root Certificate
 Downloads the Root CA from CMS.
