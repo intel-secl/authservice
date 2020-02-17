@@ -103,7 +103,7 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "                              alternatively, set environment variable AAS_DB_SSLMODE")
 	fmt.Fprintln(w, "                              - db-sslcert path to where the certificate file of database. Only applicable")
 	fmt.Fprintln(w, "                              for db-sslmode=<verify-ca|verify-full. If left empty, the cert")
-	fmt.Fprintln(w, "                              will be copied to /etc/authservice/tdcertdb.pem")
+	fmt.Fprintln(w, "                              will be copied to /etc/authservice/aasdbcert.pem")
 	fmt.Fprintln(w, "                              alternatively, set environment variable AAS_DB_SSLCERT")
 	fmt.Fprintln(w, "                              - db-sslcertsrc <path to where the database ssl/tls certificate file>")
 	fmt.Fprintln(w, "                              mandatory if db-sslcert does not already exist")
@@ -465,16 +465,17 @@ func (a *App) Run(args []string) error {
 			return errors.Wrap(err, "Error while changing ownership of files inside config directory")
 		}
 
-		err = os.Chown(a.Config.TLSKeyFile, uid, gid)
-		if err != nil {
-			return errors.Wrap(err, "Error while changing ownership of TLS Key file")
-		}
+		if task == "download_cert" {
+			err = os.Chown(a.Config.TLSKeyFile, uid, gid)
+			if err != nil {
+				return errors.Wrap(err, "Error while changing ownership of TLS Key file")
+			}
 
-		err = os.Chown(a.Config.TLSCertFile, uid, gid)
-		if err != nil {
-			return errors.Wrap(err, "Error while changing ownership of TLS Cert file")
+			err = os.Chown(a.Config.TLSCertFile, uid, gid)
+			if err != nil {
+				return errors.Wrap(err, "Error while changing ownership of TLS Cert file")
+			}
 		}
-
 	}
 	return nil
 }
