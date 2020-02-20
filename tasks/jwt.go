@@ -45,7 +45,7 @@ func (jwt JWT) Run(c setup.Context) error {
 
 	envJwtIncludeKid, _ := c.GetenvString("AAS_JWT_INCLUDE_KEYID", "AAS include key id in JWT Token")
 	envJwtTokenDurationMins, _ := c.GetenvInt("AAS_JWT_TOKEN_DURATION_MINS", "AAS JWT Token duration in mins")
-	envBearerToken, _ := c.GetenvString("BEARER_TOKEN", "bearer token")
+	envBearerToken, _ := c.GetenvSecret("BEARER_TOKEN", "bearer token")
 	//set up the defaults
 
 	jwt.Config.Token.IncludeKid = true
