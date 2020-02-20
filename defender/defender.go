@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/time/rate"
+	"intel/isecl/lib/common/external-artifacts/time/rate"
 )
 
 const Factor = 10
