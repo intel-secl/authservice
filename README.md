@@ -9,14 +9,14 @@
 - Group based authentication for access control over RESTful APIs
 
 ## System Requirements
-- RHEL 7.5/7.6
-- Epel 7 Repo
+- RHEL 8.1
+- Epel 8 Repo
 - Proxy settings if applicable
 
 ## Software requirements
 - git
 - makeself
-- `go` version >= `go1.11.4` & <= `go1.12.12`
+- `go` version >= `go1.12.12` & <= `go1.13.8``
 
 # Step By Step Build Instructions
 
@@ -27,8 +27,8 @@
 sudo yum install -y git wget makeself
 ```
 
-### Install `go` version >= `go1.11.4` & <= `go1.12.12`
-The `Auth Service` requires Go version 1.11.4 that has support for `go modules`. The build was validated with the latest version 1.12.12 of `go`. It is recommended that you use 1.12.12 version of `go`. More recent versions may introduce compatibility issues. You can use the following to install `go`.
+### Install `go` version >= `go1.12.12` & <= `go1.13.8`
+The `Auth Service` requires Go version 1.12.12 that has support for `go modules`. The build was validated with the latest version go1.13.8 of `go`. It is recommended that you use go1.13.8 version of `go`. You can use the following to install `go`.
 ```shell
 wget https://dl.google.com/go/go1.12.12.linux-amd64.tar.gz
 tar -xzf go1.12.12.linux-amd64.tar.gz

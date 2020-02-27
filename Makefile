@@ -7,7 +7,7 @@ BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 .PHONY: authservice aas-manager installer docker all test clean
 
 authservice:
-	env GOOS=linux go build -ldflags "-X intel/isecl/authservice/version.BuildDate=$(BUILDDATE) -X intel/isecl/authservice/version.Version=$(VERSION) -X intel/isecl/authservice/version.GitHash=$(GITCOMMIT)" -o out/authservice
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/authservice/version.BuildDate=$(BUILDDATE) -X intel/isecl/authservice/version.Version=$(VERSION) -X intel/isecl/authservice/version.GitHash=$(GITCOMMIT)" -o out/authservice
 
 aas-manager:
 	cd dist/linux/aas-manager/ && make
