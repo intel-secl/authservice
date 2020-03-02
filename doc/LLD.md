@@ -756,7 +756,7 @@ authdefender:
 token:
   includekid: true
   tokendurationmins: 2880
-cmsbaseurl: https://10.105.168.108:8445/cms/v1/
+cmsbaseurl: https://cms.isecl.intel.com:8445/cms/v1/
 subject:
   tlscertcommonname: AAS TLS Certificate
   jwtcertcommonname: AAS JWT Signing Certificate
