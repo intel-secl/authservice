@@ -182,6 +182,20 @@ func (r *PostgresUserRepository) AddRoles(u types.User, roles types.Roles, mustA
 	return nil
 }
 
+func (r *PostgresUserRepository) GetUserRoleByID(u types.User, roleID string, svcFltr []string) (types.Role, error) {
+	defaultLog.Trace("user GetRole")
+	defer defaultLog.Trace("user GetRole done")
+	var userRole types.Role
+
+	tx := r.db.Joins("INNER JOIN user_roles on user_roles.role_id = roles.id INNER JOIN users on " +
+		"user_roles.user_id = users.id").Where("users.id = ?", u.ID).Where("roles.id = ?", roleID)
+	err := tx.Find(&userRole).Error
+	if err != nil {
+		return userRole, errors.Wrapf(err, "user get role: could not find role id %s associated to user", roleID)
+	}
+	return userRole, nil
+}
+
 func (r *PostgresUserRepository) DeleteRole(u types.User, roleID string, svcFltr []string) error {
 
 	defaultLog.Trace("user DeleteRole")

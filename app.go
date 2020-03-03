@@ -35,7 +35,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"os/user"
-	"path"
 	"strconv"
 	"strings"
 	"syscall"
@@ -68,66 +67,99 @@ type App struct {
 func (a *App) printUsage() {
 	w := a.consoleWriter()
 	fmt.Fprintln(w, "Usage:")
-	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "    authservice <command> [arguments]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Avaliable Commands:")
-	fmt.Fprintln(w, "    help|-h|-help          Show this help message")
+	fmt.Fprintln(w, "    -h|--help              Show this help message")
 	fmt.Fprintln(w, "    setup <task>           Run setup task")
 	fmt.Fprintln(w, "    start                  Start authservice")
 	fmt.Fprintln(w, "    status                 Show the status of authservice")
 	fmt.Fprintln(w, "    stop                   Stop authservice")
-	fmt.Fprintln(w, "    tlscertsha384          Show the SHA384 of the certificate used for TLS")
-	fmt.Fprintln(w, "    uninstall [--purge]    Uninstall authservice")
-	fmt.Fprintln(w, "    version                Show the version of authservice")
+	fmt.Fprintln(w, "    tlscertsha384          Show the SHA384 digest of the certificate used for TLS")
+	fmt.Fprintln(w, "    uninstall [--purge]    Uninstall authservice. --purge option needs to be applied to remove configuration and data files")
+	fmt.Fprintln(w, "    -v|--version           Show the version of authservice")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "Setup command usage:       authservice setup [task] [--arguments=<argument_value>] [--force]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Available Tasks for setup:")
-	fmt.Fprintln(w, "    authservice setup all")
-	fmt.Fprintln(w, "        - Runs all setup tasks")
-	fmt.Fprintln(w, "    authservice setup database [-force] [--arguments=<argument_value>]")
-	fmt.Fprintln(w, "        - Available arguments are:")
-	fmt.Fprintln(w, "            - db-host    alternatively, set environment variable AAS_DB_HOSTNAME")
-	fmt.Fprintln(w, "            - db-port    alternatively, set environment variable AAS_DB_PORT")
-	fmt.Fprintln(w, "            - db-user    alternatively, set environment variable AAS_DB_USERNAME")
-	fmt.Fprintln(w, "            - db-pass    alternatively, set environment variable AAS_DB_PASSWORD")
-	fmt.Fprintln(w, "            - db-name    alternatively, set environment variable AAS_DB_NAME")
-	fmt.Fprintln(w, "            - db-sslmode <disable|allow|prefer|require|verify-ca|verify-full>")
-	fmt.Fprintln(w, "                         alternatively, set environment variable AAS_DB_SSLMODE")
-	fmt.Fprintln(w, "            - db-sslcert path to where the certificate file of database. Only applicable")
-	fmt.Fprintln(w, "                         for db-sslmode=<verify-ca|verify-full. If left empty, the cert")
-	fmt.Fprintln(w, "                         will be copied to /etc/authservice/tdcertdb.pem")
-	fmt.Fprintln(w, "                         alternatively, set environment variable AAS_DB_SSLCERT")
-	fmt.Fprintln(w, "            - db-sslcertsrc <path to where the database ssl/tls certificate file>")
-	fmt.Fprintln(w, "                         mandatory if db-sslcert does not already exist")
-	fmt.Fprintln(w, "                         alternatively, set environment variable AAS_DB_SSLCERTSRC")
-	fmt.Fprintln(w, "        - Run this command with environment variable AAS_DB_REPORT_MAX_ROWS and")
-	fmt.Fprintln(w, "          AAS_DB_REPORT_NUM_ROTATIONS can update db rotation arguments")
-	fmt.Fprintln(w, "    authservice setup server [--port=<port>]")
-	fmt.Fprintln(w, "        - Setup http server on <port>")
-	fmt.Fprintln(w, "        - Environment variable AAS_PORT=<port> can be set alternatively")
-	fmt.Fprintln(w, "    authservice setup admin [--user=<username>] [--pass=<password>]")
-	fmt.Fprintln(w, "        - Environment variable AAS_ADMIN_USERNAME=<username> can be set alternatively")
-	fmt.Fprintln(w, "        - Environment variable AAS_ADMIN_PASSWORD=<password> can be set alternatively")
-	fmt.Fprintln(w, "    authservice setup download_ca_cert [--force]")
-	fmt.Fprintln(w, "        - Download CMS root CA certificate")
-	fmt.Fprintln(w, "        - Option [--force] overwrites any existing files, and always downloads new root CA cert")
-	fmt.Fprintln(w, "        - Environment variable CMS_BASE_URL=<url> for CMS API url")
-	fmt.Fprintln(w, "    authservice setup download_cert TLS [--force]")
-	fmt.Fprintln(w, "        - Generates Key pair and CSR, gets it signed from CMS")
-	fmt.Fprintln(w, "        - Option [--force] overwrites any existing files, and always downloads newly signed TLS cert")
-	fmt.Fprintln(w, "        - Environment variable CMS_BASE_URL=<url> for CMS API url")
-	fmt.Fprintln(w, "        - Environment variable BEARER_TOKEN=<token> for authenticating with CMS")
-	fmt.Fprintln(w, "        - Environment variable KEY_PATH=<key_path> Path of file where TLS key needs to be stored")
-	fmt.Fprintln(w, "        - Environment variable CERT_PATH=<cert_path> Path of file/directory where TLS certificate needs to be stored")
-	fmt.Fprintln(w, "        - Environment variable AAS_TLS_CERT_CN=<TLS CERT COMMON NAME> to override default specified in config")
-	fmt.Fprintln(w, "        - Environment variable SAN_LIST=<san> list of hosts which needs access to service")
-	fmt.Fprintln(w, "    authservice setup jwt")
-	fmt.Fprintln(w, "        - Create jwt signing key and jwt certificate signed by CMS")
-	fmt.Fprintln(w, "        - Environment variable CMS_BASE_URL=<url> for CMS API url")
-	fmt.Fprintln(w, "        - Environment variable AAS_JWT_CERT_CN=<CERTIFICATE SUBJECT> AAS JWT Certificate Subject")
-	fmt.Fprintln(w, "        - Environment variable AAS_JWT_INCLUDE_KEYID=<KEY ID> AAS include key id in JWT Token")
-	fmt.Fprintln(w, "        - Environment variable AAS_JWT_TOKEN_DURATION_MINS=<DURATION> JWT Token validation minutes")
-	fmt.Fprintln(w, "        - Environment variable BEARER_TOKEN=<token> for authenticating with CMS")
+	fmt.Fprintln(w, "    all                   Runs all setup tasks")
+	fmt.Fprintln(w, "                          Required env variables:")
+	fmt.Fprintln(w, "                              - get required env variables from all the setup tasks")
+	fmt.Fprintln(w, "                          Optional env variables:")
+	fmt.Fprintln(w, "                              - get optional env variables from all the setup tasks")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "    database              Setup authservice database")
+	fmt.Fprintln(w, "                          Required env variables if AAS_NOSETUP=true or variables not set in config.yml:")
+	fmt.Fprintln(w, "                              - CMS_BASE_URL=<url>                                : for CMS API url")
+	fmt.Fprintln(w, "                              - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>    : to ensure that AAS is talking to the right CMS instance")
+	fmt.Fprintln(w, "                          Available arguments and Required Env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - db-host    alternatively, set environment variable AAS_DB_HOSTNAME")
+	fmt.Fprintln(w, "                              - db-port    alternatively, set environment variable AAS_DB_PORT")
+	fmt.Fprintln(w, "                              - db-user    alternatively, set environment variable AAS_DB_USERNAME")
+	fmt.Fprintln(w, "                              - db-pass    alternatively, set environment variable AAS_DB_PASSWORD")
+	fmt.Fprintln(w, "                              - db-name    alternatively, set environment variable AAS_DB_NAME")
+	fmt.Fprintln(w, "                          Available arguments and Optional env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - db-sslmode <disable|allow|prefer|require|verify-ca|verify-full>")
+	fmt.Fprintln(w, "                              alternatively, set environment variable AAS_DB_SSLMODE")
+	fmt.Fprintln(w, "                              - db-sslcert path to where the certificate file of database. Only applicable")
+	fmt.Fprintln(w, "                              for db-sslmode=<verify-ca|verify-full. If left empty, the cert")
+	fmt.Fprintln(w, "                              will be copied to /etc/authservice/aasdbcert.pem")
+	fmt.Fprintln(w, "                              alternatively, set environment variable AAS_DB_SSLCERT")
+	fmt.Fprintln(w, "                              - db-sslcertsrc <path to where the database ssl/tls certificate file>")
+	fmt.Fprintln(w, "                              mandatory if db-sslcert does not already exist")
+	fmt.Fprintln(w, "                              alternatively, set environment variable AAS_DB_SSLCERTSRC")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "    admin                 Setup task to register authservice user with default admin roles to database")
+	fmt.Fprintln(w, "                          Required env variables if AAS_NOSETUP=true or variables not set in config.yml:")
+	fmt.Fprintln(w, "                              - CMS_BASE_URL=<url>                                 : for CMS API url")
+	fmt.Fprintln(w, "                              - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>     : to ensure that AAS is talking to the right CMS instance")
+	fmt.Fprintln(w, "                          Available arguments and required env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - user        alternatively, set environment variable AAS_ADMIN_USERNAME")
+	fmt.Fprintln(w, "                              - pass        alternatively, set environment variable AAS_ADMIN_PASSWORD")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "    download_ca_cert      Download CMS root CA certificate")
+	fmt.Fprintln(w, "                          - Option [--force] overwrites any existing files, and always downloads new root CA cert")
+	fmt.Fprintln(w, "                          Required env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - CMS_BASE_URL=<url>                                : for CMS API url")
+	fmt.Fprintln(w, "                              - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>    : to ensure that AAS is talking to the right CMS instance")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "    download_cert TLS     Generates Key pair and CSR, gets it signed from CMS")
+	fmt.Fprintln(w, "                          - Option [--force] overwrites any existing files, and always downloads newly signed TLS cert")
+	fmt.Fprintln(w, "                          Required env variable if AAS_NOSETUP=true or variable not set in config.yml:")
+	fmt.Fprintln(w, "                              - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>      : to ensure that AAS is talking to the right CMS instance")
+	fmt.Fprintln(w, "                          Required env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - CMS_BASE_URL=<url>               : for CMS API url")
+	fmt.Fprintln(w, "                              - BEARER_TOKEN=<token>             : for authenticating with CMS")
+	fmt.Fprintln(w, "                              - SAN_LIST=<san>                   : list of hosts which needs access to service")
+	fmt.Fprintln(w, "                          Optional env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - KEY_PATH=<key_path>              : Path of file where TLS key needs to be stored")
+	fmt.Fprintln(w, "                              - CERT_PATH=<cert_path>            : Path of file/directory where TLS certificate needs to be stored")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "    jwt                   Create jwt signing key and jwt certificate signed by CMS")
+	fmt.Fprintln(w, "                          - Option [--force] overwrites any existing files, and always downloads newly signed JWT cert")
+	fmt.Fprintln(w, "                          Required env variable if AAS_NOSETUP=true or variable not set in config.yml:")
+	fmt.Fprintln(w, "                              - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>       : to ensure that AAS is talking to the right CMS instance")
+	fmt.Fprintln(w, "                          Available arguments and Required env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - cms-url    alternatively, set environment variable CMS_BASE_URL")
+	fmt.Fprintln(w, "                              - token      alternatively, set environment variable BEARER_TOKEN")
+	fmt.Fprintln(w, "                          Available arguments and Optional env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - subj          alternatively, set environment variable AAS_JWT_CERT_CN")
+	fmt.Fprintln(w, "                              - keyid         alternatively, set environment variable AAS_JWT_INCLUDE_KEYID")
+	fmt.Fprintln(w, "                              - valid-mins    alternatively, set environment variable AAS_JWT_TOKEN_DURATION_MINS")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "    server                Setup http server on given port")
+	fmt.Fprintln(w, "                          Required env variables if AAS_NOSETUP=true or variables not set in config.yml:")
+	fmt.Fprintln(w, "                              - CMS_BASE_URL=<url>                                       : for CMS API url")
+	fmt.Fprintln(w, "                              - CMS_TLS_CERT_SHA384=<CMS TLS cert sha384 hash>           : to ensure that AAS is talking to the right CMS instance")
+	fmt.Fprintln(w, "                          Available argument and Optional env variables specific to setup task are:")
+	fmt.Fprintln(w, "                              - port    alternatively, set environment variable AAS_PORT")
+	fmt.Fprintln(w, "                              - AAS_SERVER_READ_TIMEOUT=<read timeout in seconds>                    : Auth Service Read Timeout")
+	fmt.Fprintln(w, "                              - AAS_SERVER_READ_HEADER_TIMEOUT=<read header timeout in seconds>      : Auth Service Read Header Timeout")
+	fmt.Fprintln(w, "                              - AAS_SERVER_WRITE_TIMEOUT=<write timeout in seconds>                  : Auth Service Write Timeout")
+	fmt.Fprintln(w, "                              - AAS_SERVER_IDLE_TIMEOUT=<idle timeout in seconds>                    : Auth Service Idle Timeout")
+	fmt.Fprintln(w, "                              - AAS_SERVER_MAX_HEADER_BYTES=<max header bytes>                       : Auth Service Max Header Bytes")
+	fmt.Fprintln(w, "                              - AAS_LOG_MAX_LENGTH=<log max length>                                  : Auth Service Log maximum length")
+	fmt.Fprintln(w, "                              - AAS_ENABLE_CONSOLE_LOG=<bool>                                        : Auth Service Enable standard output")
 	fmt.Fprintln(w, "")
 }
 
@@ -250,14 +282,14 @@ func (a *App) Run(args []string) error {
 		}
 		return a.PrintDirFileContents(args[2])
 	case "token":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		if err := a.TestTokenAuth(); err != nil {
 			fmt.Printf("jwt token test create and validate test error: %v ", err)
 			return err
 		}
 		return nil
 	case "certreq":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		if err := a.GenerateCertRequest(); err != nil {
 			fmt.Printf("certificat request error: %v ", err)
 			return err
@@ -265,11 +297,11 @@ func (a *App) Run(args []string) error {
 		return nil
 	//TODO : Remove added for debug - used to debug db queries
 	case "testdb":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		a.TestNewDBFunctions()
 	case "tlscertsha384":
-		a.configureLogs(true, false)
-		hash, err := crypt.GetCertHexSha384(path.Join(a.configDir(), constants.TLSCertFile))
+		a.configureLogs(false, true)
+		hash, err := crypt.GetCertHexSha384(config.Global().TLSCertFile)
 		if err != nil {
 			fmt.Println(err.Error())
 			return err
@@ -284,21 +316,16 @@ func (a *App) Run(args []string) error {
 			time.Sleep(10 * time.Millisecond)
 			return err
 		}
-	case "-help":
-		fallthrough
-	case "--h":
-		fallthrough
-	case "--help":
-		fallthrough
-	case "help":
+	case "-h", "--help":
 		a.printUsage()
 	case "start":
+		a.configureLogs(false, true)
 		return a.start()
 	case "stop":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		return a.stop()
 	case "status":
-		a.configureLogs(true, false)
+		a.configureLogs(false, true)
 		return a.status()
 	case "uninstall":
 		var purge bool
@@ -306,7 +333,7 @@ func (a *App) Run(args []string) error {
 		flag.CommandLine.Parse(args[2:])
 		a.uninstall(purge)
 		os.Exit(0)
-	case "version":
+	case "--version", "-v":
 		fmt.Fprintf(a.consoleWriter(), "Auth Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
 	case "setup":
 		a.configureLogs(false, true)
@@ -359,8 +386,8 @@ func (a *App) Run(args []string) error {
 				},
 				setup.Download_Cert{
 					Flags:              flags,
-					KeyFile:            path.Join(a.configDir(), constants.TLSKeyFile),
-					CertFile:           path.Join(a.configDir(), constants.TLSCertFile),
+					KeyFile:            a.Config.TLSKeyFile,
+					CertFile:           a.Config.TLSCertFile,
 					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
 					CmsBaseURL:         a.Config.CMSBaseUrl,
@@ -405,7 +432,6 @@ func (a *App) Run(args []string) error {
 			},
 			AskInput: false,
 		}
-		a.configureLogs(true, true)
 		if task == "all" {
 			err = setupRunner.RunTasks()
 		} else {
@@ -436,9 +462,20 @@ func (a *App) Run(args []string) error {
 
 		err = cos.ChownR(constants.ConfigDir, uid, gid)
 		if err != nil {
-			return errors.Wrap(err, "Error while changing file ownership")
+			return errors.Wrap(err, "Error while changing ownership of files inside config directory")
 		}
 
+		if task == "download_cert" {
+			err = os.Chown(a.Config.TLSKeyFile, uid, gid)
+			if err != nil {
+				return errors.Wrap(err, "Error while changing ownership of TLS Key file")
+			}
+
+			err = os.Chown(a.Config.TLSCertFile, uid, gid)
+			if err != nil {
+				return errors.Wrap(err, "Error while changing ownership of TLS Cert file")
+			}
+		}
 	}
 	return nil
 }
@@ -567,8 +604,8 @@ func (a *App) startServer() error {
 
 	// dispatch web server go routine
 	go func() {
-		tlsCert := path.Join(a.configDir(), constants.TLSCertFile)
-		tlsKey := path.Join(a.configDir(), constants.TLSKeyFile)
+		tlsCert := config.Global().TLSCertFile
+		tlsKey := config.Global().TLSKeyFile
 		if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
 			defaultLog.WithError(err).Info("Failed to start HTTPS server")
 			stop <- syscall.SIGTERM

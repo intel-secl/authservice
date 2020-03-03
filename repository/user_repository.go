@@ -18,5 +18,6 @@ type UserRepository interface {
 	GetRoles(types.User, *types.RoleSearch, bool) ([]types.Role, error)
 	GetPermissions(types.User, *types.RoleSearch) ([]ct.PermissionInfo, error)
 	AddRoles(types.User, types.Roles, bool) error
+	GetUserRoleByID(types.User, string, []string) (types.Role, error)
 	DeleteRole(types.User, string, []string) error
 }

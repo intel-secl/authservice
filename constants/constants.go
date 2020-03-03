@@ -7,6 +7,7 @@ package constants
 import (
 	"crypto"
 	"time"
+	ct "intel/isecl/lib/common/types/aas"
 )
 
 const (
@@ -20,8 +21,8 @@ const (
 	SecurityLogFile                = LogDir + "authservice-security.log"
 	HTTPLogFile                    = LogDir + "http.log"
 	ConfigFile                     = "config.yml"
-	TLSCertFile                    = "tls-cert.pem"
-	TLSKeyFile                     = "tls.key"
+	DefaultTLSCertFile             = ConfigDir + "tls-cert.pem"
+	DefaultTLSKeyFile              = ConfigDir + "tls.key"
 	TokenSignKeysAndCertDir        = ConfigDir + "certs/tokensign/"
 	TokenSignKeyFile               = TokenSignKeysAndCertDir + "jwt.key"
 	TokenSignCertFile              = TokenSignKeysAndCertDir + "jwtsigncert.pem"
@@ -57,13 +58,21 @@ const (
 )
 
 const (
-	RoleAndUserManagerGroupName = "RoleAndUserManager"
+	RoleCreate   = "roles:create"
+	RoleRetrieve = "roles:retrieve"
+	RoleSearch   = "roles:search"
+	RoleDelete   = "roles:delete"
 
-	RoleManagerGroupName = "RoleManager"
+	UserCreate   = "users:create"
+	UserRetrieve = "users:retrieve"
+	UserStore    = "users:store"
+	UserSearch   = "users:search"
+	UserDelete   = "users:delete"
 
-	UserManagerGroupName = "UserManager"
-
-	UserRoleManagerGroupName = "UserRoleManager"
+	UserRoleCreate     = "user_roles:create"
+	UserRoleRetrieve   = "user_roles:retrieve"
+	UserRoleSearch     = "user_roles:search"
+	UserRoleDelete     = "user_roles:delete"
 )
 
 // State represents whether or not a daemon is running or not
@@ -76,6 +85,58 @@ const (
 	Running State = true
 )
 
-func GetDefaultAdministratorRoles() []string {
-	return []string{"RoleManager", "UserManager", "UserRoleManager"}
+var DefaultRoles = [4]string{Administrator, RoleManager, UserManager, UserRoleManager}
+
+const (
+	Administrator   = "Administrator"
+	RoleManager     = "RoleManager"
+	UserManager     = "UserManager"
+	UserRoleManager = "UserRoleManager"
+)
+
+func GetDefaultAdministratorRoles() []ct.RoleCreate {
+
+
+	return []ct.RoleCreate {
+		{
+			RoleInfo:ct.RoleInfo{
+				Service: ServiceName,
+				Name   : Administrator,
+				Context: "",
+			},
+			Permissions:[]string {
+				"*:*:*",
+			},
+		},
+		{
+			RoleInfo:ct.RoleInfo{
+				Service: ServiceName,
+				Name   : RoleManager,
+				Context: "",
+			},
+			Permissions:[]string {
+				RoleCreate + ":*", RoleRetrieve + ":*", RoleSearch + ":*", RoleDelete + ":*",
+			},
+		},
+		{
+			RoleInfo:ct.RoleInfo{
+				Service: ServiceName,
+				Name   : UserManager,
+				Context: "",
+			},
+			Permissions:[]string {
+				UserCreate + ":*", UserRetrieve + ":*", UserStore + ":*", UserSearch + ":*", UserDelete + ":*",
+			},
+		},
+		{
+			RoleInfo:ct.RoleInfo{
+				Service: ServiceName,
+				Name   : UserRoleManager,
+				Context:"",
+			},
+			Permissions:[]string {
+				UserRoleCreate + ":*", UserRoleRetrieve + ":*", UserRoleSearch + ":*", UserRoleDelete + ":*",
+			},
+		},
+	}
 }

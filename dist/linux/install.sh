@@ -140,6 +140,7 @@ fi
 # check if AAS_NOSETUP is defined
 if [ "${AAS_NOSETUP,,}" == "true" ]; then
     echo "AAS_NOSETUP is true, skipping setup"
+    echo "Run \"authservice setup all\" for manual setup"
     echo "Installation completed successfully!"
 else 
     $COMPONENT_NAME setup all

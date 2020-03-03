@@ -44,7 +44,7 @@ As a role administratrator, I want to be able to manage roles so that I can crea
 
 ####Acceptance Criteria
 Roles Required for Operation
-AAS:RoleManager or AAS:RoleAndUserManager
+AAS:RoleManager or AAS:Administrator
 
 Role Creation
 1. A role cannot be created unless user has the right privilege
@@ -69,7 +69,7 @@ As a user administrator, I want to be able to manage users - ie create/ query an
 
 ####Acceptance Criteria
 Roles Required for Operation
-AAS:UserManager or AAS:RoleAndUserManager
+AAS:UserManager or AAS:Administrator
 
 User Creation
 1. A user cannot be created unless user has the right privilege
@@ -98,7 +98,7 @@ As a user role administrator, I want to be able to add, remove and query roles t
 
 ####Acceptance Criteria
 Roles Required for Operation
-AAS:UserRoleManager or AAS:RoleAndUserManager
+AAS:UserRoleManager or AAS:Administrator
 
 Create Role Association
 1. Role association needs privileges
@@ -255,6 +255,7 @@ Create a user in AAS
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"users:create:*"`
 
 ```json
 {
@@ -275,7 +276,7 @@ Example Response:
 Query Users
 
 - Authorization: `Bearer Token`
-
+- Permissions: `"users:search:*"`
 
 Example Response:
 ```json
@@ -294,11 +295,12 @@ Available Query parameters:
 
 - name=(username)
 
-### GET `/aas/users/{id-uuidv4}`
+### GET `/aas/users/{id}`
 
 Get a single user by ID
 
 - Authorization: `Bearer Token`
+- Permissions: `"users:retrieve:*"`
 
 Retrieve information regarding a specific user
 - `GET /aas/users/123e4567-e89b-12d3-a456-426655440000`
@@ -317,23 +319,18 @@ Example Response:
 ### DELETE `/aas/users/{user_id}`
 
 - Authorization: `Bearer Token`
+- Permissions: `"users:delete:*"`
 
 Response: success/failure
 
 deletes user from database with specific user id. Deleting a record using this method is a 2-step process as we need to first obtain the user uuid using the `GET` method.
-
-
-### DELETE `/aas/users?username=myname@intel.com`
-
-- Authorization: `Bearer Token`
-
-Response: success/failure
 
 ### PATCH `/aas/users/{userid}`
 
 used to update a user (change username) or reset password
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"users:store:*"`
 
 ```json
 {
@@ -371,6 +368,7 @@ Create a role in AAS. In the below, the context is optional. Usage of context de
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"roles:create:*"`
 
 ```json
 {
@@ -393,7 +391,7 @@ Example Response:
 Query Users
 
 - Authorization: `Bearer Token`
-
+- Permissions: `"roles:search:*"`
 
 Example Response:
 ```json
@@ -424,11 +422,12 @@ Available Query parameters:
 - contextContains=(substring to match context) - if both context and contextContains are present, context is used and cotextContains is ignored
 - allContexts=<true|false> - false means that record(s) returned would be the ones where the context field is empty
 
-### GET `/aas/roles/{id-uuidv4}`
+### GET `/aas/roles/{id}`
 
 Get a single role by ID
 
 - Authorization: `Bearer Token`
+- Permissions: `"roles:retrieve:*"`
 
 Retrieve information regarding a specific role
 - `GET /aas/roles/123e4567-e89b-12d3-a456-426655440000`
@@ -448,6 +447,7 @@ Example Response:
 DELETE a role in AAS
 
 - Authorization: `Bearer Token`
+- Permissions: `"roles:delete:*"`
 
 ## User Role Management
 ### POST /aas/users/{userid}/roles
@@ -456,6 +456,7 @@ Assign a role to the user. User roles association is only allowed using ids. You
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"user_roles:create:*"`
 
 ```json
     {
@@ -475,14 +476,31 @@ Delete a role association with the user. Right now, there are no bulk operation 
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"user_roles:delete:*"`
 
+### GET aas/users/{userid}/roles/{role_id}
 
+Get a particular role associated with the user.
+
+- Authorization: `Bearer Token`
+- Content-Type: `application/json`
+- Permissions: `"user_roles:retrieve:*"`
+
+Example Response:
+```json
+{
+    "role_id": "7faf7c0c-3701-4844-aeb2-df81449fab0a",
+    "service": "AAS",
+    "name": "Administrator"
+}
+```
 ### GET aas/users/{userid}/roles/
 
 Get all roles that are associated with the user.
 
 - Authorization: `Bearer Token`
 - Content-Type: `application/json`
+- Permissions: `"user_roles:search:*"`
 
 Example Response:
 ```json
@@ -504,6 +522,22 @@ Example Response:
         "context": "CN=wls.isecl.intel.com"
     }
 ]
+```
+
+### GET aas/users/{userid}/permissions/
+
+Get all permissions that are associated with the user.
+
+- Authorization: `Bearer Token`
+- Content-Type: `application/json`
+- Permissions: `"user_roles:search:*"`
+
+Example Response:
+```json
+[{
+	"service": "AAS",
+	"rules": ["*:*:*", "roles:create:*", "roles:delete:*", "roles:retrieve:*", "roles:search:*"]
+}]
 ```
 Available Query parameters:
 
@@ -647,39 +681,53 @@ Some of configuration variable are only needed during setup. Others are used dur
 
 ### Environment Variables
 ```shell
-# database connection related
-AAS_DB_HOSTNAME=<database_hostname_or_ip> # mandatory
-AAS_DB_PORT=<database_port> # mandatory
-AAS_DB_USERNAME=<db_user> # mandatory
-AAS_DB_PASSWORD=<db_user_password> # mandatory
-AAS_DB_NAME=<name_of_db_in_db_server> #mandatory
+# database connection related, all mandatory
+AAS_DB_HOSTNAME=<database_hostname_or_ip> 
+AAS_DB_PORT=<database_port>
+AAS_DB_USERNAME=<db_user>
+AAS_DB_PASSWORD=<db_user_password>
+AAS_DB_NAME=<name_of_db_in_db_server>
 
 # database TLS connection related. Please see details in the SSL/TLS connection to database section
-AAS_DB_SSLMODE=verify_ca|require #optional - if not specified, no certificate verification will be performed
-AAS_DB_SSLCERTSRC=<path_to_cert_file_to_be_copied> #optional
-AAS_DB_SSLCERT=<path_to_cert_file_on_system> #optional
+#optional - if not specified, no certificate verification will be performed
+AAS_DB_SSLMODE=verify_ca|require
+#optional
+AAS_DB_SSLCERTSRC=<path_to_cert_file_to_be_copied>
+#optional
+AAS_DB_SSLCERT=<path_to_cert_file_on_system>
 
 # Root CA, TLS Certificate and JWT Certificate related
-CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/ # mandatory - URL of CMS server
-CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... # mandatory - this is used to verify the CMS before the root-CA is downloaded.
-COMMON_NAME="AAS TLS Certificate" # optional - TLS Certificate Subject name (default will be used)
-SAN_LIST=comma_seperated_list_of_ip_addresses_and_host_names # mandatory - otherwise, it will be only localhost and 127.0.0.1
-AAS_JWT_CERT_SUBJECT="AAS JWT certificate" #optional -  Subject/ Common Name for JWT signing certificate obtained from CMS
-BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....  #mandatatory bearer token in JWT form obtained from CMS for retrieving TLS and JWT signing cert
-
+# mandatory - URL of CMS server
+CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39...
+# optional - TLS Certificate Subject name (default will be used)
+COMMON_NAME="AAS TLS Certificate"
+# mandatory - otherwise, it will be only localhost and 127.0.0.1
+SAN_LIST=comma_seperated_list_of_ip_addresses_and_host_names
+#optional -  Subject/ Common Name for JWT signing certificate obtained from CMS
+AAS_JWT_CERT_SUBJECT="AAS JWT certificate"
+#mandatatory bearer token in JWT form obtained from CMS for retrieving TLS and JWT signing cert
+BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....
 
 # Options for AAS issues JWT token
-AAS_JWT_TOKEN_DURATION_MINS=120 # option duration in minutes how long the JWT token is valid - default is 120 (2 hours)
+# option duration in minutes how long the JWT token is valid - default is 120 (2 hours
+AAS_JWT_TOKEN_DURATION_MINS=120 )
 
 
 # Administrator related
-AAS_ADMIN_USERNAME=<admin_user_name> # mandatory - name of administrator user
-AAS_ADMIN_PASSWORD=<password> # mandatory - password of administrator user
+# mandatory - name of administrator user
+AAS_ADMIN_USERNAME=<admin_user_name>
+# mandatory - password of administrator user
+AAS_ADMIN_PASSWORD=<password>
 
 # Miscellaneous
-LOG_LEVEL=critical|error|warning|info|debug|trace # optional - if not supplied, it will be set to 'warning'
-AAS_LOG_MAX_LENGTH=300 # optional - if not supplied, it will be set to 300
-AAS_ENABLE_CONSOLE_LOG=true # optional - if not supplied, it will be set to false
+# optional - if not supplied, it will be set to 'warning'
+LOG_LEVEL=critical|error|warning|info|debug|trace
+# optional - if not supplied, it will be set to 300
+AAS_LOG_MAX_LENGTH=300
+# optional - if not supplied, it will be set to false
+AAS_ENABLE_CONSOLE_LOG=true
 ```
 
 ### Configuraiton variables
@@ -708,7 +756,7 @@ authdefender:
 token:
   includekid: true
   tokendurationmins: 2880
-cmsbaseurl: https://10.105.168.108:8445/cms/v1/
+cmsbaseurl: https://cms.isecl.intel.com:8445/cms/v1/
 subject:
   tlscertcommonname: AAS TLS Certificate
   jwtcertcommonname: AAS JWT Signing Certificate
@@ -804,7 +852,13 @@ Configuration parameters for http server
 Environment variables
 ```shell
 # optional (8444 will be default) - use this env variable or --port argument
- AAS_PORT=444 # port that the http server listens on
+AAS_PORT=444 # port that the http server listens on
+
+# mandatory - URL of CMS server
+CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/
+
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39...
 ```
 ### Setup - Download Root Certificate
 Downloads the Root CA from CMS.
@@ -819,6 +873,10 @@ Downloads the Root CA from CMS.
 ```shell
 # mandatory - no commmand line arguments currently available in lieu of this
 CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/ #URL of CMS server
+
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... 
+
 ```
 
 
@@ -836,6 +894,9 @@ Environment variables
 ```shell
 # mandatory - no commmand line arguments currently available in lieu of this
 CMS_BASE_URL=https://<ip_address/host_name_ofcms>/cms/v1/ #URL of CMS server
+
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... 
 
 # optional (default will be used)
 COMMON_NAME="AAS TLS Certificate" # Common name in the TLS certificate of AAS. Needs to match attribute in JWT token
@@ -865,6 +926,9 @@ AAS_JWT_CERT_SUBJECT="AAS JWT certificate" #optional argument if you want overri
 # mandatory - alternatively use --cms-url argument
 CMS_BASE_URL=https://x.x.x.x:8445/cms/v1/ # url of the Certificate Management Server
 
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... 
+
 # mandatory - alternatively use --token argument
 BEARER_TOKEN=eyJhbGciOiJFUzM4NCIs....  #bearer token in JWT form obtained from CMS
 
@@ -884,9 +948,17 @@ Set up an administrator user that has the predefined roles for AAS.
 Environment variables
 
 ```shell
-AAS_ADMIN_USERNAME=<admin_user_name> # mandatory - --user argument may be used instead
+# mandatory - alternatively use --cms-url argument
+CMS_BASE_URL=https://x.x.x.x:8445/cms/v1/ # url of the Certificate Management Server
 
-AAS_ADMIN_PASSWORD=<password> # mandatory --pass argument may be used instead
+# mandatory - this is used to verify the CMS before the root-CA is downloaded.
+CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39... 
+
+# mandatory - --user argument may be used instead
+AAS_ADMIN_USERNAME=<admin_user_name>
+
+# mandatory --pass argument may be used instead
+AAS_ADMIN_PASSWORD=<password>
 ```
 
 This task can be used to create administrator user. The same may be used to create additional users or change the pass work of an existing administrative user

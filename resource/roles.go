@@ -41,7 +41,7 @@ func createRole(db repository.AASDatabase) errorHandlerFunc {
 		defer defaultLog.Trace("createRole return")
 
 		// authorize rest api endpoint based on token
-		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
+		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleCreate}, true)
 		if err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func getRole(db repository.AASDatabase) errorHandlerFunc {
 		defer defaultLog.Trace("getRole return")
 
 		// authorize rest api endpoint based on token
-		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
+		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleRetrieve}, true)
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized get role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -204,7 +204,7 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 		defer defaultLog.Trace("deleteRole return")
 
 		// authorize rest api endpoint based on token
-		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName}, true, true)
+		ctxMap, err := AuthorizeEndpoint(r, []string{consts.RoleDelete}, true)
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized delete role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -221,6 +221,12 @@ func deleteRole(db repository.AASDatabase) errorHandlerFunc {
 		if del_rl == nil || err != nil {
 			defaultLog.WithError(err).WithField("id", id).Info("attempt to delete invalid role")
 			w.WriteHeader(http.StatusNoContent)
+			return nil
+		}
+
+		if del_rl.Service == consts.ServiceName && contains(consts.DefaultRoles, del_rl.Name) {
+			defaultLog.WithError(err).WithField("id", id).Info("attempt to delete default role")
+			w.WriteHeader(http.StatusBadRequest)
 			return nil
 		}
 
@@ -254,7 +260,7 @@ func queryRoles(db repository.AASDatabase) errorHandlerFunc {
 		var validation_err error
 
 		// authorize rest api endpoint based on token
-		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.RoleManagerGroupName, consts.RoleAndUserManagerGroupName})
+		svcFltr, err := AuthorizeEndPointAndGetServiceFilter(r, []string{consts.RoleSearch})
 		if err != nil {
 			secLog.Warningf("%s: Unauthorized query role attempt from: %s", commLogMsg.UnauthorizedAccess, r.RemoteAddr)
 			return err
@@ -326,4 +332,13 @@ func updateRole(db repository.AASDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return &resourceError{Message: "", StatusCode: http.StatusNotImplemented}
 	}
+}
+
+func contains(strArr [4]string, str string) bool {
+	for _, s := range strArr {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }

@@ -4,10 +4,13 @@ GITCOMMITDATE := $(shell git log -1 --date=short --pretty=format:%cd)
 VERSION := $(or ${GITTAG}, v0.0.0)
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 
-.PHONY: authservice installer docker all test clean
+.PHONY: authservice aas-manager installer docker all test clean
 
 authservice:
-	env GOOS=linux go build -ldflags "-X intel/isecl/authservice/version.BuildDate=$(BUILDDATE) -X intel/isecl/authservice/version.Version=$(VERSION) -X intel/isecl/authservice/version.GitHash=$(GITCOMMIT)" -o out/authservice
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/authservice/version.BuildDate=$(BUILDDATE) -X intel/isecl/authservice/version.Version=$(VERSION) -X intel/isecl/authservice/version.GitHash=$(GITCOMMIT)" -o out/authservice
+
+aas-manager:
+	cd dist/linux/aas-manager/ && make
 
 test:
 	go test ./... -coverprofile cover.out
@@ -15,7 +18,7 @@ test:
 	go tool cover -html=cover.out -o cover.html
 
 
-installer: authservice
+installer: authservice aas-manager
 	mkdir -p out/installer
 	cp dist/linux/authservice.service out/installer/authservice.service
 	cp dist/linux/install.sh out/installer/install.sh && chmod +x out/installer/install.sh
@@ -24,6 +27,7 @@ installer: authservice
 	makeself out/installer out/authservice-$(VERSION).bin "Auth Service $(VERSION)" ./install.sh
 	cp dist/linux/install_pgdb.sh out/install_pgdb.sh && chmod +x out/install_pgdb.sh
 	cp dist/linux/create_db.sh out/create_db.sh && chmod +x out/create_db.sh
+	mv dist/linux/aas-manager/populate-users out/populate-users.sh && chmod +x out/populate-users.sh
 
 docker: installer
 	cp dist/docker/entrypoint.sh out/entrypoint.sh && chmod +x out/entrypoint.sh

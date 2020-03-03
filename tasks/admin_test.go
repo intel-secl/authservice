@@ -20,6 +20,7 @@ func TestCreateAdmin(t *testing.T) {
 	m := &mock.MockDatabase{}
 	var user *types.User
 	var role *types.Role
+	var permission *types.Permission
 	m.MockUserRepository.CreateFunc = func(u types.User) (*types.User, error) {
 		user = &u
 		return user, nil
@@ -39,6 +40,16 @@ func TestCreateAdmin(t *testing.T) {
 			return nil, errors.New("Record not found")
 		}
 		return role, nil
+	}
+	m.MockPermissionRepository.CreateFunc = func(p types.Permission) (*types.Permission, error) {
+		permission = &p
+		return permission, nil
+	}
+	m.MockPermissionRepository.RetrieveFunc = func(r *types.PermissionSearch) (*types.Permission, error) {
+		if permission == nil {
+			return nil, errors.New("Record not found")
+		}
+		return permission, nil
 	}
 
 	task := Admin{
