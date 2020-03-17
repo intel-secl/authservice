@@ -536,6 +536,9 @@ func (a *App) startServer() error {
 	// Create public routes that does not need any authentication
 	r := mux.NewRouter()
 
+	// ISECL-8715 - Prevent potential open redirects to external URLs
+	r.SkipClean(true)
+
 	// Create Router, set routes
 	sr := r.PathPrefix("/aas/noauth").Subrouter()
 	func(setters ...func(*mux.Router)) {
