@@ -142,7 +142,6 @@ func (a *App) GetServiceUsers() []UserAndRolesCreate {
 			urc.Name = a.AhServiceUserName
 			urc.Password = a.AhServiceUserPassword
 			urc.Roles = append(urc.Roles, NewRole("VS", "ReportRetriever", "", []string{"reports:retrieve:*", "reports:search:*", "hosts:search:*", "hosts:retrieve:*"}))
-			urc.Roles = append(urc.Roles, NewRole("WLS", "ReportSearcher", "", []string{"reports:search:*"}))
 		case "WPM":
 			urc.Name = a.WpmServiceUserName
 			urc.Password = a.WpmServiceUserPassword
