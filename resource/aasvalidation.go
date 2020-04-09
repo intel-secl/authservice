@@ -8,7 +8,7 @@ import (
 	"errors"
 	"regexp"
 
-	commLogMsg "intel/isecl/lib/common/log/message"
+	commLogMsg "intel/isecl/lib/common/v2/log/message"
 )
 
 var (

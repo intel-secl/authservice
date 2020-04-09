@@ -8,10 +8,10 @@ package tasks
 import (
 	"errors"
 	"golang.org/x/crypto/bcrypt"
-	"intel/isecl/authservice/repository"
-	"intel/isecl/authservice/types"
-	ct "intel/isecl/lib/common/types/aas"
-	"intel/isecl/lib/common/validation"
+	"intel/isecl/authservice/v2/repository"
+	"intel/isecl/authservice/v2/types"
+	ct "intel/isecl/lib/common/v2/types/aas"
+	"intel/isecl/lib/common/v2/validation"
 )
 
 // declared in pg_database.go

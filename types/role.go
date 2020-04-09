@@ -5,7 +5,7 @@
 package types
 
 import (
-	. "intel/isecl/lib/common/types/aas"
+	. "intel/isecl/lib/common/v2/types/aas"
 	"time"
 )
 

@@ -5,8 +5,8 @@
 package tasks
 
 import (
-	"intel/isecl/authservice/config"
-	"intel/isecl/lib/common/setup"
+	"intel/isecl/authservice/v2/config"
+	"intel/isecl/lib/common/v2/setup"
 	"os"
 
 	"testing"

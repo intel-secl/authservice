@@ -6,18 +6,18 @@ package resource
 
 import (
 	"encoding/json"
-	jwtauth "intel/isecl/lib/common/jwt"
-	ct "intel/isecl/lib/common/types/aas"
-	"intel/isecl/lib/common/validation"
+	jwtauth "intel/isecl/lib/common/v2/jwt"
+	ct "intel/isecl/lib/common/v2/types/aas"
+	"intel/isecl/lib/common/v2/validation"
 
-	authcommon "intel/isecl/authservice/common"
-	"intel/isecl/authservice/repository"
-	"intel/isecl/authservice/types"
+	authcommon "intel/isecl/authservice/v2/common"
+	"intel/isecl/authservice/v2/repository"
+	"intel/isecl/authservice/v2/types"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
-	commLogMsg "intel/isecl/lib/common/log/message"
+	commLogMsg "intel/isecl/lib/common/v2/log/message"
 )
 
 type roleClaims struct {

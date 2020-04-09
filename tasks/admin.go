@@ -7,16 +7,16 @@ package tasks
 import (
 	"flag"
 	"fmt"
-	consts "intel/isecl/authservice/constants"
-	"intel/isecl/authservice/repository"
-	"intel/isecl/authservice/types"
-	commLog "intel/isecl/lib/common/log"
-	"intel/isecl/lib/common/setup"
+	consts "intel/isecl/authservice/v2/constants"
+	"intel/isecl/authservice/v2/repository"
+	"intel/isecl/authservice/v2/types"
+	commLog "intel/isecl/lib/common/v2/log"
+	"intel/isecl/lib/common/v2/setup"
 	"io"
 
 	"github.com/pkg/errors"
 
-	commLogMsg "intel/isecl/lib/common/log/message"
+	commLogMsg "intel/isecl/lib/common/v2/log/message"
 )
 
 type Admin struct {

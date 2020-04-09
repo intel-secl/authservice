@@ -7,7 +7,7 @@ package constants
 import (
 	"crypto"
 	"time"
-	ct "intel/isecl/lib/common/types/aas"
+	ct "intel/isecl/lib/common/v2/types/aas"
 )
 
 const (

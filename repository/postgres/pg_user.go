@@ -6,9 +6,9 @@ package postgres
 
 import (
 	"fmt"
-	"intel/isecl/authservice/repository"
-	"intel/isecl/authservice/types"
-	ct "intel/isecl/lib/common/types/aas"
+	"intel/isecl/authservice/v2/repository"
+	"intel/isecl/authservice/v2/types"
+	ct "intel/isecl/lib/common/v2/types/aas"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"

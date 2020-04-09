@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"intel/isecl/lib/common/external-artifacts/time/rate"
+	"intel/isecl/lib/common/v2/external-artifacts/time/rate"
 )
 
 const Factor = 10

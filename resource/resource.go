@@ -6,17 +6,17 @@ package resource
 
 import (
 	"fmt"
-	consts "intel/isecl/authservice/constants"
-	comctx "intel/isecl/lib/common/context"
-	"intel/isecl/lib/common/log"
+	consts "intel/isecl/authservice/v2/constants"
+	comctx "intel/isecl/lib/common/v2/context"
+	"intel/isecl/lib/common/v2/log"
 
-	"intel/isecl/lib/common/auth"
-	ct "intel/isecl/lib/common/types/aas"
+	"intel/isecl/lib/common/v2/auth"
+	ct "intel/isecl/lib/common/v2/types/aas"
 	"net/http"
 
 	"github.com/jinzhu/gorm"
 
-	commLogMsg "intel/isecl/lib/common/log/message"
+	commLogMsg "intel/isecl/lib/common/v2/log/message"
 )
 
 var defaultLog = log.GetDefaultLogger()

@@ -6,7 +6,7 @@ package resource
 
 import (
 	"fmt"
-	"intel/isecl/authservice/version"
+	"intel/isecl/authservice/v2/version"
 	"net/http"
 
 	"github.com/gorilla/mux"
