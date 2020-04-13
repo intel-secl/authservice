@@ -99,6 +99,7 @@ if [ ! -f $PGDATA/pg_hba.conf ] ; then
         fi
         echo "# host all all $ISECL_PGDB_SERVICEHOST md5" >> $PGDATA/pg_hba.conf
         echo "hostssl all all $ISECL_PGDB_SERVICEHOST md5" >> $PGDATA/pg_hba.conf
+        echo "hostnossl all all 0.0.0.0/0 reject" >> $PGDATA/pg_hba.conf
     fi
 
     chown -R postgres:postgres /usr/local/pgsql
