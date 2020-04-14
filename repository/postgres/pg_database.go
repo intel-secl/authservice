@@ -89,8 +89,8 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 	defer defaultLog.Trace("Open DB done")
 
 	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
-	if sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "verify-full" {
-		sslMode = "require"
+	if sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "require" {
+		sslMode = "verify-full"
 	}
 
 	var sslCertParams string
