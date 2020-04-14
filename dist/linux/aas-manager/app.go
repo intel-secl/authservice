@@ -221,7 +221,6 @@ func (a *App) GetSuperInstallUser() UserAndRolesCreate {
 			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.TaCN, a.TaSanList))
 		case "AH":
 			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.AhCN, a.AhSanList))
-			urc.Roles = append(urc.Roles, NewRole("VS", "CaCertRetriever", "", []string{"*:*:*"}))
 		case "KBS":
 			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.KmsCN, a.KmsSanList))
 		case "WPM":
