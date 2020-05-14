@@ -16,13 +16,17 @@ echo "Creating database '${ISECL_PGDB_DBNAME}' for user '${ISECL_PGDB_USERNAME}'
 log_file="create_db_${ISECL_PGDB_DBNAME}.log"
 
 cd /tmp
+cat /dev/null > "$log_file"
 
-sudo -u postgres psql postgres -c "CREATE USER ${ISECL_PGDB_USERNAME} WITH PASSWORD '${ISECL_PGDB_USERPASSWORD}';" &>> $log_file
-sudo -u postgres psql postgres -c "CREATE DATABASE ${ISECL_PGDB_DBNAME}" &>> $log_file
-sudo -u postgres psql postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${ISECL_PGDB_DBNAME} TO ${ISECL_PGDB_USERNAME};" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOSUPERUSER;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOCREATEROLE;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOCREATEDB;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOREPLICATION;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOBYPASSRLS;" &>> $log_file
-sudo -u postgres psql postgres -c "ALTER ROLE ${ISECL_PGDB_USERNAME} NOINHERIT;" &>> $log_file
+su - postgres -c "psql -c \"CREATE USER ${ISECL_PGDB_USERNAME} WITH PASSWORD '${ISECL_PGDB_USERPASSWORD}';\"" &>> $log_file
+su - postgres -c "psql -c \"CREATE DATABASE ${ISECL_PGDB_DBNAME};\"" &>> $log_file
+su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE ${ISECL_PGDB_DBNAME} TO ${ISECL_PGDB_USERNAME};\"" &>> $log_fileq
+su - postgres -c "psql -c \"ALTER ROLE ${ISECL_PGDB_USERNAME} NOSUPERUSER;\"" &>> $log_file
+su - postgres -c "psql -c \"ALTER ROLE ${ISECL_PGDB_USERNAME} NOCREATEROLE;\"" &>> $log_file
+su - postgres -c "psql -c \"ALTER ROLE ${ISECL_PGDB_USERNAME} NOCREATEDB;\"" &>> $log_file
+su - postgres -c "psql -c \"ALTER ROLE ${ISECL_PGDB_USERNAME} NOREPLICATION;\"" &>> $log_file
+su - postgres -c "psql -c \"ALTER ROLE ${ISECL_PGDB_USERNAME} NOBYPASSRLS;\"" &>> $log_file
+su - postgres -c "psql -c \"ALTER ROLE ${ISECL_PGDB_USERNAME} NOINHERIT;\"" &>> $log_file
+
+cd -
+mv "/tmp/$log_file" .
