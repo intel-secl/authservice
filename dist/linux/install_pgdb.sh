@@ -12,6 +12,7 @@ DEFAULT_CERTSUBJECT="/CN=ISecl Self Sign Cert"
 DEFAULT_CIPHERSUITES="ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256"
 DEFAULT_CERT_DNS="localhost"
 DEFAULT_CERT_IP="127.0.0.1"
+DEFAULT_MAX_CONNECTIONS=400
 # Variables Section. Please edit the default value as appropriate or use the iseclpgdb.env file
 
 ISECL_PGDB_IP_INTERFACES="${ISECL_PGDB_IP_INTERFACES:-localhost}"    # network interfaces to listen for connection
@@ -26,6 +27,7 @@ ISECL_PGDB_CIPHERSUITES="${ISECL_PGDB_CIPHERSUITES:-$DEFAULT_CIPHERSUITES}"
 
 ISECL_PGDB_CERT_DNS="${ISECL_PGDB_CERT_DNS:-$DEFAULT_CERT_DNS}"
 ISECL_PGDB_CERT_IP="${ISECL_PGDB_CERT_IP:-$DEFAULT_CERT_IP}"
+ISECL_PGDB_MAX_CONNECTIONS="${ISECL_PGDB_MAX_CONNECTIONS:-$DEFAULT_MAX_CONNECTIONS}"
 
 pgdb_cert_dns=""
 for dns in $(echo $ISECL_PGDB_CERT_DNS | tr "," "\n")
@@ -102,6 +104,7 @@ if [ ! -f $PGDATA/pg_hba.conf ] ; then
     echo "ssl_cert_file = 'server.crt'" >> $PGDATA/postgresql.conf
     echo "ssl_key_file = 'server.key'" >> $PGDATA/postgresql.conf
     echo "ssl_ciphers = '$ISECL_PGDB_CIPHERSUITES'" >> $PGDATA/postgresql.conf
+    echo "max_connections = $ISECL_PGDB_MAX_CONNECTIONS" >> $PGDATA/postgresql.conf
 
 	mv $PGDATA/pg_hba.conf $PGDATA/pg_hba-template.conf
 	echo "local all postgres peer" >> $PGDATA/pg_hba.conf
