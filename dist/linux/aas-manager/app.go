@@ -52,8 +52,8 @@ type App struct {
 	AasAdminUserName string
 	AasAdminPassword string
 
-	VsCN       string
-	VsSanList  string
+	HvsCN      string
+	HvsSanList string
 	AhCN       string
 	AhSanList  string
 	WlsCN      string
@@ -67,8 +67,8 @@ type App struct {
 	InstallAdminPassword   string
 	GlobalAdminUserName    string
 	GlobalAdminPassword    string
-	VsServiceUserName      string
-	VsServiceUserPassword  string
+	HvsServiceUserName     string
+	HvsServiceUserPassword string
 	AhServiceUserName      string
 	AhServiceUserPassword  string
 	WpmServiceUserName     string
@@ -138,14 +138,14 @@ func (a *App) GetServiceUsers() []UserAndRolesCreate {
 		urc.Roles = []aas.RoleCreate{}
 
 		switch k {
-		case "VS":
-			urc.Name = a.VsServiceUserName
-			urc.Password = a.VsServiceUserPassword
+		case "HVS":
+			urc.Name = a.HvsServiceUserName
+			urc.Password = a.HvsServiceUserPassword
 			urc.Roles = append(urc.Roles, NewRole("TA", "Administrator", "", []string{"*:*:*"}))
 		case "AH":
 			urc.Name = a.AhServiceUserName
 			urc.Password = a.AhServiceUserPassword
-			urc.Roles = append(urc.Roles, NewRole("VS", "ReportRetriever", "", []string{"reports:retrieve:*", "reports:search:*", "hosts:search:*", "hosts:retrieve:*"}))
+			urc.Roles = append(urc.Roles, NewRole("HVS", "ReportRetriever", "", []string{"reports:retrieve:*", "reports:search:*", "hosts:search:*", "hosts:retrieve:*"}))
 		case "WPM":
 			urc.Name = a.WpmServiceUserName
 			urc.Password = a.WpmServiceUserPassword
@@ -153,7 +153,7 @@ func (a *App) GetServiceUsers() []UserAndRolesCreate {
 		case "WLS":
 			urc.Name = a.WlsServiceUserName
 			urc.Password = a.WlsServiceUserPassword
-			urc.Roles = append(urc.Roles, NewRole("VS", "ReportCreator", "", []string{"reports:create:*"}))
+			urc.Roles = append(urc.Roles, NewRole("HVS", "ReportCreator", "", []string{"reports:create:*"}))
 		case "WLA":
 			urc.Name = a.WlaServiceUserName
 			urc.Password = a.WlaServiceUserPassword
@@ -183,8 +183,8 @@ func (a *App) GetGlobalAdminUser() *UserAndRolesCreate {
 	for k, _ := range a.Components {
 
 		switch k {
-		case "VS":
-			urc.Roles = append(urc.Roles, NewRole("VS", "Administrator", "", []string{"*:*:*"}))
+		case "HVS":
+			urc.Roles = append(urc.Roles, NewRole("HVS", "Administrator", "", []string{"*:*:*"}))
 		case "TA":
 			urc.Roles = append(urc.Roles, NewRole("TA", "Administrator", "", []string{"*:*:*"}))
 		case "AH":
@@ -213,12 +213,12 @@ func (a *App) GetSuperInstallUser() UserAndRolesCreate {
 
 	for k, _ := range a.Components {
 		switch k {
-		case "VS":
-			urc.Roles = append(urc.Roles, NewRole("CMS", "CertApprover", "CN=VS Flavor Signing Certificate;certType=Signing", nil))
-			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.VsCN, a.VsSanList))
-			urc.Roles = append(urc.Roles, NewRole("CMS", "CertApprover", "CN=mtwilson-saml;certType=Signing", nil))
+		case "HVS":
+			urc.Roles = append(urc.Roles, NewRole("CMS", "CertApprover", "CN=HVS Flavor Signing Certificate;certType=Signing", nil))
+			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.HvsCN, a.HvsSanList))
+			urc.Roles = append(urc.Roles, NewRole("CMS", "CertApprover", "CN=hvs-saml;certType=Signing", nil))
 		case "TA":
-			urc.Roles = append(urc.Roles, NewRole("VS", "AttestationRegister", "",
+			urc.Roles = append(urc.Roles, NewRole("HVS", "AttestationRegister", "",
 				[]string{"host_tls_policies:create:*", "hosts:create:*", "hosts:store:*", "hosts:search:*",
 					"host_unique_flavors:create:*", "flavors:search:*", "tpm_passwords:retrieve:*",
 					"tpm_passwords:create:*", "host_aiks:certify:*", "tpm_endorsements:create:*", "tpm_endorsements:search:*"}))
@@ -232,7 +232,7 @@ func (a *App) GetSuperInstallUser() UserAndRolesCreate {
 		case "WLS":
 			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.WlsCN, a.WlsSanList))
 		case "WLA":
-			urc.Roles = append(urc.Roles, NewRole("VS", "Certifier", "", []string{"host_signing_key_certificates:create:*"}))
+			urc.Roles = append(urc.Roles, NewRole("HVS", "Certifier", "", []string{"host_signing_key_certificates:create:*"}))
 		}
 	}
 
@@ -289,8 +289,8 @@ func (a *App) LoadAllVariables(envFile string) error {
 		{&a.InstallAdminUserName, "INSTALL_ADMIN_USERNAME", "installadmin", "Installation ADMIN USERNAME", false, false},
 		{&a.InstallAdminPassword, "INSTALL_ADMIN_PASSWORD", "", "Installation ADMIN PASSWORD", false, true},
 
-		{&a.VsCN, "VS_CERT_COMMON_NAME", "Mt Wilson TLS Certificate", "Verification Service TLS Certificate Common Name", false, false},
-		{&a.VsSanList, "VS_CERT_SAN_LIST", "", "Verification Service TLS Certificate SAN LIST", false, false},
+		{&a.HvsCN, "HVS_CERT_COMMON_NAME", "HVS TLS Certificate", "Host Verification Service TLS Certificate Common Name", false, false},
+		{&a.HvsSanList, "HVS_CERT_SAN_LIST", "", "Host Verification Service TLS Certificate SAN LIST", false, false},
 
 		{&a.AhCN, "AH_CERT_COMMON_NAME", "Attestation Hub TLS Certificate", "Attestation Hub TLS Certificate Common Name", false, false},
 		{&a.AhSanList, "AH_CERT_SAN_LIST", "", "Attestation Hub TLS Certificate SAN LIST", false, false},
@@ -307,8 +307,8 @@ func (a *App) LoadAllVariables(envFile string) error {
 		{&a.GlobalAdminUserName, "GLOBAL_ADMIN_USERNAME", "", "Global Admin User Name", false, false},
 		{&a.GlobalAdminPassword, "GLOBAL_ADMIN_PASSWORD", "", "Global Admin User Password", false, true},
 
-		{&a.VsServiceUserName, "VS_SERVICE_USERNAME", "", "Verificaiton Service User Name", false, false},
-		{&a.VsServiceUserPassword, "VS_SERVICE_PASSWORD", "", "Verification Service User Password", false, true},
+		{&a.HvsServiceUserName, "HVS_SERVICE_USERNAME", "", "Host Verification Service User Name", false, false},
+		{&a.HvsServiceUserPassword, "HVS_SERVICE_PASSWORD", "", "Host Verification Service User Password", false, true},
 
 		{&a.AhServiceUserName, "AH_SERVICE_USERNAME", "", "Attestation Hub Service User Name", false, false},
 		{&a.AhServiceUserPassword, "AH_SERVICE_PASSWORD", "", "Attestation Hub Service User Password", false, true},
