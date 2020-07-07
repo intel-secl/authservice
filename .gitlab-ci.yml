@@ -56,10 +56,17 @@ installer:
     - apt update && apt install -y makeself
     - make installer
     - cp ./doc/openapi.yml ./out/openapi.yml
+    - cd dist/linux/aas-manager && make && cd -
+    - cp dist/linux/aas-manager/populate-users ./out/populate-users 
+    - cp dist/linux/install_pgdb.sh ./out/install_pgdb.sh
+    - cp dist/linux/create_db.sh ./out/create_db.sh
   artifacts:
     paths:
       - "out/authservice-*.bin"
       - "out/openapi.yml"
+      - "out/populate-users"
+      - "out/install_pgdb.sh"
+      - "out/create_db.sh"
 
 docker:
   stage: dist
