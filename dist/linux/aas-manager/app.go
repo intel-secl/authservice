@@ -216,7 +216,7 @@ func (a *App) GetSuperInstallUser() UserAndRolesCreate {
 		case "HVS":
 			urc.Roles = append(urc.Roles, NewRole("CMS", "CertApprover", "CN=HVS Flavor Signing Certificate;certType=Signing", nil))
 			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.HvsCN, a.HvsSanList))
-			urc.Roles = append(urc.Roles, NewRole("CMS", "CertApprover", "CN=hvs-saml;certType=Signing", nil))
+			urc.Roles = append(urc.Roles, NewRole("CMS", "CertApprover", "CN=HVS SAML Certificate;certType=Signing", nil))
 		case "TA":
 			urc.Roles = append(urc.Roles, NewRole("HVS", "AttestationRegister", "",
 				[]string{"host_tls_policies:create:*", "hosts:create:*", "hosts:store:*", "hosts:search:*",
