@@ -59,7 +59,7 @@ make installer
 | uuid     | github.com/google/uuid      | v1.1.1                             |
 | handlers | github.com/gorilla/handlers | v1.4.0                             |
 | mux      | github.com/gorilla/mux      | v1.7.0                             |
-| gorm     | github.com/jinzhu/gorm      | v1.9.2                             |
+| gorm     | github.com/jinzhu/gorm      | v1.9.15                            |
 | logrus   | github.com/sirupsen/logrus  | v1.3.0                             |
 | testify  | github.com/stretchr/testify | v1.3.0                             |
 | crypto   | golang.org/x/crypto         | v0.0.0-20190219172222-a4c6cb3142f2 |
