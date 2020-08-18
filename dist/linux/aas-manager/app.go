@@ -54,8 +54,8 @@ type App struct {
 
 	HvsCN      string
 	HvsSanList string
-	AhCN       string
-	AhSanList  string
+	IhCN       string
+	IhSanList  string
 	WlsCN      string
 	WlsSanList string
 	TaCN       string
@@ -69,8 +69,8 @@ type App struct {
 	GlobalAdminPassword    string
 	HvsServiceUserName     string
 	HvsServiceUserPassword string
-	AhServiceUserName      string
-	AhServiceUserPassword  string
+	IhServiceUserName      string
+	IhServiceUserPassword  string
 	WpmServiceUserName     string
 	WpmServiceUserPassword string
 	WlsServiceUserName     string
@@ -142,10 +142,10 @@ func (a *App) GetServiceUsers() []UserAndRolesCreate {
 			urc.Name = a.HvsServiceUserName
 			urc.Password = a.HvsServiceUserPassword
 			urc.Roles = append(urc.Roles, NewRole("TA", "Administrator", "", []string{"*:*:*"}))
-		case "AH":
-			urc.Name = a.AhServiceUserName
-			urc.Password = a.AhServiceUserPassword
-			urc.Roles = append(urc.Roles, NewRole("HVS", "ReportRetriever", "", []string{"reports:retrieve:*", "reports:search:*", "hosts:search:*", "hosts:retrieve:*"}))
+		case "IH":
+			urc.Name = a.IhServiceUserName
+			urc.Password = a.IhServiceUserPassword
+			urc.Roles = append(urc.Roles, NewRole("HVS", "ReportSearcher", "", []string{"reports:search:*"}))
 		case "WPM":
 			urc.Name = a.WpmServiceUserName
 			urc.Password = a.WpmServiceUserPassword
@@ -187,8 +187,6 @@ func (a *App) GetGlobalAdminUser() *UserAndRolesCreate {
 			urc.Roles = append(urc.Roles, NewRole("HVS", "Administrator", "", []string{"*:*:*"}))
 		case "TA":
 			urc.Roles = append(urc.Roles, NewRole("TA", "Administrator", "", []string{"*:*:*"}))
-		case "AH":
-			urc.Roles = append(urc.Roles, NewRole("AH", "Administrator", "", []string{"*:*:*"}))
 		case "KBS":
 			urc.Roles = append(urc.Roles, NewRole("KMS", "KeyCRUD", "", []string{"*:*:*"}))
 		case "WLS":
@@ -223,8 +221,8 @@ func (a *App) GetSuperInstallUser() UserAndRolesCreate {
 					"host_unique_flavors:create:*", "flavors:search:*", "tpm_passwords:retrieve:*",
 					"tpm_passwords:create:*", "host_aiks:certify:*", "tpm_endorsements:create:*", "tpm_endorsements:search:*"}))
 			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.TaCN, a.TaSanList))
-		case "AH":
-			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.AhCN, a.AhSanList))
+		case "IH":
+			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.IhCN, a.IhSanList))
 		case "KBS":
 			urc.Roles = append(urc.Roles, MakeTlsCertificateRole(a.KmsCN, a.KmsSanList))
 		case "WPM":
@@ -292,8 +290,8 @@ func (a *App) LoadAllVariables(envFile string) error {
 		{&a.HvsCN, "HVS_CERT_COMMON_NAME", "HVS TLS Certificate", "Host Verification Service TLS Certificate Common Name", false, false},
 		{&a.HvsSanList, "HVS_CERT_SAN_LIST", "", "Host Verification Service TLS Certificate SAN LIST", false, false},
 
-		{&a.AhCN, "AH_CERT_COMMON_NAME", "Attestation Hub TLS Certificate", "Attestation Hub TLS Certificate Common Name", false, false},
-		{&a.AhSanList, "AH_CERT_SAN_LIST", "", "Attestation Hub TLS Certificate SAN LIST", false, false},
+		{&a.IhCN, "IH_CERT_COMMON_NAME", "Integration Hub TLS Certificate", "Integration Hub TLS Certificate Common Name", false, false},
+		{&a.IhSanList, "IH_CERT_SAN_LIST", "", "Integration Hub TLS Certificate SAN LIST", false, false},
 
 		{&a.WlsCN, "WLS_CERT_COMMON_NAME", "WLS TLS Certificate", "Workload Service TLS Certificate Common Name", false, false},
 		{&a.WlsSanList, "WLS_CERT_SAN_LIST", "", "Workload Service TLS Certificate SAN LIST", false, false},
@@ -310,10 +308,10 @@ func (a *App) LoadAllVariables(envFile string) error {
 		{&a.HvsServiceUserName, "HVS_SERVICE_USERNAME", "", "Host Verification Service User Name", false, false},
 		{&a.HvsServiceUserPassword, "HVS_SERVICE_PASSWORD", "", "Host Verification Service User Password", false, true},
 
-		{&a.AhServiceUserName, "AH_SERVICE_USERNAME", "", "Attestation Hub Service User Name", false, false},
-		{&a.AhServiceUserPassword, "AH_SERVICE_PASSWORD", "", "Attestation Hub Service User Password", false, true},
+		{&a.IhServiceUserName, "IH_SERVICE_USERNAME", "", "Integration Hub Service User Name", false, false},
+		{&a.IhServiceUserPassword, "IH_SERVICE_PASSWORD", "", "Integration Hub Service User Password", false, true},
 
-		{&a.WpmServiceUserName, "WPM_SERVICE_USERNAME", "", "Workload Policy Manager Hub Service User Name", false, false},
+		{&a.WpmServiceUserName, "WPM_SERVICE_USERNAME", "", "Workload Policy Manager Service User Name", false, false},
 		{&a.WpmServiceUserPassword, "WPM_SERVICE_PASSWORD", "", "Workload Policy Manager Service User Password", false, true},
 
 		{&a.WlsServiceUserName, "WLS_SERVICE_USERNAME", "", "Workload Service User Name", false, false},
