@@ -5,7 +5,7 @@
 package mock
 
 import (
-	"intel/isecl/authservice/v2/repository"
+	"intel/isecl/authservice/v3/repository"
 )
 
 type MockDatabase struct {

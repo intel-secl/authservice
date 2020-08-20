@@ -6,8 +6,8 @@ package middleware
 
 import (
 	"errors"
-	"intel/isecl/authservice/v2/repository/mock"
-	"intel/isecl/authservice/v2/types"
+	"intel/isecl/authservice/v3/repository/mock"
+	"intel/isecl/authservice/v3/types"
 	"net/http"
 	"net/http/httptest"
 	"testing"

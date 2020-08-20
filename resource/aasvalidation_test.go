@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"intel/isecl/lib/common/v2/validation"
+	"intel/isecl/lib/common/v3/validation"
 
 	"github.com/stretchr/testify/assert"
 )

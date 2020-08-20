@@ -5,8 +5,8 @@
 package mock
 
 import (
-	"intel/isecl/authservice/v2/types"
-	ct "intel/isecl/lib/common/v2/types/aas"
+	"intel/isecl/authservice/v3/types"
+	ct "intel/isecl/lib/common/v3/types/aas"
 )
 
 type MockUserRepository struct {

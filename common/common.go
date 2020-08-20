@@ -6,10 +6,10 @@ package common
 
 import (
 	"fmt"
-	"intel/isecl/authservice/v2/config"
-	"intel/isecl/authservice/v2/defender"
-	"intel/isecl/authservice/v2/repository"
-	"intel/isecl/authservice/v2/types"
+	"intel/isecl/authservice/v3/config"
+	"intel/isecl/authservice/v3/defender"
+	"intel/isecl/authservice/v3/repository"
+	"intel/isecl/authservice/v3/types"
 	"net/http"
 	"time"
 )

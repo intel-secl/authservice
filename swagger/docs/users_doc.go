@@ -4,7 +4,7 @@
  */
 package docs
 
-import "intel/isecl/lib/common/v2/types/aas"
+import "intel/isecl/lib/common/v3/types/aas"
 
 // UserCreateInfo request payload
 // swagger:parameters UserCreateInfo

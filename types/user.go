@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"intel/isecl/authservice/v2/constants"
-	"intel/isecl/lib/common/v2/crypt"
+	"intel/isecl/authservice/v3/constants"
+	"intel/isecl/lib/common/v3/crypt"
 
 	"golang.org/x/crypto/bcrypt"
 )

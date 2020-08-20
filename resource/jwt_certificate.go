@@ -5,15 +5,15 @@
 package resource
 
 import (
-	consts "intel/isecl/authservice/v2/constants"
-	"intel/isecl/lib/common/v2/validation"
+	consts "intel/isecl/authservice/v3/constants"
+	"intel/isecl/lib/common/v3/validation"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 
 	"github.com/gorilla/mux"
 
-	commLogMsg "intel/isecl/lib/common/v2/log/message"
+	commLogMsg "intel/isecl/lib/common/v3/log/message"
 )
 
 func SetJwtCertificate(r *mux.Router) {

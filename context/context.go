@@ -8,7 +8,7 @@ import (
 	"context"
 	"net/http"
 
-	"intel/isecl/authservice/v2/types"
+	"intel/isecl/authservice/v3/types"
 )
 
 type httpContextKey string

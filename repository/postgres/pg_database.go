@@ -6,10 +6,10 @@ package postgres
 
 import (
 	"fmt"
-	"intel/isecl/authservice/v2/repository"
-	"intel/isecl/authservice/v2/types"
-	commLog "intel/isecl/lib/common/v2/log"
-	commLogMsg "intel/isecl/lib/common/v2/log/message"
+	"intel/isecl/authservice/v3/repository"
+	"intel/isecl/authservice/v3/types"
+	commLog "intel/isecl/lib/common/v3/log"
+	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"io/ioutil"
 	"strings"
 	"time"

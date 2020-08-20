@@ -7,12 +7,12 @@ package resource
 import (
 	"encoding/json"
 	"fmt"
-	authcommon "intel/isecl/authservice/v2/common"
-	consts "intel/isecl/authservice/v2/constants"
-	"intel/isecl/authservice/v2/repository"
-	"intel/isecl/authservice/v2/types"
-	ct "intel/isecl/lib/common/v2/types/aas"
-	"intel/isecl/lib/common/v2/validation"
+	authcommon "intel/isecl/authservice/v3/common"
+	consts "intel/isecl/authservice/v3/constants"
+	"intel/isecl/authservice/v3/repository"
+	"intel/isecl/authservice/v3/types"
+	ct "intel/isecl/lib/common/v3/types/aas"
+	"intel/isecl/lib/common/v3/validation"
 	"net/http"
 	"strconv"
 
@@ -21,7 +21,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	commLogMsg "intel/isecl/lib/common/v2/log/message"
+	commLogMsg "intel/isecl/lib/common/v3/log/message"
 )
 
 func SetUsers(r *mux.Router, db repository.AASDatabase) {

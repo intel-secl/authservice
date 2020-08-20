@@ -6,10 +6,10 @@ package tasks
 
 import (
 	"errors"
-	"intel/isecl/lib/common/v2/setup"
-	"intel/isecl/authservice/v2/repository"
-	"intel/isecl/authservice/v2/repository/mock"
-	"intel/isecl/authservice/v2/types"
+	"intel/isecl/lib/common/v3/setup"
+	"intel/isecl/authservice/v3/repository"
+	"intel/isecl/authservice/v3/repository/mock"
+	"intel/isecl/authservice/v3/types"
 	"os"
 	"testing"
 

@@ -7,9 +7,9 @@ package tasks
 import (
 	"flag"
 	"fmt"
-	"intel/isecl/authservice/v2/config"
-	"intel/isecl/authservice/v2/constants"
-	"intel/isecl/lib/common/v2/setup"
+	"intel/isecl/authservice/v3/config"
+	"intel/isecl/authservice/v3/constants"
+	"intel/isecl/lib/common/v3/setup"
 	"io"
 	"time"
 

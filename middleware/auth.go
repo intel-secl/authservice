@@ -5,18 +5,18 @@
 package middleware
 
 import (
-	authcommon "intel/isecl/authservice/v2/common"
-	"intel/isecl/authservice/v2/context"
-	_ "intel/isecl/authservice/v2/defender"
-	"intel/isecl/authservice/v2/repository"
-	"intel/isecl/authservice/v2/types"
+	authcommon "intel/isecl/authservice/v3/common"
+	"intel/isecl/authservice/v3/context"
+	_ "intel/isecl/authservice/v3/defender"
+	"intel/isecl/authservice/v3/repository"
+	"intel/isecl/authservice/v3/types"
 	"net/http"
 	_ "time"
 
 	"github.com/gorilla/mux"
 
-	commLog "intel/isecl/lib/common/v2/log"
-	commLogMsg "intel/isecl/lib/common/v2/log/message"
+	commLog "intel/isecl/lib/common/v3/log"
+	commLogMsg "intel/isecl/lib/common/v3/log/message"
 )
 
 var defaultLogger = commLog.GetDefaultLogger()

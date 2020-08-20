@@ -5,8 +5,8 @@
 package main
 
 import (
-	"intel/isecl/authservice/v2/constants"
-	_ "intel/isecl/authservice/v2/swagger/docs"
+	"intel/isecl/authservice/v3/constants"
+	_ "intel/isecl/authservice/v3/swagger/docs"
 	"os"
 	"os/user"
 	"strconv"

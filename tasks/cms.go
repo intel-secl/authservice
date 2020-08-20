@@ -6,7 +6,7 @@
 package tasks
 
 import (
-	"intel/isecl/lib/common/v2/setup"
+	"intel/isecl/lib/common/v3/setup"
 	"io"
 )
 

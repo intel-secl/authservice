@@ -4,7 +4,7 @@
  */
 package repository
 
-import "intel/isecl/authservice/v2/types"
+import "intel/isecl/authservice/v3/types"
 
 type PermissionRepository interface {
 	Create(types.Permission) (*types.Permission, error)

@@ -6,9 +6,9 @@ package config
 
 import (
 	"errors"
-	"intel/isecl/authservice/v2/constants"
-	commLog "intel/isecl/lib/common/v2/log"
-	"intel/isecl/lib/common/v2/setup"
+	"intel/isecl/authservice/v3/constants"
+	commLog "intel/isecl/lib/common/v3/log"
+	"intel/isecl/lib/common/v3/setup"
 	"os"
 	"path"
 	"sync"

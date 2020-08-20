@@ -5,8 +5,8 @@
 package postgres
 
 import (
-	"intel/isecl/authservice/v2/repository"
-	"intel/isecl/authservice/v2/types"
+	"intel/isecl/authservice/v3/repository"
+	"intel/isecl/authservice/v3/types"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
