@@ -885,7 +885,7 @@ CMS_TLS_CERT_SHA384=3c95457d5adcb19c223d538d01c39...
 Downloads the TLS certificate for the Authentication Service from the CMS. Currently most of the arguments for this setup function is only supported through exported environment variables. The following are the supported environment variable applicable for downloading the certificate
 
 ```shell
-> authservice setup download_cert [--force] [--host_names=intel.com,10.1.168.2]
+> authservice setup download_cert [--force] [--host_names=intel.com,aas.server.com]
 ```
 `--force` overwrites any existing files and download a new certificate from CMS
 

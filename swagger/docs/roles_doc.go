@@ -128,7 +128,7 @@ type SwaggRolesResponse struct {
 //          "role_id": "c18f045d-c40e-417d-b06d-4f1e40c307f3",
 //          "service": "CMS",
 //          "name" : "CertApprover",
-//          "context": "CN=WLS TLS Certificate;SAN=10.80.207.79,controller;certType=TLS"
+//          "context": "CN=WLS TLS Certificate;SAN=wls.server.com,controller;certType=TLS"
 //       }
 //    ]
 // ---
