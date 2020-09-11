@@ -42,8 +42,8 @@ installer: authservice aas-manager
 
 docker: installer
 	cp dist/docker/entrypoint.sh out/entrypoint.sh && chmod +x out/entrypoint.sh
-	docker build -t isecl/authservice:latest --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} -f ./dist/docker/Dockerfile ./out
-	docker save isecl/authservice:latest > ./out/docker-authservice-$(VERSION)-$(GITCOMMIT).tar
+	docker build -t isecl/authservice:$(VERSION) --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} -f ./dist/docker/Dockerfile ./out
+	docker save isecl/authservice:$(VERSION) > ./out/docker-authservice-$(VERSION)-$(GITCOMMIT).tar
 
 docker-zip: installer
 	mkdir -p out/docker-authservice

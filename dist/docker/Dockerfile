@@ -1,7 +1,11 @@
-FROM registry.access.redhat.com/ubi7-init:7.6
+FROM centos:8
 
-COPY authservice-*.bin /tmp/authservice.bin
+RUN useradd -u 1001 --comment "Authservice" --home /opt/authservice  --shell /bin/false aas
+
+RUN mkdir -p /opt/authservice
+COPY authservice /opt/authservice/bin/
+RUN ln -sfT  /opt/authservice/bin/authservice /usr/bin/authservice
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN env AAS_NOSETUP=true /tmp/authservice.bin && rm /tmp/authservice.bin
 
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh"]
