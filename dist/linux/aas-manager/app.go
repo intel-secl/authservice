@@ -159,6 +159,7 @@ func (a *App) GetServiceUsers() []UserAndRolesCreate {
 			urc.Password = a.WlaServiceUserPassword
 			urc.Roles = append(urc.Roles, NewRole("WLS", "FlavorsImageRetrieval", "", []string{"image_flavors:retrieve:*"}))
 			urc.Roles = append(urc.Roles, NewRole("WLS", "ReportCreator", "", []string{"reports:create:*"}))
+                        urc.Roles = append(urc.Roles, NewRole("WLS", "KeysCreator", "", []string{"keys:create:*"}))
 		}
 		if urc.Name != "" {
 			urs = append(urs, urc)
